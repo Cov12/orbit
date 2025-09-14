@@ -1,0 +1,54 @@
+# prisma/schema.prisma — Add billing models
+# --- BEGIN DIFF ---
+# Add to your existing schema (after Business model is defined)
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+model Invoice {
+  id               String   @id @default(cuid())
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  stripeInvoiceId  String   @unique
+  amountDue        Int      // cents
+  amountPaid       Int      // cents
+  currency         String   @default("usd")
+  status           String
+  pdfUrl           String?
+  periodStart      DateTime
+  periodEnd        DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([businessId, createdAt])
+}
+
+model AddOn {
+  id              String         @id @default(cuid())
+  businessId      String
+  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  price           Int            // cents
+  billingInterval BillingInterval
+  active          Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+
+  @@index([businessId, active])
+}
+
+model BusinessPaymentMethod {
+  id                    String   @id @default(cuid())
+  businessId            String
+  business              Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  stripePaymentMethodId String   @unique
+  type                  String
+  last4                 String?
+  expMonth              Int?
+  expYear               Int?
+  isDefault             Boolean  @default(false)
+  createdAt             DateTime @default(now())
+
+  @@index([businessId, isDefault])
+}
+# --- END DIFF ---

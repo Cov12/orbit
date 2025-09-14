@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# WorkPipe PRD (Repository Overview)
 
-## Getting Started
+This repository contains the **Product Requirements Document (PRD)** for **WorkPipe**, a multi-tenant SaaS platform for business management.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 📖 Quick Links
+- [Full PRD](./WorkPipe_PRD.md)
+- [Data Models & Schema](./WorkPipe_PRD.md#6-data-model-initial)
+- [Business Billing Section](./WorkPipe_PRD.md#33-business-billing--monetization)
+- [User Stories & Acceptance Criteria](./WorkPipe_PRD.md#4-user-stories--acceptance-criteria-selected)
+- [Rollout Plan](./WorkPipe_PRD.md#11-rollout-plan-sequenced-milestones)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Vision
+WorkPipe is the **all-in-one operating system** for businesses. It unifies:
+- Marketing sites & funnels
+- CRM pipelines & contacts
+- Stripe-based payments & billing
+- Automation & analytics
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+---
 
-## Learn More
+## 🏗️ Tech Stack
+- **Framework**: Next.js 14 (App Router)
+- **Auth**: Clerk
+- **Database**: PostgreSQL + Prisma
+- **Styling/UI**: Tailwind CSS + shadcn/ui
+- **Payments**: Stripe Billing + Connect
+- **File Uploads**: UploadThing
+- **Charts**: Tremor React
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📦 Core Features (MVP)
+- Multi-tenant structure (Business → Subaccounts)
+- Business Billing Dashboard with subscriptions, invoices, add-ons
+- Funnel & website builder (drag-and-drop, Stripe Checkout integration)
+- CRM with pipelines, tickets, contacts
+- Media asset management
+- Notifications & theming
+- Automation triggers & actions
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📌 Rollout Milestones
+- **M0** – Foundation (RBAC, schema, router, marketing site)
+- **M1** – Business Billing (Stripe subscriptions, invoices, add-ons, upgrade flow)
+- **M2** – Subaccounts & Stripe Connect
+- **M3** – Media & Contacts
+- **M4** – Funnel Builder
+- **M5** – CRM Pipelines
+- **M6** – Automation (V1)
+- **M7** – Analytics
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## 📂 Repo Layout
+- `WorkPipe_PRD.md` → Full detailed PRD (requirements, models, user stories)
+- `migrations/` → SQL migrations for Postgres (e.g., billing models)
+- `app/api/stripe/webhook/route.ts` → Stripe webhook handler
+- `README.md` → (this file)
+
+---
+
+## 🔑 Next Steps
+1. Implement **M0 Foundation** (Clerk, RBAC, schema, router, marketing site)
+2. Integrate **M1 Business Billing** (subscriptions, invoices, add-ons)
+3. Track progress against the PRD rollout plan
+
+---
+
+📌 For complete context and technical details, see [WorkPipe_PRD.md](./WorkPipe_PRD.md).
