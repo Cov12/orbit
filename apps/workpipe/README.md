@@ -1,16 +1,6 @@
 # WorkPipe PRD (Repository Overview)
 
 This repository contains the **Product Requirements Document (PRD)** for **WorkPipe**, a multi-tenant SaaS platform for business management.
-
----
-
-## Quick Links
-- [Full PRD](./WorkPipe_PRD.md)
-- [Data Models & Schema](./WorkPipe_PRD.md#6-data-model-initial)
-- [Business Billing Section](./WorkPipe_PRD.md#33-business-billing--monetization)
-- [User Stories & Acceptance Criteria](./WorkPipe_PRD.md#4-user-stories--acceptance-criteria-selected)
-- [Rollout Plan](./WorkPipe_PRD.md#11-rollout-plan-sequenced-milestones)
-
 ---
 
 ## Vision
