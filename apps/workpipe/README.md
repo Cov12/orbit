@@ -51,6 +51,3 @@ WorkPipe is the **all-in-one operating system** for businesses. It unifies:
 - `migrations/` → SQL migrations for Postgres (e.g., billing models)
 - `app/api/stripe/webhook/route.ts` → Stripe webhook handler
 - `README.md` → (this file)
----
-
-📌 For complete context and technical details, see [WorkPipe_PRD.md](./WorkPipe_PRD.md).
