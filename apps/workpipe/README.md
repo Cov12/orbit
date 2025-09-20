@@ -4,7 +4,7 @@ This repository contains the **Product Requirements Document (PRD)** for **WorkP
 
 ---
 
-## 📖 Quick Links
+## Quick Links
 - [Full PRD](./WorkPipe_PRD.md)
 - [Data Models & Schema](./WorkPipe_PRD.md#6-data-model-initial)
 - [Business Billing Section](./WorkPipe_PRD.md#33-business-billing--monetization)
@@ -13,7 +13,7 @@ This repository contains the **Product Requirements Document (PRD)** for **WorkP
 
 ---
 
-## 🚀 Vision
+## Vision
 WorkPipe is the **all-in-one operating system** for businesses. It unifies:
 - Marketing sites & funnels
 - CRM pipelines & contacts
@@ -22,7 +22,7 @@ WorkPipe is the **all-in-one operating system** for businesses. It unifies:
 
 ---
 
-## 🏗️ Tech Stack
+## Tech Stack
 - **Framework**: Next.js 14 (App Router)
 - **Auth**: Clerk
 - **Database**: PostgreSQL + Prisma
@@ -33,7 +33,7 @@ WorkPipe is the **all-in-one operating system** for businesses. It unifies:
 
 ---
 
-## 📦 Core Features (MVP)
+## Core Features (MVP)
 - Multi-tenant structure (Business → Subaccounts)
 - Business Billing Dashboard with subscriptions, invoices, add-ons
 - Funnel & website builder (drag-and-drop, Stripe Checkout integration)
@@ -44,7 +44,7 @@ WorkPipe is the **all-in-one operating system** for businesses. It unifies:
 
 ---
 
-## 📌 Rollout Milestones
+## Rollout Milestones
 - **M0** – Foundation (RBAC, schema, router, marketing site)
 - **M1** – Business Billing (Stripe subscriptions, invoices, add-ons, upgrade flow)
 - **M2** – Subaccounts & Stripe Connect
@@ -56,19 +56,11 @@ WorkPipe is the **all-in-one operating system** for businesses. It unifies:
 
 ---
 
-## 📂 Repo Layout
+## Repo Layout
 - `WorkPipe_PRD.md` → Full detailed PRD (requirements, models, user stories)
 - `migrations/` → SQL migrations for Postgres (e.g., billing models)
 - `app/api/stripe/webhook/route.ts` → Stripe webhook handler
 - `README.md` → (this file)
-
----
-
-## 🔑 Next Steps
-1. Implement **M0 Foundation** (Clerk, RBAC, schema, router, marketing site)
-2. Integrate **M1 Business Billing** (subscriptions, invoices, add-ons)
-3. Track progress against the PRD rollout plan
-
 ---
 
 📌 For complete context and technical details, see [WorkPipe_PRD.md](./WorkPipe_PRD.md).
