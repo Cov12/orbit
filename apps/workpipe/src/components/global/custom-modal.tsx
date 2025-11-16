@@ -1,7 +1,10 @@
 'use client'
-import { useModal } from '@/providers/modal-provider'
-import { DialogTitle } from '@radix-ui/react-dialog'
 import React from 'react'
+
+import { DialogTitle } from '@radix-ui/react-dialog'
+
+import { useModal } from '@/providers/modal-provider'
+
 import {
   Dialog,
   DialogContent,

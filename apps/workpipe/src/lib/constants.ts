@@ -219,6 +219,7 @@ export const icons = [
 ]
 
 export type EditorBtns =
+  // Existing components
   | 'text'
   | 'container'
   | 'section'
@@ -229,8 +230,57 @@ export type EditorBtns =
   | 'video'
   | '__body'
   | 'image'
-  | null
   | '3Col'
+  // Content components
+  | 'heading'
+  | 'rich-text'
+  | 'animated-text'
+  | 'icon'
+  | 'divider'
+  | 'spacer'
+  | 'code-block'
+  | 'snippet'
+  | 'qr-code'
+  // Form components
+  | 'newsletter'
+  | 'survey'
+  | 'file-upload'
+  | 'date-picker'
+  | 'phone-input'
+  // Interactive components
+  | 'button'
+  | 'tabs'
+  | 'accordion'
+  | 'modal'
+  | 'tooltip'
+  | 'dropdown'
+  // Media components
+  | 'image-gallery'
+  | 'image-carousel'
+  | 'audio-player'
+  // E-commerce components
+  | 'product-card'
+  | 'price-table'
+  | 'rating'
+  // Layout components
+  | 'card'
+  // Navigation components
+  | 'navbar'
+  | 'breadcrumbs'
+  | 'pagination'
+  // Social proof components
+  | 'testimonial'
+  | 'logo-grid'
+  // Analytics components
+  | 'pixel'
+  // Animation components
+  | 'counter'
+  | 'particles'
+  | 'bg-animation'
+  // Business components
+  | 'appointment'
+  | 'lead-magnet'
+  | null
 
 export const defaultStyles: React.CSSProperties = {
   backgroundPosition: 'center',

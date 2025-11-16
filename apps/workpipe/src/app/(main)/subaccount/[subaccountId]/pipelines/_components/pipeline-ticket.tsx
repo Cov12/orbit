@@ -1,3 +1,9 @@
+import { Dispatch, SetStateAction } from 'react'
+
+import { Contact2, Edit, MoreHorizontalIcon, Trash, User2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Draggable } from 'react-beautiful-dnd'
+
 import TicketForm from '@/components/forms/ticket-form'
 import CustomModal from '@/components/global/custom-modal'
 import TagComponent from '@/components/global/tag'
@@ -38,10 +44,8 @@ import { toast } from '@/components/ui/use-toast'
 import { deleteTicket, saveActivityLogsNotification } from '@/lib/queries'
 import { TicketWithTags } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
-import { Contact2, Edit, MoreHorizontalIcon, Trash, User2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { Dispatch, SetStateAction } from 'react'
-import { Draggable } from 'react-beautiful-dnd'
+
+
 
 type Props = {
   setAllTickets: Dispatch<SetStateAction<TicketWithTags>>

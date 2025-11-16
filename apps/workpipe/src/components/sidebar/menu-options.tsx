@@ -1,7 +1,7 @@
 'use client'
 
-import { icons } from '@/lib/constants'
-import { useModal } from '@/providers/modal-provider'
+import { useEffect, useMemo, useState } from 'react'
+
 import {
   Business,
   BusinessSidebarOption,
@@ -12,7 +12,11 @@ import clsx from 'clsx'
 import { ChevronsUpDown, Compass, Menu, PlusCircleIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+
+import { icons } from '@/lib/constants'
+import { useModal } from '@/providers/modal-provider'
+
+
 import SubAccountDetails from '../forms/subaccount-details'
 import CustomModal from '../global/custom-modal'
 import { AspectRatio } from '../ui/aspect-ratio'

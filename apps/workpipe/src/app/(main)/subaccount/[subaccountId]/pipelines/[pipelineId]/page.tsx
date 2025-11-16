@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation'
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { db } from '@/lib/db'
 import {
@@ -7,7 +9,7 @@ import {
     updateTicketsOrder,
 } from '@/lib/queries'
 import { LaneDetail } from '@/lib/types'
-import { redirect } from 'next/navigation'
+
 import PipelineInfoBar from '../_components/pipeline-infobar'
 import PipelineSettings from '../_components/pipeline-settings'
 import PipelineView from '../_components/pipeline-view'

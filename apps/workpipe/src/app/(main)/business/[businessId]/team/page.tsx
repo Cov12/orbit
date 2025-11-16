@@ -1,7 +1,9 @@
-import SendInvitation from '@/components/forms/send-invitation'
-import { db } from '@/lib/db'
 import { currentUser } from '@clerk/nextjs'
 import { Plus } from 'lucide-react'
+
+import SendInvitation from '@/components/forms/send-invitation'
+import { db } from '@/lib/db'
+
 import { columns } from './columns'
 import DataTable from './data-table'
 

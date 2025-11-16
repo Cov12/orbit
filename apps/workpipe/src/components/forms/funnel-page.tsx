@@ -1,8 +1,24 @@
 'use client'
-import { zodResolver } from '@hookform/resolvers/zod'
 import React, { useEffect } from 'react'
+
+import { zodResolver } from '@hookform/resolvers/zod'
+import { FunnelPage } from '@prisma/client'
+import { CopyPlusIcon, Trash } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
+import { v4 } from 'uuid'
 import { z } from 'zod'
+
+import {
+    deleteFunnelePage,
+    getFunnels,
+    saveActivityLogsNotification,
+    upsertFunnelPage,
+} from '@/lib/queries'
+import { FunnelPageSchema } from '@/lib/types'
+
+import Loading from '../global/loading'
+import { Button } from '../ui/button'
 import {
     Card,
     CardContent,
@@ -19,20 +35,6 @@ import {
     FormMessage,
 } from '../ui/form'
 import { Input } from '../ui/input'
-
-import {
-    deleteFunnelePage,
-    getFunnels,
-    saveActivityLogsNotification,
-    upsertFunnelPage,
-} from '@/lib/queries'
-import { FunnelPageSchema } from '@/lib/types'
-import { FunnelPage } from '@prisma/client'
-import { CopyPlusIcon, Trash } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { v4 } from 'uuid'
-import Loading from '../global/loading'
-import { Button } from '../ui/button'
 import { useToast } from '../ui/use-toast'
 
 interface CreateFunnelPageProps {

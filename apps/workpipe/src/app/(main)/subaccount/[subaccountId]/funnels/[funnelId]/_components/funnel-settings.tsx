@@ -1,7 +1,5 @@
 import React from 'react'
 
-import { db } from '@/lib/db'
-import { getConnectAccountProducts } from '@/lib/stripe/stripe-actions'
 import { Funnel } from '@prisma/client'
 
 
@@ -13,6 +11,9 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
+import { db } from '@/lib/db'
+import { getConnectAccountProducts } from '@/lib/stripe/stripe-actions'
+
 import FunnelProductsTable from './funnel-products-table'
 
 interface FunnelSettingsProps {

@@ -1,5 +1,8 @@
 'use client'
 
+import { Pipeline } from '@prisma/client'
+import { useRouter } from 'next/navigation'
+
 import CreatePipelineForm from '@/components/forms/create-pipeline-form'
 import {
     AlertDialog,
@@ -15,8 +18,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
 import { deletePipeline } from '@/lib/queries'
-import { Pipeline } from '@prisma/client'
-import { useRouter } from 'next/navigation'
 
 const PipelineSettings = ({
   pipelineId,

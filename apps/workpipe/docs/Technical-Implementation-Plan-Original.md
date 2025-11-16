@@ -5,7 +5,6 @@ This comprehensive technical implementation plan is based on the PRD and serves 
 ## **Phase 1: Foundation & Infrastructure**
 
 ### **1.1 Project Setup & Tooling**
-
 - Next.js 14 with App Router and TypeScript
 - ESLint + Prettier configuration
 - Husky for git hooks
@@ -13,7 +12,6 @@ This comprehensive technical implementation plan is based on the PRD and serves 
 - Environment configuration (.env hierarchy)
 
 ### **1.2 Development Environment**
-
 ```bash
 # Core dependencies
 - Next.js 14
@@ -24,7 +22,6 @@ This comprehensive technical implementation plan is based on the PRD and serves 
 ```
 
 ### **1.3 Folder Structure**
-
 ```
 src/
 ├── app/                     # App Router pages
@@ -44,7 +41,6 @@ src/
 ## **Phase 2: Database Schema & Multi-Tenancy Strategy**
 
 ### **2.1 Multi-Tenancy Architecture**
-
 - **Row-Level Security (RLS)**: Every table includes `businessId` for tenant isolation
 - **Hierarchical Structure**: Business → SubAccount → Resources
 - **Database Constraints**: Foreign key relationships enforce tenant boundaries
@@ -53,7 +49,6 @@ src/
 ### **2.2 Core Schema Design**
 
 **Identity & Access Management:**
-
 ```sql
 -- Users (Clerk integration)
 User {
@@ -94,7 +89,6 @@ SubAccount {
 ```
 
 **RBAC System:**
-
 ```sql
 -- Business-level roles
 UserBusinessRole {
@@ -131,7 +125,6 @@ enum SubAccountRole {
 ## **Phase 3: Authentication & Authorization System**
 
 ### **3.1 Clerk Integration Strategy**
-
 ```typescript
 // lib/auth.ts
 export const authConfig = {

@@ -1,10 +1,13 @@
 'use client'
+import React from 'react'
+
+import clsx from 'clsx'
+import { Trash } from 'lucide-react'
+
 import { Badge } from '@/components/ui/badge'
 import { EditorBtns } from '@/lib/constants'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
-import clsx from 'clsx'
-import { Trash } from 'lucide-react'
-import React from 'react'
+
 
 type Props = {
   element: EditorElement

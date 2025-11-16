@@ -1,11 +1,12 @@
 'use client'
+import { Business, BusinessSidebarOption, SubAccount, User } from '@prisma/client'
+import { PlusCircleIcon } from 'lucide-react'
+import { twMerge } from 'tailwind-merge'
+
 import SubAccountDetails from '@/components/forms/subaccount-details'
 import CustomModal from '@/components/global/custom-modal'
 import { Button } from '@/components/ui/button'
 import { useModal } from '@/providers/modal-provider'
-import { Business, BusinessSidebarOption, SubAccount, User } from '@prisma/client'
-import { PlusCircleIcon } from 'lucide-react'
-import { twMerge } from 'tailwind-merge'
 
 type Props = {
   user: User & {

@@ -1,7 +1,10 @@
 'use client'
-import { getPipelines } from '@/lib/queries'
-import { Prisma } from '@prisma/client'
 import { useEffect, useMemo, useState } from 'react'
+
+import { Prisma } from '@prisma/client'
+
+import { getPipelines } from '@/lib/queries'
+
 import { Card, CardContent, CardDescription, CardHeader } from '../ui/card'
 import { Progress } from '../ui/progress'
 import {

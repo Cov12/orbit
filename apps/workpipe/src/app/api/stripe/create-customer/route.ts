@@ -1,6 +1,7 @@
+import { NextResponse } from 'next/server'
+
 import { stripe } from '@/lib/stripe'
 import { StripeCustomerType } from '@/lib/types'
-import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   const { address, email, name, shipping }: StripeCustomerType =

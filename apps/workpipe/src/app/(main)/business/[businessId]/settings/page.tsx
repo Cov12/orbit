@@ -1,7 +1,8 @@
+import { currentUser } from '@clerk/nextjs'
+
 import BusinessDetails from '@/components/forms/business-details'
 import UserDetails from '@/components/forms/user-details'
 import { db } from '@/lib/db'
-import { currentUser } from '@clerk/nextjs'
 
 type Props = {
   params: { businessId: string }

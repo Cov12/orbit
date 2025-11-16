@@ -1,9 +1,10 @@
 'use client'
-import { Badge } from '@/components/ui/badge'
-import { FunnelsForSubAccount } from '@/lib/types'
 import { ColumnDef } from '@tanstack/react-table'
 import { ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+
+import { Badge } from '@/components/ui/badge'
+import { FunnelsForSubAccount } from '@/lib/types'
 
 export const columns: ColumnDef<FunnelsForSubAccount>[] = [
   {

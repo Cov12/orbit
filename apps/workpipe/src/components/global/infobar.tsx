@@ -1,10 +1,13 @@
 'use client'
-import { NotificationWithUser } from '@/lib/types'
+import { useState } from 'react'
+
 import { UserButton } from '@clerk/nextjs'
 import { Role } from '@prisma/client'
 import { Bell } from 'lucide-react'
-import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+import { NotificationWithUser } from '@/lib/types'
+
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { Card } from '../ui/card'
 import {
@@ -16,6 +19,7 @@ import {
   SheetTrigger,
 } from '../ui/sheet'
 import { Switch } from '../ui/switch'
+
 import { ModeToggle } from './mode-toggle'
 
 type Props = {

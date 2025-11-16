@@ -1,10 +1,12 @@
 'use client'
+import { useEffect } from 'react'
+
+import { useSearchParams } from 'next/navigation'
+
 import SubscriptionFormWrapper from '@/components/forms/subscription-form/subscription-form-wrapper'
 import CustomModal from '@/components/global/custom-modal'
 import { PricesList } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
-import { useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
 
 type Props = {
   prices: PricesList['data']

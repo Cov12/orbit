@@ -1,11 +1,16 @@
 'use client'
+import React from 'react'
+
+import clsx from 'clsx'
+import { Trash } from 'lucide-react'
+import { v4 } from 'uuid'
+
 import { Badge } from '@/components/ui/badge'
 import { EditorBtns, defaultStyles } from '@/lib/constants'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
-import clsx from 'clsx'
-import { Trash } from 'lucide-react'
-import React from 'react'
-import { v4 } from 'uuid'
+
+
+
 import Recursive from './recursive'
 
 type Props = { element: EditorElement }
@@ -146,6 +151,160 @@ const Container = ({ element }: Props) => {
               name: 'Two Columns',
               styles: { ...defaultStyles, display: 'flex' },
               type: '2Col',
+            },
+          },
+        })
+        break
+      case 'heading':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                text: 'Heading',
+                level: 'h2',
+                alignment: 'left',
+              },
+              id: v4(),
+              name: 'Heading',
+              styles: { ...defaultStyles },
+              type: 'heading',
+            },
+          },
+        })
+        break
+      case 'animated-text':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                text: 'Animated Text',
+                animation: 'fade',
+                duration: 1000,
+              },
+              id: v4(),
+              name: 'Animated Text',
+              styles: { ...defaultStyles },
+              type: 'animated-text',
+            },
+          },
+        })
+        break
+      case 'rich-text':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                content: '<p>Rich text content here...</p>',
+                placeholder: 'Start typing...',
+                editable: true,
+              },
+              id: v4(),
+              name: 'Rich Text',
+              styles: { ...defaultStyles },
+              type: 'rich-text',
+            },
+          },
+        })
+        break
+      case 'icon':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                icon: 'star',
+                size: 24,
+                color: '#000000',
+              },
+              id: v4(),
+              name: 'Icon',
+              styles: { ...defaultStyles },
+              type: 'icon',
+            },
+          },
+        })
+        break
+      case 'divider':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                style: 'solid',
+                thickness: 1,
+                color: '#e5e5e5',
+                spacing: 20,
+              },
+              id: v4(),
+              name: 'Divider',
+              styles: { ...defaultStyles },
+              type: 'divider',
+            },
+          },
+        })
+        break
+      case 'spacer':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                height: 40,
+                responsive: true,
+              },
+              id: v4(),
+              name: 'Spacer',
+              styles: { ...defaultStyles },
+              type: 'spacer',
+            },
+          },
+        })
+        break
+      case 'code-block':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                code: 'console.log("Hello World");',
+                language: 'javascript',
+                showLineNumbers: true,
+                theme: 'dark',
+              },
+              id: v4(),
+              name: 'Code Block',
+              styles: { ...defaultStyles },
+              type: 'code-block',
+            },
+          },
+        })
+        break
+      case 'qr-code':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                value: 'https://example.com',
+                size: 200,
+                backgroundColor: '#ffffff',
+                foregroundColor: '#000000',
+              },
+              id: v4(),
+              name: 'QR Code',
+              styles: { ...defaultStyles },
+              type: 'qr-code',
             },
           },
         })

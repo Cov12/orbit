@@ -142,12 +142,13 @@
 ---
 
 ## 5) System architecture & tech decisions
-- **Frontend:** Next.js 14 (App Router), React Server Components where possible; shadcn/ui for primitives; Tailwind CSS; Tremor for charts.  
-- **Auth:** Clerk.  
-- **Storage & DB:** **PostgreSQL** (Neon or equivalent) via Prisma; single DB with tenant_id scoping; migrations with Prisma Migrate.  
-- **File uploads:** UploadThing → blob storage/CDN.  
-- **Payments:** Stripe (Billing + Connect).  
-- **Routing:** Middleware resolves custom subdomains/domains and public routes; dynamic `[domain]/[path]` for funnels.  
+- **Frontend:** Next.js 14 (App Router), React Server Components where possible; shadcn/ui for primitives; Tailwind CSS; Tremor for charts.
+- **UI Components:** **MANDATORY** - Use shadcn MCP (Model Context Protocol) for all UI component additions, modifications, and selections. This ensures consistent component usage and proper integration with the shadcn/ui system.
+- **Auth:** Clerk.
+- **Storage & DB:** **PostgreSQL** (Neon or equivalent) via Prisma; single DB with tenant_id scoping; migrations with Prisma Migrate.
+- **File uploads:** UploadThing → blob storage/CDN.
+- **Payments:** Stripe (Billing + Connect).
+- **Routing:** Middleware resolves custom subdomains/domains and public routes; dynamic `[domain]/[path]` for funnels.
 - **Observability:** Request logging, structured app logs, metrics, error tracking (Sentry), audit log entities.
 
 **Why Postgres (vs the tutorial’s MySQL example):** WorkPipe will use Postgres from day one for strong JSON, window functions, and ecosystem fit (Neon, RLS if desired later). Prisma abstracts most differences; we’ll design schemas with explicit foreign keys and composite tenant keys.

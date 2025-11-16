@@ -1,4 +1,9 @@
 'use client'
+import {
+  useSearchParams,
+  useRouter
+} from 'next/navigation'
+
 import SubscriptionFormWrapper from '@/components/forms/subscription-form/subscription-form-wrapper'
 import CustomModal from '@/components/global/custom-modal'
 import { Button } from '@/components/ui/button'
@@ -12,10 +17,6 @@ import {
 } from '@/components/ui/card'
 import { PricesList } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
-import {
-  useSearchParams,
-  useRouter
-} from 'next/navigation'
 
 type Props = {
   features: string[]

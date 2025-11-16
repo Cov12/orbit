@@ -1,6 +1,8 @@
-import { EditorBtns } from '@/lib/constants'
-import Image from 'next/image'
 import React from 'react'
+
+import Image from 'next/image'
+
+import { EditorBtns } from '@/lib/constants'
 
 type Props = {}
 

@@ -1,4 +1,10 @@
 'use client'
+import React from 'react'
+
+import { Pipeline } from '@prisma/client'
+import { Check, ChevronsUpDown, Plus } from 'lucide-react'
+import Link from 'next/link'
+
 import CreatePipelineForm from '@/components/forms/create-pipeline-form'
 import CustomModal from '@/components/global/custom-modal'
 import { Button } from '@/components/ui/button'
@@ -15,10 +21,7 @@ import {
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { useModal } from '@/providers/modal-provider'
-import { Pipeline } from '@prisma/client'
-import { Check, ChevronsUpDown, Plus } from 'lucide-react'
-import Link from 'next/link'
-import React from 'react'
+
 
 type Props = {
   subAccountId: string
