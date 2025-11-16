@@ -1,10 +1,11 @@
 'use client'
+import { useRouter } from 'next/navigation'
+
 import {
     deleteSubAccount,
     getSubaccountDetails,
     saveActivityLogsNotification,
 } from '@/lib/queries'
-import { useRouter } from 'next/navigation'
 
 type Props = {
   subaccountId: string

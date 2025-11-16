@@ -1,4 +1,11 @@
 'use client'
+import React from 'react'
+
+import clsx from 'clsx'
+import { Trash } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { z } from 'zod'
+
 import ContactForm from '@/components/forms/contact-form'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
@@ -8,15 +15,8 @@ import {
     saveActivityLogsNotification,
     upsertContact,
 } from '@/lib/queries'
-
 import { ContactUserFormSchema } from '@/lib/types'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
-import clsx from 'clsx'
-import { Trash } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-
-import React from 'react'
-import { z } from 'zod'
 
 type Props = {
   element: EditorElement

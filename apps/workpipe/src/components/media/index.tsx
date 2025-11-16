@@ -1,5 +1,7 @@
-import { GetMediaFiles } from '@/lib/types'
 import { FolderSearch } from 'lucide-react'
+
+import { GetMediaFiles } from '@/lib/types'
+
 import {
     Command,
     CommandEmpty,
@@ -8,6 +10,7 @@ import {
     CommandItem,
     CommandList,
 } from '../ui/command'
+
 import MediaCard from './media-card'
 import MediaUploadButton from './upload-buttons'
 

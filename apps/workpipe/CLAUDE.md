@@ -28,10 +28,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Development Workflow
 1. Use `npm run dev` to start development server
 2. Make code changes
-3. Run `npm run format` to format code (or let pre-commit hooks handle it)
-4. Run `npm run lint:fix` to fix linting issues
-5. Run `npm run type-check` to verify TypeScript
-6. Use `npm run commit` for conventional commits or commit normally (commitlint will validate)
+3. **For UI components**: Always consult shadcn MCP before adding or modifying any UI components
+4. Run `npm run format` to format code (or let pre-commit hooks handle it)
+5. Run `npm run lint:fix` to fix linting issues
+6. Run `npm run type-check` to verify TypeScript
+7. Use `npm run commit` for conventional commits or commit normally (commitlint will validate)
 
 ## Architecture Overview
 
@@ -92,6 +93,7 @@ Custom middleware handles:
 ### Component Architecture
 
 - Uses shadcn/ui for base components
+- **MANDATORY**: Always use the shadcn MCP (Model Context Protocol) for all UI component additions, modifications, and selections
 - Custom components in `src/components/`
 - Page-specific components in `_components` subdirectories
 - Providers for theming and modals

@@ -1,3 +1,5 @@
+import clsx from 'clsx'
+
 import { Separator } from '@/components/ui/separator'
 import {
   Table,
@@ -10,7 +12,7 @@ import {
 import { addOnProducts, pricingCards } from '@/lib/constants'
 import { db } from '@/lib/db'
 import { stripe } from '@/lib/stripe'
-import clsx from 'clsx'
+
 import PricingCard from './_components/pricing-card'
 import SubscriptionHelper from './_components/subscription-helper'
 

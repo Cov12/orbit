@@ -1,4 +1,14 @@
 'use client'
+import React, { useEffect } from 'react'
+
+
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Funnel } from '@prisma/client'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { v4 } from 'uuid'
+import { z } from 'zod'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
     Form,
@@ -8,22 +18,15 @@ import {
     FormLabel,
     FormMessage
 } from '@/components/ui/form'
-import { Funnel } from '@prisma/client'
-import React, { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { Input } from '../ui/input'
-import { Textarea } from '../ui/textarea'
-
 import { saveActivityLogsNotification, upsertFunnel } from '@/lib/queries'
 import { CreateFunnelFormSchema } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
-import { v4 } from 'uuid'
+
 import FileUpload from '../global/file-upload'
 import Loading from '../global/loading'
 import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Textarea } from '../ui/textarea'
 import { toast } from '../ui/use-toast'
 
 interface CreateFunnelProps {

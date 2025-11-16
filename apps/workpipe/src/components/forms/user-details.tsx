@@ -1,5 +1,23 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
+import { zodResolver } from '@hookform/resolvers/zod'
+import { SubAccount, User } from '@prisma/client'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { v4 } from 'uuid'
+import { z } from 'zod'
+
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import {
   changeUserPermissions,
   getAuthUserDetails,
@@ -12,12 +30,10 @@ import {
   UserWithPermissionsAndSubAccounts,
 } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { SubAccount, User } from '@prisma/client'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
+
+import FileUpload from '../global/file-upload'
+import Loading from '../global/loading'
+import { Button } from '../ui/button'
 import {
   Card,
   CardContent,
@@ -25,21 +41,6 @@ import {
   CardHeader,
   CardTitle,
 } from '../ui/card'
-import { useToast } from '../ui/use-toast'
-
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import { v4 } from 'uuid'
-import FileUpload from '../global/file-upload'
-import Loading from '../global/loading'
-import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import {
   Select,
@@ -50,6 +51,7 @@ import {
 } from '../ui/select'
 import { Separator } from '../ui/separator'
 import { Switch } from '../ui/switch'
+import { useToast } from '../ui/use-toast'
 
 type Props = {
   id: string | null

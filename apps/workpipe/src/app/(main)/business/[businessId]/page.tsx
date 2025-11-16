@@ -1,3 +1,11 @@
+import { AreaChart } from '@tremor/react'
+import {
+  Contact2,
+  DollarSign,
+  Goal,
+  ShoppingCart
+} from 'lucide-react'
+
 import CircleProgress from '@/components/global/circle-progress'
 import {
   Card,
@@ -11,13 +19,6 @@ import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { db } from '@/lib/db'
 // import { stripe } from '@/lib/stripe'
-import { AreaChart } from '@tremor/react'
-import {
-  Contact2,
-  DollarSign,
-  Goal,
-  ShoppingCart
-} from 'lucide-react'
 
 const Page = async ({
   params,
@@ -25,13 +26,13 @@ const Page = async ({
   params: { businessId: string }
   searchParams: { code: string }
 }) => {
-  let currency = 'USD'
+  const currency = 'USD'
   let sessions
   let totalClosedSessions
   let totalPendingSessions
-  let net = 0
-  let potentialIncome = 0
-  let closingRate = 0
+  const net = 0
+  const potentialIncome = 0
+  const closingRate = 0
   const currentYear = new Date().getFullYear()
   const startDate = new Date(`${currentYear}-01-01T00:00:00Z`).getTime() / 1000
   const endDate = new Date(`${currentYear}-12-31T23:59:59Z`).getTime() / 1000

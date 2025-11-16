@@ -467,6 +467,8 @@ export class FunnelRepository extends BaseRepository<Funnel> {
 ## **Phase 6: UI/UX Component Architecture**
 
 ### **6.1 Design System Foundation**
+**MANDATORY**: Always use shadcn MCP (Model Context Protocol) for all UI component additions, modifications, and selections to ensure consistent component usage and proper integration.
+
 ```typescript
 // components/ui/ (shadcn/ui base components)
 ├── button.tsx
@@ -1708,12 +1710,17 @@ Key Deliverables:
 - Implement proper connection pooling
 - Use CDN for static assets and media
 
+**5. UI Component Standards**
+- **MANDATORY**: Use shadcn MCP for all UI component work
+- Ensures consistent component selection and implementation
+- Maintains design system integrity across the platform
+
 ### **Technology Stack Summary**
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
 | **Frontend** | Next.js 14 + TypeScript | Application framework |
-| **Styling** | Tailwind CSS + shadcn/ui | Design system |
+| **Styling** | Tailwind CSS + shadcn/ui (via MCP) | Design system |
 | **Database** | PostgreSQL + Prisma | Data persistence |
 | **Auth** | Clerk | Authentication & user management |
 | **Payments** | Stripe + Connect | Billing & marketplace |

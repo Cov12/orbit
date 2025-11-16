@@ -1,8 +1,9 @@
-import { stripe } from '@/lib/stripe'
-import { subscriptionCreated } from '@/lib/stripe/stripe-actions'
 import { headers } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+
+import { stripe } from '@/lib/stripe'
+import { subscriptionCreated } from '@/lib/stripe/stripe-actions'
 
 const stripeWebhookEvents = new Set([
   'product.created',

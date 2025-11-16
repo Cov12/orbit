@@ -8,7 +8,9 @@ import {
   Ticket,
   User,
 } from '@prisma/client'
+import Stripe from 'stripe'
 import { z } from 'zod'
+
 import { db } from './db'
 import {
   _getTicketsWithAllRelations,
@@ -21,7 +23,6 @@ import {
   getUserPermissions
 } from './queries'
   
-import Stripe from 'stripe'
     
   export type NotificationWithUser =
     | ({
@@ -95,6 +96,7 @@ import Stripe from 'stripe'
     description: z.string(),
     subDomainName: z.string().optional(),
     favicon: z.string().optional(),
+    published: z.boolean().optional(),
   })
 
   export const CreateProfileFormSchema = z.object({

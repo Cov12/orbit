@@ -1,9 +1,11 @@
 'use client'
-import { createMedia, saveActivityLogsNotification } from '@/lib/queries'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+
+import { createMedia, saveActivityLogsNotification } from '@/lib/queries'
+
 import FileUpload from '../global/file-upload'
 import { Button } from '../ui/button'
 import {

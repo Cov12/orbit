@@ -1,3 +1,7 @@
+import { CheckCircleIcon } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -9,9 +13,6 @@ import {
 import { db } from '@/lib/db'
 import { stripe } from '@/lib/stripe'
 import { getStripeOAuthLink } from '@/lib/utils'
-import { CheckCircleIcon } from 'lucide-react'
-import Image from 'next/image'
-import Link from 'next/link'
 
 type Props = {
   params: {

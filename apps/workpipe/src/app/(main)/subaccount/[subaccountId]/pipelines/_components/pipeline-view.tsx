@@ -1,4 +1,11 @@
 'use client'
+import { useEffect, useState } from 'react'
+
+import { Lane, Ticket } from '@prisma/client'
+import { Flag, Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { DragDropContext, DropResult, Droppable } from 'react-beautiful-dnd'
+
 import LaneForm from '@/components/forms/lane-form'
 import CustomModal from '@/components/global/custom-modal'
 import { Button } from '@/components/ui/button'
@@ -8,11 +15,7 @@ import {
     TicketAndTags,
 } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
-import { Lane, Ticket } from '@prisma/client'
-import { Flag, Plus } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { DragDropContext, DropResult, Droppable } from 'react-beautiful-dnd'
+
 import PipelineLane from './pipeline-lane'
 
 type Props = {
@@ -84,7 +87,7 @@ const PipelineView = ({
       }
 
       case 'ticket': {
-        let newLanes = [...allLanes]
+        const newLanes = [...allLanes]
         const originLane = newLanes.find(
           (lane) => lane.id === source.droppableId
         )

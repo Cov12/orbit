@@ -1,4 +1,6 @@
 'use client'
+import clsx from 'clsx'
+
 import {
     Sheet,
     SheetContent,
@@ -8,7 +10,7 @@ import {
 } from '@/components/ui/sheet'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useEditor } from '@/providers/editor/editor-provider'
-import clsx from 'clsx'
+
 import TabList from './tabs'
 import ComponentsTab from './tabs/components-tab'
 import MediaBucketTab from './tabs/media-bucket-tab'

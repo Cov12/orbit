@@ -1,4 +1,5 @@
 import { getAuthUserDetails } from '@/lib/queries'
+
 import MenuOptions from './menu-options'
 
 type Props = {

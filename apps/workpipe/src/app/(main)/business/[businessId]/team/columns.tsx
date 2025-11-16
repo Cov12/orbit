@@ -1,13 +1,18 @@
 'use client'
 
+import { useState } from 'react'
+
 import {
     Role
 } from '@prisma/client'
 import { ColumnDef } from '@tanstack/react-table'
 import clsx from 'clsx'
+import { Copy, Edit, MoreHorizontal, Trash } from 'lucide-react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
 import UserDetails from '@/components/forms/user-details'
+import CustomModal from '@/components/global/custom-modal'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -29,15 +34,11 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useModal } from '@/providers/modal-provider'
-import { Copy, Edit, MoreHorizontal, Trash } from 'lucide-react'
-
-import CustomModal from '@/components/global/custom-modal'
 import { useToast } from '@/components/ui/use-toast'
 import { deleteUser, getUser } from '@/lib/queries'
 import { UsersWithBusinessSubAccountPermissionsSidebarOptions } from '@/lib/types'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useModal } from '@/providers/modal-provider'
+
 
 export const columns: ColumnDef<UsersWithBusinessSubAccountPermissionsSidebarOptions>[] =
   [

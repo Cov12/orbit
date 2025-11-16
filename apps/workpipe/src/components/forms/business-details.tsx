@@ -1,15 +1,6 @@
 'use client'
-import { Business } from '@prisma/client'
-import { useForm } from 'react-hook-form'
 import React, { useEffect, useState } from 'react'
-import { NumberInput } from '@tremor/react'
-import { v4 } from 'uuid'
-import { useToast } from '../ui/use-toast'
-import * as z from 'zod'
-import FileUpload from '../global/file-upload'
-import Loading from '../global/loading'
-import { Input } from '../ui/input'
-import { Switch } from '../ui/switch'
+
 import {
     initUser,
     saveActivityLogsNotification,
@@ -18,7 +9,15 @@ import {
     deleteBusiness,
   } from '@/lib/queries'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Business } from '@prisma/client'
+import { NumberInput } from '@tremor/react'
 import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { v4 } from 'uuid'
+import * as z from 'zod'
+import FileUpload from '../global/file-upload'
+import Loading from '../global/loading'
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -30,6 +29,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from '../ui/alert-dialog'
+  import { Button } from '../ui/button'
   import {
     Card,
     CardContent,
@@ -46,7 +46,9 @@ import {
     FormLabel,
     FormMessage,
   } from '../ui/form'
-  import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Switch } from '../ui/switch'
+import { useToast } from '../ui/use-toast'
 
   type Props = {
     data?: Partial<Business>

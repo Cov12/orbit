@@ -1,17 +1,19 @@
 'use client'
-import SubscriptionForm from '@/components/forms/subscription-form'
-import { toast } from '@/components/ui/use-toast'
-import { useModal } from '@/providers/modal-provider'
+import { useEffect, useMemo, useState } from 'react'
+
 import { Plan } from '@prisma/client'
 import { Elements } from '@stripe/react-stripe-js'
 import { Stripe, StripeElementsOptions } from '@stripe/stripe-js'
+import clsx from 'clsx'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
-import { getStripe } from '@/lib/stripe/stripe-client'
+
+import SubscriptionForm from '@/components/forms/subscription-form'
 import Loading from '@/components/global/loading'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-import clsx from 'clsx'
+import { toast } from '@/components/ui/use-toast'
 import { pricingCards } from '@/lib/constants'
+import { getStripe } from '@/lib/stripe/stripe-client'
+import { useModal } from '@/providers/modal-provider'
 
 type Props = {
   customerId: string

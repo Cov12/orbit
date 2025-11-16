@@ -1,11 +1,22 @@
 'use client'
 
+import { useEffect } from 'react'
+
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Business, SubAccount } from '@prisma/client'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
-import * as z from 'zod'
 import { v4 } from 'uuid'
+import * as z from 'zod'
 
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card'
 import {
   Form,
   FormControl,
@@ -14,24 +25,14 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { useRouter } from 'next/navigation'
-
 import { Input } from '@/components/ui/input'
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card'
+import { saveActivityLogsNotification, upsertSubAccount } from '@/lib/queries'
+import { useModal } from '@/providers/modal-provider'
 
 import FileUpload from '../global/file-upload'
-import { Business, SubAccount } from '@prisma/client'
-import { useToast } from '../ui/use-toast'
-import { saveActivityLogsNotification, upsertSubAccount } from '@/lib/queries'
-import { useEffect } from 'react'
 import Loading from '../global/loading'
-import { useModal } from '@/providers/modal-provider'
+import { useToast } from '../ui/use-toast'
+
 
 const formSchema = z.object({
   name: z.string(),

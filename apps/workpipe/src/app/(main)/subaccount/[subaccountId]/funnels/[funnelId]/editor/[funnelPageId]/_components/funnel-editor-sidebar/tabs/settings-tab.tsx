@@ -1,5 +1,21 @@
 'use client'
 import {
+    AlignCenter,
+    AlignHorizontalJustifyCenterIcon,
+    AlignHorizontalJustifyEndIcon,
+    AlignHorizontalJustifyStart,
+    AlignHorizontalSpaceAround,
+    AlignHorizontalSpaceBetween,
+    AlignJustify,
+    AlignLeft,
+    AlignRight,
+    AlignVerticalJustifyCenter,
+    AlignVerticalJustifyStart,
+    ChevronsLeftRightIcon,
+    LucideImageDown,
+} from 'lucide-react'
+
+import {
     Accordion,
     AccordionContent,
     AccordionItem,
@@ -19,21 +35,6 @@ import {
 import { Slider } from '@/components/ui/slider'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useEditor } from '@/providers/editor/editor-provider'
-import {
-    AlignCenter,
-    AlignHorizontalJustifyCenterIcon,
-    AlignHorizontalJustifyEndIcon,
-    AlignHorizontalJustifyStart,
-    AlignHorizontalSpaceAround,
-    AlignHorizontalSpaceBetween,
-    AlignJustify,
-    AlignLeft,
-    AlignRight,
-    AlignVerticalJustifyCenter,
-    AlignVerticalJustifyStart,
-    ChevronsLeftRightIcon,
-    LucideImageDown,
-} from 'lucide-react'
 
 type Props = {}
 
@@ -42,7 +43,7 @@ const SettingsTab = (props: Props) => {
 
   const handleOnChanges = (e: any) => {
     const styleSettings = e.target.id
-    let value = e.target.value
+    const value = e.target.value
     const styleObject = {
       [styleSettings]: value,
     }
@@ -63,7 +64,7 @@ const SettingsTab = (props: Props) => {
 
   const handleChangeCustomValues = (e: any) => {
     const settingProperty = e.target.id
-    let value = e.target.value
+    const value = e.target.value
     const styleObject = {
       [settingProperty]: value,
     }

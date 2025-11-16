@@ -1,5 +1,6 @@
-import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Database, Plus, SettingsIcon, SquareStackIcon } from 'lucide-react'
+
+import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 type Props = {}
 

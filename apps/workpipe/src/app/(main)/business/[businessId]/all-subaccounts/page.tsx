@@ -1,3 +1,7 @@
+import { SubAccount } from '@prisma/client'
+import Image from 'next/image'
+import Link from 'next/link'
+
 import { AlertDescription } from '@/components/ui/alert'
 import {
     AlertDialog,
@@ -19,9 +23,6 @@ import {
     CommandList,
 } from '@/components/ui/command'
 import { getAuthUserDetails } from '@/lib/queries'
-import { SubAccount } from '@prisma/client'
-import Image from 'next/image'
-import Link from 'next/link'
 
 import CreateSubaccountButton from './_components/create-subaccount-btn'
 import DeleteButton from './_components/delete-button'

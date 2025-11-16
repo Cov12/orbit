@@ -1,6 +1,7 @@
+import { NextResponse } from 'next/server'
+
 import { db } from '@/lib/db'
 import { stripe } from '@/lib/stripe'
-import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   const { customerId, priceId } = await req.json()

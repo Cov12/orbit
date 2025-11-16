@@ -1,17 +1,7 @@
 'use client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { saveActivityLogsNotification, upsertFunnelPage } from '@/lib/queries'
-import { DeviceTypes, useEditor } from '@/providers/editor/editor-provider'
-import { FunnelPage } from '@prisma/client'
+import { FocusEventHandler, useEffect, useState } from 'react'
+
+import { FunnelPage, Funnel } from '@prisma/client'
 import clsx from 'clsx'
 import {
     ArrowLeftCircle,
@@ -24,12 +14,26 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FocusEventHandler, useEffect } from 'react'
 import { toast } from 'sonner'
+
+import Loading from '@/components/global/loading'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { saveActivityLogsNotification, upsertFunnelPage, upsertFunnel } from '@/lib/queries'
+import { DeviceTypes, useEditor } from '@/providers/editor/editor-provider'
+
 
 type Props = {
   funnelId: string
-  funnelPageDetails: FunnelPage
+  funnelPageDetails: FunnelPage & { Funnel: Funnel }
   subaccountId: string
 }
 
@@ -40,6 +44,7 @@ const FunnelEditorNavigation = ({
 }: Props) => {
   const router = useRouter()
   const { state, dispatch } = useEditor()
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     dispatch({
@@ -89,12 +94,14 @@ const FunnelEditorNavigation = ({
   }
 
   const handleOnSave = async () => {
+    setIsSaving(true)
     const content = JSON.stringify(state.editor.elements)
     try {
+      const { Funnel, ...funnelPageData } = funnelPageDetails
       const response = await upsertFunnelPage(
         subaccountId,
         {
-          ...funnelPageDetails,
+          ...funnelPageData,
           content,
         },
         funnelId
@@ -110,6 +117,41 @@ const FunnelEditorNavigation = ({
     } catch (error) {
       toast('Oppse!', {
         description: 'Could not save editor',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handlePublishToggle = async (checked: boolean) => {
+    try {
+      await upsertFunnel(
+        subaccountId,
+        {
+          name: funnelPageDetails.Funnel.name,
+          description: funnelPageDetails.Funnel.description || '',
+          subDomainName: funnelPageDetails.Funnel.subDomainName || undefined,
+          favicon: funnelPageDetails.Funnel.favicon || undefined,
+          published: checked,
+          liveProducts: funnelPageDetails.Funnel.liveProducts || '[]',
+        },
+        funnelId
+      )
+
+      await saveActivityLogsNotification({
+        businessId: undefined,
+        description: `${checked ? 'Published' : 'Unpublished'} funnel | ${funnelPageDetails.Funnel.name}`,
+        subaccountId: subaccountId,
+      })
+
+      toast('Success', {
+        description: `Funnel ${checked ? 'published' : 'saved as draft'}`,
+      })
+
+      router.refresh()
+    } catch (error) {
+      toast('Error', {
+        description: 'Could not update funnel status',
       })
     }
   }
@@ -225,8 +267,8 @@ const FunnelEditorNavigation = ({
             <div className="flex flex-row items-center gap-4">
               Draft
               <Switch
-                disabled
-                defaultChecked={true}
+                checked={funnelPageDetails.Funnel.published}
+                onCheckedChange={handlePublishToggle}
               />
               Publish
             </div>
@@ -234,7 +276,9 @@ const FunnelEditorNavigation = ({
               Last updated {funnelPageDetails.updatedAt.toLocaleDateString()}
             </span>
           </div>
-          <Button onClick={handleOnSave}>Save</Button>
+          <Button onClick={handleOnSave} disabled={isSaving}>
+            {isSaving ? <Loading /> : 'Save'}
+          </Button>
         </aside>
       </nav>
     </TooltipProvider>

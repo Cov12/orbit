@@ -1,12 +1,14 @@
 import React from 'react'
-import { redirect } from 'next/navigation'
-import { Plan } from '@prisma/client'
+
 import { currentUser } from '@clerk/nextjs'
+import { Plan } from '@prisma/client'
+import { redirect } from 'next/navigation'
+
+import BusinessDetails from '@/components/forms/business-details'
 import { 
   getAuthUserDetails, 
   verifyAndAcceptInvitation 
 } from '@/lib/queries'
-import BusinessDetails from '@/components/forms/business-details'
 
 const Page = async ({
   searchParams,

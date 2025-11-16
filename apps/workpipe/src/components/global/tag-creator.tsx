@@ -1,15 +1,27 @@
 'use client'
+import { useEffect, useState } from 'react'
+
+import { Tag } from '@prisma/client'
+import { PlusCircleIcon, TrashIcon, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { v4 } from 'uuid'
+
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+} from '@/components/ui/command'
 import {
     deleteTag,
     getTagsForSubaccount,
     saveActivityLogsNotification,
     upsertTag,
 } from '@/lib/queries'
-import { Tag } from '@prisma/client'
-import { PlusCircleIcon, TrashIcon, X } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { v4 } from 'uuid'
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,17 +34,9 @@ import {
     AlertDialogTrigger,
 } from '../ui/alert-dialog'
 import { toast } from '../ui/use-toast'
+
 import TagComponent from './tag'
 
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-    CommandSeparator,
-} from '@/components/ui/command'
 
 type Props = {
   subAccountId: string

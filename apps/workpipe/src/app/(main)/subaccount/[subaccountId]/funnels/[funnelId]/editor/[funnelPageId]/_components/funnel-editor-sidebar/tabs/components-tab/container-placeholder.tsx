@@ -1,5 +1,6 @@
-import { EditorBtns } from '@/lib/constants'
 import React from 'react'
+
+import { EditorBtns } from '@/lib/constants'
 
 type Props = {}
 

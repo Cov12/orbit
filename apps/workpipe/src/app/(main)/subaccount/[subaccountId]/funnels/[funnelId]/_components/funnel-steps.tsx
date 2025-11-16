@@ -1,18 +1,8 @@
 'use client'
-import CreateFunnelPage from '@/components/forms/funnel-page'
-import CustomModal from '@/components/global/custom-modal'
-import { AlertDialog } from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { toast } from '@/components/ui/use-toast'
-import { upsertFunnelPage } from '@/lib/queries'
-import { FunnelsForSubAccount } from '@/lib/types'
-import { useModal } from '@/providers/modal-provider'
-import { FunnelPage } from '@prisma/client'
-import { Check, ExternalLink, LucideEdit } from 'lucide-react'
 import { useState } from 'react'
 
-import FunnelPagePlaceholder from '@/components/icons/funnel-page-placeholder'
+import { FunnelPage } from '@prisma/client'
+import { Check, ExternalLink, LucideEdit } from 'lucide-react'
 import Link from 'next/link'
 import {
     DragDropContext,
@@ -21,12 +11,27 @@ import {
     Droppable,
 } from 'react-beautiful-dnd'
 
+import CreateFunnelPage from '@/components/forms/funnel-page'
+import CustomModal from '@/components/global/custom-modal'
+import FunnelPagePlaceholder from '@/components/icons/funnel-page-placeholder'
+import { AlertDialog } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 import {
     Card,
     CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { toast } from '@/components/ui/use-toast'
+import { upsertFunnelPage } from '@/lib/queries'
+import { FunnelsForSubAccount } from '@/lib/types'
+import { useModal } from '@/providers/modal-provider'
+
+
+
+
+
 import FunnelStepCard from './funnel-step-card'
 
 type Props = {

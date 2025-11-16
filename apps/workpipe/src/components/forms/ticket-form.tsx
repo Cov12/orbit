@@ -1,4 +1,13 @@
 'use client'
+import { useEffect, useRef, useState } from 'react'
+
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Contact, Tag, User } from '@prisma/client'
+import { CheckIcon, ChevronsUpDownIcon, User2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+
 import {
     Form,
     FormControl,
@@ -23,13 +32,7 @@ import {
 import { TicketFormSchema, TicketWithTags } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useModal } from '@/providers/modal-provider'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Contact, Tag, User } from '@prisma/client'
-import { CheckIcon, ChevronsUpDownIcon, User2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
+
 import Loading from '../global/loading'
 import TagCreator from '../global/tag-creator'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'

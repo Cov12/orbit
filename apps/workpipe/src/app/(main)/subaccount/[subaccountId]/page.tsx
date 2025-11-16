@@ -1,3 +1,7 @@
+import { AreaChart, BadgeDelta } from '@tremor/react'
+import { ClipboardIcon, Contact2, DollarSign, ShoppingCart } from 'lucide-react'
+import Link from 'next/link'
+
 import BlurPage from '@/components/global/blur-page'
 import CircleProgress from '@/components/global/circle-progress'
 import PipelineValue from '@/components/global/pipeline-value'
@@ -10,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-
 import {
   Table,
   TableBody,
@@ -21,9 +24,6 @@ import {
 } from '@/components/ui/table'
 import { db } from '@/lib/db'
 import { stripe } from '@/lib/stripe'
-import { AreaChart, BadgeDelta } from '@tremor/react'
-import { ClipboardIcon, Contact2, DollarSign, ShoppingCart } from 'lucide-react'
-import Link from 'next/link'
 
 type Props = {
   params: { subaccountId: string }

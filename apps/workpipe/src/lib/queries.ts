@@ -12,13 +12,14 @@ import {
   Ticket,
   User
 } from '@prisma/client'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { v4 } from 'uuid'
+import { z } from 'zod'
+
 import { db } from './db'
 import { CreateFunnelFormSchema, CreateMediaType, UpsertFunnelPage } from './types'
 
-import { revalidatePath } from 'next/cache'
-import { z } from 'zod'
 
 export const getAuthUserDetails = async () => {
     const user = await currentUser()
@@ -250,7 +251,7 @@ export const getAuthUserDetails = async () => {
     return response
   }
 
-  export const upsertBusiness = async (business: Business, price?: Plan) => {
+  export const upsertBusiness = async (business: Business, _price?: Plan) => {
     if (!business.companyEmail) return null
     try {
       const businessDetails = await db.business.upsert({
@@ -682,7 +683,7 @@ export const getAuthUserDetails = async () => {
   
     // Create a new invitation in Clerk
     try {
-      const invitation = await clerkClient.invitations.createInvitation({
+      await clerkClient.invitations.createInvitation({
         emailAddress: email,
         redirectUrl: process.env.NEXT_PUBLIC_URL,
         publicMetadata: {
@@ -826,9 +827,25 @@ export const getAuthUserDetails = async () => {
   }
 
   export const deleteFunnelePage = async (funnelPageId: string) => {
-    const response = await db.funnelPage.delete({ where: { id: funnelPageId } })
-  
-    return response
+    try {
+      // First check if the funnel page exists
+      const existingPage = await db.funnelPage.findUnique({
+        where: { id: funnelPageId }
+      })
+
+      if (!existingPage) {
+        throw new Error(`Funnel page with ID ${funnelPageId} not found`)
+      }
+
+      const response = await db.funnelPage.delete({
+        where: { id: funnelPageId }
+      })
+
+      return response
+    } catch (error) {
+      console.error('Error deleting funnel page:', error)
+      throw error
+    }
   }
 
   export const getFunnelPageDetails = async (funnelPageId: string) => {

@@ -1,4 +1,11 @@
 'use client'
+import React, { useState } from 'react'
+
+import { Funnel } from '@prisma/client'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import Stripe from 'stripe'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,11 +20,6 @@ import {
     saveActivityLogsNotification,
     updateFunnelProducts,
 } from '@/lib/queries'
-import { Funnel } from '@prisma/client'
-import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import React, { useState } from 'react'
-import Stripe from 'stripe'
 
 interface FunnelProductsTableProps {
   defaultData: Funnel
