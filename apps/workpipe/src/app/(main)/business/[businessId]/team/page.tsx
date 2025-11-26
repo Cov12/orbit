@@ -7,6 +7,9 @@ import { db } from '@/lib/db'
 import { columns } from './columns'
 import DataTable from './data-table'
 
+// Force dynamic rendering to support Clerk's headers access in Next.js 15
+export const dynamic = 'force-dynamic'
+
 type Props = {
   params: Promise<{ businessId: string }>
 }

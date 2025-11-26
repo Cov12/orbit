@@ -5,6 +5,9 @@ import UserDetails from '@/components/forms/user-details'
 import BlurPage from '@/components/global/blur-page'
 import { db } from '@/lib/db'
 
+// Force dynamic rendering to support Clerk's headers access in Next.js 15
+export const dynamic = 'force-dynamic'
+
 type Props = {
   params: Promise<{ subaccountId: string }>
 }

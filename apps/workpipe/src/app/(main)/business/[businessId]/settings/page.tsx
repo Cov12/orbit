@@ -4,6 +4,9 @@ import BusinessDetails from '@/components/forms/business-details'
 import UserDetails from '@/components/forms/user-details'
 import { db } from '@/lib/db'
 
+// Force dynamic rendering to support Clerk's headers access in Next.js 15
+export const dynamic = 'force-dynamic'
+
 type Props = {
   params: Promise<{ businessId: string }>
 }

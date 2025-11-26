@@ -7,6 +7,9 @@ import { redirect } from 'next/navigation'
 import BusinessDetails from '@/components/forms/business-details'
 import { getAuthUserDetails, verifyAndAcceptInvitation } from '@/lib/queries'
 
+// Force dynamic rendering to support Clerk's headers access in Next.js 15
+export const dynamic = 'force-dynamic'
+
 const Page = async ({
   searchParams,
 }: {

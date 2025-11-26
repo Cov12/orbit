@@ -13,6 +13,9 @@ import {
   verifyAndAcceptInvitation,
 } from '@/lib/queries'
 
+// Force dynamic rendering to support Clerk's headers access in Next.js 15
+export const dynamic = 'force-dynamic'
+
 type Props = {
   children: React.ReactNode
   params: Promise<{ subaccountId: string }>
