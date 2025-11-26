@@ -2,13 +2,9 @@
 
 import React from 'react'
 
+import ContactFormComponent from '@/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor/funnel-editor-components/contact-form-component'
+import LinkComponent from '@/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor/funnel-editor-components/link-component'
 import { EditorElement } from '@/providers/editor/editor-provider'
-
-// Import all component categories
-
-// Import existing components (these already exist in the codebase)
-import ContactFormComponent from '../../../app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor/funnel-editor-components/contact-form-component'
-import LinkComponent from '../../../app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor/funnel-editor-components/link-component'
 
 import {
   HeadingComponent,
@@ -30,7 +26,9 @@ interface ComponentRendererProps {
  * Maps component types to their respective React components
  * Uses shadcn MCP components where applicable
  */
-export const ComponentRegistry: React.FC<ComponentRendererProps> = ({ element }) => {
+export const ComponentRegistry: React.FC<ComponentRendererProps> = ({
+  element,
+}) => {
   const renderComponent = () => {
     switch (element.type) {
       // Content Components
@@ -75,7 +73,9 @@ export const ComponentRegistry: React.FC<ComponentRendererProps> = ({ element })
 
       // Form Components (placeholder - to be implemented)
       case 'newsletter':
-        return <PlaceholderComponent element={element} name="Newsletter Signup" />
+        return (
+          <PlaceholderComponent element={element} name="Newsletter Signup" />
+        )
       case 'survey':
         return <PlaceholderComponent element={element} name="Survey/Quiz" />
       case 'file-upload':
@@ -135,24 +135,39 @@ export const ComponentRegistry: React.FC<ComponentRendererProps> = ({ element })
 
       // Analytics Components (placeholder - to be implemented)
       case 'pixel':
-        return <PlaceholderComponent element={element} name="Conversion Pixel" />
+        return (
+          <PlaceholderComponent element={element} name="Conversion Pixel" />
+        )
 
       // Animation Components (placeholder - to be implemented)
       case 'counter':
-        return <PlaceholderComponent element={element} name="Animated Counter" />
+        return (
+          <PlaceholderComponent element={element} name="Animated Counter" />
+        )
       case 'particles':
-        return <PlaceholderComponent element={element} name="Particle Effects" />
+        return (
+          <PlaceholderComponent element={element} name="Particle Effects" />
+        )
       case 'bg-animation':
-        return <PlaceholderComponent element={element} name="Background Animation" />
+        return (
+          <PlaceholderComponent element={element} name="Background Animation" />
+        )
 
       // Business Components (placeholder - to be implemented)
       case 'appointment':
-        return <PlaceholderComponent element={element} name="Appointment Booking" />
+        return (
+          <PlaceholderComponent element={element} name="Appointment Booking" />
+        )
       case 'lead-magnet':
         return <PlaceholderComponent element={element} name="Lead Magnet" />
 
       default:
-        return <PlaceholderComponent element={element} name={`Unknown Component (${element.type})`} />
+        return (
+          <PlaceholderComponent
+            element={element}
+            name={`Unknown Component (${element.type})`}
+          />
+        )
     }
   }
 
@@ -160,15 +175,22 @@ export const ComponentRegistry: React.FC<ComponentRendererProps> = ({ element })
 }
 
 // Placeholder component for components not yet implemented
-const PlaceholderComponent: React.FC<{ element: EditorElement; name: string }> = ({ element, name }) => {
+const PlaceholderComponent: React.FC<{
+  element: EditorElement
+  name: string
+}> = ({ element, name }) => {
   return (
     <div
-      className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 text-center"
+      className="w-full rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-4 text-center"
       style={element.styles}
     >
-      <div className="text-gray-600 font-medium">{name}</div>
-      <div className="text-xs text-gray-400 mt-1">Component implementation pending</div>
-      <div className="text-xs text-gray-400">Will use shadcn MCP components</div>
+      <div className="font-medium text-gray-600">{name}</div>
+      <div className="mt-1 text-xs text-gray-400">
+        Component implementation pending
+      </div>
+      <div className="text-xs text-gray-400">
+        Will use shadcn MCP components
+      </div>
     </div>
   )
 }
@@ -191,9 +213,9 @@ const ThreeColumns: React.FC<{ element: EditorElement }> = ({ element }) => (
   <PlaceholderComponent element={element} name="3 Columns (Existing)" />
 )
 
-const CheckoutComponent: React.FC<{ element: EditorElement }> = ({ element }) => (
-  <PlaceholderComponent element={element} name="Checkout (Existing)" />
-)
+const CheckoutComponent: React.FC<{ element: EditorElement }> = ({
+  element,
+}) => <PlaceholderComponent element={element} name="Checkout (Existing)" />
 
 const VideoComponent: React.FC<{ element: EditorElement }> = ({ element }) => (
   <PlaceholderComponent element={element} name="Video (Existing)" />

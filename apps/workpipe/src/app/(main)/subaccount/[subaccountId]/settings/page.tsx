@@ -6,10 +6,11 @@ import BlurPage from '@/components/global/blur-page'
 import { db } from '@/lib/db'
 
 type Props = {
-  params: { subaccountId: string }
+  params: Promise<{ subaccountId: string }>
 }
 
 const SubaccountSettingPage = async ({ params }: Props) => {
+  const { subaccountId } = await params
   const authUser = await currentUser()
   if (!authUser) return
   const userDetails = await db.user.findUnique({
@@ -20,7 +21,7 @@ const SubaccountSettingPage = async ({ params }: Props) => {
   if (!userDetails) return
 
   const subAccount = await db.subAccount.findUnique({
-    where: { id: params.subaccountId },
+    where: { id: subaccountId },
   })
   if (!subAccount) return
 
@@ -34,7 +35,7 @@ const SubaccountSettingPage = async ({ params }: Props) => {
 
   return (
     <BlurPage>
-      <div className="flex lg:!flex-row flex-col gap-4">
+      <div className="flex flex-col gap-4 lg:!flex-row">
         <SubAccountDetails
           businessDetails={businessDetails}
           details={subAccount}
@@ -43,7 +44,7 @@ const SubaccountSettingPage = async ({ params }: Props) => {
         />
         <UserDetails
           type="subaccount"
-          id={params.subaccountId}
+          id={subaccountId}
           subAccounts={subAccounts}
           userData={userDetails}
         />

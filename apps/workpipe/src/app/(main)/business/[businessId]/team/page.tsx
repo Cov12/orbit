@@ -8,15 +8,16 @@ import { columns } from './columns'
 import DataTable from './data-table'
 
 type Props = {
-  params: { businessId: string }
+  params: Promise<{ businessId: string }>
 }
 
 const TeamPage = async ({ params }: Props) => {
+  const { businessId } = await params
   const authUser = await currentUser()
   const teamMembers = await db.user.findMany({
     where: {
       Business: {
-        id: params.businessId,
+        id: businessId,
       },
     },
     include: {
@@ -28,7 +29,7 @@ const TeamPage = async ({ params }: Props) => {
   if (!authUser) return null
   const businessDetails = await db.business.findUnique({
     where: {
-      id: params.businessId,
+      id: businessId,
     },
     include: {
       SubAccount: true,

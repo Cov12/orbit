@@ -19,7 +19,9 @@ interface AnimatedTextComponentProps {
   element: EditorElement
 }
 
-const AnimatedTextComponent: React.FC<AnimatedTextComponentProps> = ({ element }) => {
+const AnimatedTextComponent: React.FC<AnimatedTextComponentProps> = ({
+  element,
+}) => {
   const { dispatch, state } = useEditor()
   const content = element.content as AnimatedTextContent
 
@@ -39,7 +41,7 @@ const AnimatedTextComponent: React.FC<AnimatedTextComponentProps> = ({ element }
           content: {
             ...content,
             text: textElement.innerText,
-          },
+          } as any,
         },
       },
     })
@@ -81,7 +83,7 @@ const AnimatedTextComponent: React.FC<AnimatedTextComponentProps> = ({ element }
             {text.split(' ').map((word, idx) => (
               <span
                 key={idx}
-                className="inline-block opacity-0 animate-fade-in"
+                className="animate-fade-in inline-block opacity-0"
                 style={{ animationDelay: `${idx * 0.1}s` }}
               >
                 {word}{' '}

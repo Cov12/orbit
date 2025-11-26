@@ -17,19 +17,20 @@ import PricingCard from './_components/pricing-card'
 import SubscriptionHelper from './_components/subscription-helper'
 
 type Props = {
-  params: { businessId: string }
+  params: Promise<{ businessId: string }>
 }
 
 const page = async ({ params }: Props) => {
+  const { businessId } = await params
   //CHALLENGE : Create the add on  products
   const addOns = await stripe.products.list({
-    ids: addOnProducts.map((product) => product.id),
+    ids: addOnProducts.map(product => product.id),
     expand: ['data.default_price'],
   })
 
   const businessSubscription = await db.business.findUnique({
     where: {
-      id: params.businessId,
+      id: businessId,
     },
     select: {
       customerId: true,
@@ -43,18 +44,18 @@ const page = async ({ params }: Props) => {
   })
 
   const currentPlanDetails = await pricingCards.find(
-    (c) => c.priceId === businessSubscription?.Subscription?.priceId
+    c => c.priceId === businessSubscription?.Subscription?.priceId
   )
 
-  let allCharges: any[] = [];
+  let allCharges: any[] = []
   if (businessSubscription?.customerId) {
     const charges = await stripe.charges.list({
       limit: 50,
       customer: businessSubscription.customerId,
-    });
+    })
 
     allCharges = [
-      ...charges.data.map((charge) => ({
+      ...charges.data.map(charge => ({
         description: charge.description,
         id: charge.id,
         date: `${new Date(charge.created * 1000).toLocaleTimeString()} ${new Date(
@@ -63,12 +64,12 @@ const page = async ({ params }: Props) => {
         status: 'Paid',
         amount: `$${charge.amount / 100}`,
       })),
-    ];
+    ]
   }
   businessSubscription
-  console.log('businessSubscription: ',businessSubscription)
-  console.log('currentPlanDetails: ',currentPlanDetails)
-  console.log('params.businessId: ',params.businessId)
+  console.log('businessSubscription: ', businessSubscription)
+  console.log('currentPlanDetails: ', currentPlanDetails)
+  console.log('businessId: ', businessId)
 
   return (
     <>
@@ -77,12 +78,11 @@ const page = async ({ params }: Props) => {
         customerId={businessSubscription?.customerId || ''}
         planExists={businessSubscription?.Subscription?.active === true}
       />
-      <h1 className="text-4xl p-4">Billing</h1>
-      <Separator className=" mb-6" />
-      <h2 className="text-2xl p-4">Current Plan</h2>
-      <div className="flex flex-col lg:!flex-row justify-between gap-8">
+      <h1 className="p-4 text-4xl">Billing</h1>
+      <Separator className="mb-6" />
+      <h2 className="p-4 text-2xl">Current Plan</h2>
+      <div className="flex flex-col justify-between gap-8 lg:!flex-row">
         <PricingCard
-          
           planExists={businessSubscription?.Subscription?.active === true}
           prices={prices.data}
           customerId={businessSubscription?.customerId || ''}
@@ -109,7 +109,7 @@ const page = async ({ params }: Props) => {
             businessSubscription?.Subscription?.active === true
               ? currentPlanDetails?.features || []
               : currentPlanDetails?.features ||
-                pricingCards.find((pricing) => pricing.title === 'Starter')
+                pricingCards.find(pricing => pricing.title === 'Starter')
                   ?.features ||
                 []
           }
@@ -119,9 +119,8 @@ const page = async ({ params }: Props) => {
               : 'Starter'
           }
         />
-        {addOns.data.map((addOn) => (
+        {addOns.data.map(addOn => (
           <PricingCard
-          
             planExists={businessSubscription?.Subscription?.active === true}
             prices={prices.data}
             customerId={businessSubscription?.customerId || ''}
@@ -130,19 +129,21 @@ const page = async ({ params }: Props) => {
               //@ts-ignore
               addOn.default_price?.unit_amount
                 ? //@ts-ignore
-                `$${addOn.default_price.unit_amount / 100}`
-                : '$0'}
+                  `$${addOn.default_price.unit_amount / 100}`
+                : '$0'
+            }
             buttonCta="Subscribe"
             description="Dedicated support line & teams channel for support"
             duration="/ month"
             features={[]}
             title={'24/7 priority support'}
             highlightTitle="Get support now!"
-            highlightDescription="Get priority support and skip the long long with the click of a button."           />
+            highlightDescription="Get priority support and skip the long long with the click of a button."
+          />
         ))}
       </div>
-      <h2 className="text-2xl p-4">Payment History</h2>
-      <Table className="bg-card border-[1px] border-border rounded-md">
+      <h2 className="p-4 text-2xl">Payment History</h2>
+      <Table className="rounded-md border-[1px] border-border bg-card">
         <TableHeader className="rounded-md">
           <TableRow>
             <TableHead className="w-[200px]">Description</TableHead>
@@ -152,8 +153,8 @@ const page = async ({ params }: Props) => {
             <TableHead className="text-right">Amount</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="font-medium truncate">
-          {allCharges.map((charge) => (
+        <TableBody className="truncate font-medium">
+          {allCharges.map(charge => (
             <TableRow key={charge.id}>
               <TableCell>{charge.description}</TableCell>
               <TableCell className="text-muted-foreground">

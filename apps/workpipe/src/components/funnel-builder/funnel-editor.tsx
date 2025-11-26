@@ -2,14 +2,7 @@
 
 import React from 'react'
 
-import {
-  Save,
-  Eye,
-  Share,
-  Settings,
-  ArrowLeft,
-  Loader2,
-} from 'lucide-react'
+import { Save, Eye, Share, Settings, ArrowLeft, Loader2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,7 +11,6 @@ import { useEditor } from '@/providers/editor/editor-provider'
 
 import EditorSidebar from './editor-sidebar'
 import FunnelEditorCanvas from './funnel-editor-canvas'
-
 
 interface FunnelEditorProps {
   funnelPageId: string
@@ -38,7 +30,7 @@ interface FunnelEditorProps {
 const FunnelEditor: React.FC<FunnelEditorProps> = ({
   funnelPageId,
   funnelId,
-  _subaccountId,
+  subaccountId: _subaccountId,
   pageDetails,
   onSave,
   onPreview,
@@ -75,7 +67,7 @@ const FunnelEditor: React.FC<FunnelEditorProps> = ({
   }
 
   return (
-    <div className={`h-screen flex flex-col bg-background ${className}`}>
+    <div className={`flex h-screen flex-col bg-background ${className}`}>
       {/* Header */}
       <header className="border-b bg-background">
         <div className="flex items-center justify-between px-4 py-3">
@@ -83,7 +75,7 @@ const FunnelEditor: React.FC<FunnelEditorProps> = ({
           <div className="flex items-center gap-3">
             {onBack && (
               <Button variant="ghost" size="sm" onClick={onBack}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="mr-1 h-4 w-4" />
                 Back
               </Button>
             )}
@@ -91,7 +83,7 @@ const FunnelEditor: React.FC<FunnelEditorProps> = ({
             <Separator orientation="vertical" className="h-6" />
 
             <div>
-              <h1 className="font-semibold text-sm">
+              <h1 className="text-sm font-semibold">
                 {pageDetails?.name || 'Funnel Page Editor'}
               </h1>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -129,20 +121,20 @@ const FunnelEditor: React.FC<FunnelEditorProps> = ({
           {/* Right Section */}
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handlePreview}>
-              <Eye className="h-4 w-4 mr-1" />
+              <Eye className="mr-1 h-4 w-4" />
               Preview
             </Button>
 
             <Button variant="outline" size="sm">
-              <Share className="h-4 w-4 mr-1" />
+              <Share className="mr-1 h-4 w-4" />
               Share
             </Button>
 
             <Button size="sm" onClick={handleSave} disabled={isSaving}>
               {isSaving ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : (
-                <Save className="h-4 w-4 mr-1" />
+                <Save className="mr-1 h-4 w-4" />
               )}
               Save
             </Button>
@@ -155,7 +147,7 @@ const FunnelEditor: React.FC<FunnelEditorProps> = ({
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         {/* Canvas Area */}
         <FunnelEditorCanvas className="flex-1" />
 
@@ -167,37 +159,37 @@ const FunnelEditor: React.FC<FunnelEditorProps> = ({
       <footer className="border-t bg-muted/30 px-4 py-2">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
-            <span>
-              {state.editor.elements.length - 1} components
-            </span>
-            <span>
-              {state.history.history.length} states in history
-            </span>
+            <span>{state.editor.elements.length - 1} components</span>
+            <span>{state.history.history.length} states in history</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <span>
-              Funnel ID: {funnelId}
-            </span>
-            <span>
-              Page ID: {funnelPageId}
-            </span>
-            <span>
-              Using shadcn MCP components
-            </span>
+            <span>Funnel ID: {funnelId}</span>
+            <span>Page ID: {funnelPageId}</span>
+            <span>Using shadcn MCP components</span>
           </div>
         </div>
       </footer>
 
       {/* Keyboard Shortcuts Overlay */}
       {!state.editor.previewMode && (
-        <div className="absolute bottom-4 left-4 bg-black/80 text-white text-xs px-3 py-2 rounded-lg opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
+        <div className="pointer-events-none absolute bottom-4 left-4 rounded-lg bg-black/80 px-3 py-2 text-xs text-white opacity-0 transition-opacity hover:opacity-100">
           <div className="space-y-1">
-            <div><kbd>Ctrl+Z</kbd> Undo</div>
-            <div><kbd>Ctrl+Y</kbd> Redo</div>
-            <div><kbd>Ctrl+S</kbd> Save</div>
-            <div><kbd>Ctrl+P</kbd> Preview</div>
-            <div><kbd>Delete</kbd> Delete selected</div>
+            <div>
+              <kbd>Ctrl+Z</kbd> Undo
+            </div>
+            <div>
+              <kbd>Ctrl+Y</kbd> Redo
+            </div>
+            <div>
+              <kbd>Ctrl+S</kbd> Save
+            </div>
+            <div>
+              <kbd>Ctrl+P</kbd> Preview
+            </div>
+            <div>
+              <kbd>Delete</kbd> Delete selected
+            </div>
           </div>
         </div>
       )}

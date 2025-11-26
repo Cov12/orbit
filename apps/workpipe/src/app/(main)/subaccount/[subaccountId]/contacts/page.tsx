@@ -16,21 +16,21 @@ import {
 } from '@/components/ui/table'
 import { db } from '@/lib/db'
 
-
 import CraeteContactButton from './_components/create-contact-btn'
 
 type Props = {
-  params: { subaccountId: string }
+  params: Promise<{ subaccountId: string }>
 }
 
 const ContactPage = async ({ params }: Props) => {
+  const { subaccountId } = await params
   type SubAccountWithContacts = SubAccount & {
     Contact: (Contact & { Ticket: Ticket[] })[]
   }
 
   const contacts = (await db.subAccount.findUnique({
     where: {
-      id: params.subaccountId,
+      id: subaccountId,
     },
 
     include: {
@@ -67,8 +67,8 @@ const ContactPage = async ({ params }: Props) => {
   }
   return (
     <BlurPage>
-      <h1 className="text-4xl p-4">Contacts</h1>
-      <CraeteContactButton subaccountId={params.subaccountId} />
+      <h1 className="p-4 text-4xl">Contacts</h1>
+      <CraeteContactButton subaccountId={subaccountId} />
       <Table>
         <TableHeader>
           <TableRow>
@@ -79,8 +79,8 @@ const ContactPage = async ({ params }: Props) => {
             <TableHead className="text-right">Total Value</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="font-medium truncate">
-          {allContacts.map((contact) => (
+        <TableBody className="truncate font-medium">
+          {allContacts.map(contact => (
             <TableRow key={contact.id}>
               <TableCell>
                 <Avatar>

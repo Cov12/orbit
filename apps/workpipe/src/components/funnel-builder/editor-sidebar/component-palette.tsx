@@ -50,14 +50,18 @@ const categoryIcons = {
   business: Building,
 }
 
-const ComponentPalette: React.FC<ComponentPaletteProps> = ({ className = '' }) => {
+const ComponentPalette: React.FC<ComponentPaletteProps> = ({
+  className = '',
+}) => {
   const { dispatch } = useEditor()
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeView, setActiveView] = useState<'categories' | 'search'>('categories')
+  const [activeView, setActiveView] = useState<'categories' | 'search'>(
+    'categories'
+  )
 
   // Generate component palette data
-  const componentPalette = useMemo(() =>
-    FunnelComponentManager.generateComponentPalette(),
+  const componentPalette = useMemo(
+    () => FunnelComponentManager.generateComponentPalette(),
     []
   )
 
@@ -75,10 +79,14 @@ const ComponentPalette: React.FC<ComponentPaletteProps> = ({ className = '' }) =
   const handleAddComponent = (componentType: EditorBtns) => {
     if (componentType === null) return
 
-    const componentDef = FunnelComponentManager.getComponentDefinitionByType(componentType)
+    const componentDef =
+      FunnelComponentManager.getComponentDefinitionByType(componentType)
     if (!componentDef) return
 
-    const newElement = FunnelComponentManager.createElement(componentDef, '__body')
+    const newElement = FunnelComponentManager.createElement(
+      componentDef,
+      '__body'
+    )
 
     dispatch({
       type: 'ADD_ELEMENT',
@@ -95,19 +103,19 @@ const ComponentPalette: React.FC<ComponentPaletteProps> = ({ className = '' }) =
   }
 
   return (
-    <div className={`h-full flex flex-col ${className}`}>
+    <div className={`flex h-full flex-col ${className}`}>
       {/* Header */}
-      <div className="p-4 border-b">
-        <h3 className="font-semibold text-sm mb-3">Components</h3>
+      <div className="border-b p-4">
+        <h3 className="mb-3 text-sm font-semibold">Components</h3>
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
           <Input
             placeholder="Search components..."
             value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-9 h-8 text-sm"
+            onChange={e => handleSearch(e.target.value)}
+            className="h-8 pl-9 text-sm"
           />
         </div>
       </div>
@@ -116,12 +124,20 @@ const ComponentPalette: React.FC<ComponentPaletteProps> = ({ className = '' }) =
       <ScrollArea className="flex-1">
         {activeView === 'categories' ? (
           <div className="p-4">
-            <Accordion type="multiple" defaultValue={['content', 'forms']} className="w-full">
-              {componentPalette.map((category) => {
-                const CategoryIcon = categoryIcons[category.category as keyof typeof categoryIcons]
+            <Accordion
+              type="multiple"
+              defaultValue={['content', 'forms']}
+              className="w-full"
+            >
+              {componentPalette.map(category => {
+                const CategoryIcon =
+                  categoryIcons[category.category as keyof typeof categoryIcons]
 
                 return (
-                  <AccordionItem key={category.category} value={category.category}>
+                  <AccordionItem
+                    key={category.category}
+                    value={category.category}
+                  >
                     <AccordionTrigger className="text-sm font-medium">
                       <div className="flex items-center gap-2">
                         {CategoryIcon && <CategoryIcon className="h-4 w-4" />}
@@ -133,7 +149,7 @@ const ComponentPalette: React.FC<ComponentPaletteProps> = ({ className = '' }) =
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="grid gap-2 pt-2">
-                        {category.components.map((component) => (
+                        {category.components.map(component => (
                           <ComponentCard
                             key={component.id}
                             component={component}
@@ -152,11 +168,12 @@ const ComponentPalette: React.FC<ComponentPaletteProps> = ({ className = '' }) =
           <div className="p-4">
             <div className="mb-3">
               <p className="text-sm text-muted-foreground">
-                {searchResults.length} component{searchResults.length !== 1 ? 's' : ''} found
+                {searchResults.length} component
+                {searchResults.length !== 1 ? 's' : ''} found
               </p>
             </div>
             <div className="grid gap-2">
-              {searchResults.map((component) => (
+              {searchResults.map(component => (
                 <ComponentCard
                   key={component.id}
                   component={{
@@ -177,8 +194,8 @@ const ComponentPalette: React.FC<ComponentPaletteProps> = ({ className = '' }) =
       </ScrollArea>
 
       {/* Footer */}
-      <div className="p-4 border-t">
-        <div className="text-xs text-muted-foreground text-center">
+      <div className="border-t p-4">
+        <div className="text-center text-xs text-muted-foreground">
           Drag components to canvas or click + to add
         </div>
       </div>
@@ -190,7 +207,7 @@ interface ComponentCardProps {
   component: {
     id: string
     name: string
-    type: string
+    type: string | null
     icon: string
     description: string
   }
@@ -205,51 +222,62 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
   onAdd,
   showCategory = false,
 }) => {
-  const componentDef = FunnelComponentManager.getComponentDefinition(component.id)
+  const componentDef = FunnelComponentManager.getComponentDefinition(
+    component.id
+  )
 
   return (
     <div
       draggable
-      onDragStart={(e) => onDragStart(e, component.type as EditorBtns)}
-      className="group relative p-3 border rounded-lg hover:border-primary/50 hover:bg-accent/50 cursor-grab active:cursor-grabbing transition-colors"
+      onDragStart={e => onDragStart(e, component.type as EditorBtns)}
+      className="group relative cursor-grab rounded-lg border p-3 transition-colors hover:border-primary/50 hover:bg-accent/50 active:cursor-grabbing"
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="text-sm font-medium truncate">{component.name}</div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex items-center gap-2">
+            <div className="truncate text-sm font-medium">{component.name}</div>
             {showCategory && componentDef && (
               <Badge variant="outline" className="text-xs">
-                {FunnelComponentManager['formatCategoryLabel'](componentDef.category)}
+                {FunnelComponentManager['formatCategoryLabel'](
+                  componentDef.category
+                )}
               </Badge>
             )}
           </div>
-          <p className="text-xs text-muted-foreground line-clamp-2">
+          <p className="line-clamp-2 text-xs text-muted-foreground">
             {component.description}
           </p>
 
           {/* Show shadcn components if available */}
-          {componentDef?.shadcnComponents && componentDef.shadcnComponents.length > 0 && (
-            <div className="mt-2">
-              <div className="flex flex-wrap gap-1">
-                {componentDef.shadcnComponents.slice(0, 2).map((shadcnComponent) => (
-                  <Badge key={shadcnComponent} variant="secondary" className="text-xs">
-                    {shadcnComponent}
-                  </Badge>
-                ))}
-                {componentDef.shadcnComponents.length > 2 && (
-                  <Badge variant="secondary" className="text-xs">
-                    +{componentDef.shadcnComponents.length - 2}
-                  </Badge>
-                )}
+          {componentDef?.shadcnComponents &&
+            componentDef.shadcnComponents.length > 0 && (
+              <div className="mt-2">
+                <div className="flex flex-wrap gap-1">
+                  {componentDef.shadcnComponents
+                    .slice(0, 2)
+                    .map(shadcnComponent => (
+                      <Badge
+                        key={shadcnComponent}
+                        variant="secondary"
+                        className="text-xs"
+                      >
+                        {shadcnComponent}
+                      </Badge>
+                    ))}
+                  {componentDef.shadcnComponents.length > 2 && (
+                    <Badge variant="secondary" className="text-xs">
+                      +{componentDef.shadcnComponents.length - 2}
+                    </Badge>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
 
         <Button
           size="sm"
           variant="ghost"
-          className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 shrink-0"
+          className="h-6 w-6 shrink-0 p-0 opacity-0 group-hover:opacity-100"
           onClick={() => onAdd(component.type as EditorBtns)}
         >
           <Plus className="h-3 w-3" />

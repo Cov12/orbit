@@ -8,8 +8,9 @@ import EditorProvider from '@/providers/editor/editor-provider'
 
 import FunnelEditor from '../(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor'
 
-const Page = async ({ params }: { params: { domain: string } }) => {
-  const domainData = await getDomainContent(params.domain.slice(0, -1))
+const Page = async ({ params }: { params: Promise<{ domain: string }> }) => {
+  const { domain } = await params
+  const domainData = await getDomainContent(domain.slice(0, -1))
   if (!domainData) return notFound()
 
   const pageData = domainData.FunnelPages.find(page => !page.pathName)

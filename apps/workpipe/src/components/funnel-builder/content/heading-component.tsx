@@ -42,7 +42,7 @@ const HeadingComponent: React.FC<HeadingComponentProps> = ({ element }) => {
           content: {
             ...content,
             text: headingElement.innerText,
-          },
+          } as any,
         },
       },
     })
