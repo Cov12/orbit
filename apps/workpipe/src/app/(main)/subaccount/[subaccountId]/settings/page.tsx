@@ -1,4 +1,4 @@
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 
 import SubAccountDetails from '@/components/forms/subaccount-details'
 import UserDetails from '@/components/forms/user-details'

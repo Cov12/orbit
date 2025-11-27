@@ -1,3 +1,4 @@
+import React from 'react'
 import { DeviceTypes, EditorElement } from './editor-provider'
 
 export type EditorAction =
@@ -29,7 +30,7 @@ export type EditorAction =
               id: ''
               content: []
               name: ''
-              styles: {}
+              styles: {} as React.CSSProperties
               type: null
             }
       }

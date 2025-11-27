@@ -1,4 +1,4 @@
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 import { Plus } from 'lucide-react'
 
 import SendInvitation from '@/components/forms/send-invitation'
