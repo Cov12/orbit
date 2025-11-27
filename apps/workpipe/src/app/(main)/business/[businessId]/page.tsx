@@ -162,11 +162,8 @@ const Page = async ({
           <Card className="relative flex-1">
             <CardHeader>
               <CardTitle>Business Goal</CardTitle>
-              <CardDescription>
-                <p className="mt-2">
-                  Reflects the number of sub accounts you want to own and
-                  manage.
-                </p>
+              <CardDescription className="mt-2">
+                Reflects the number of sub accounts you want to own and manage.
               </CardDescription>
             </CardHeader>
             <CardFooter>

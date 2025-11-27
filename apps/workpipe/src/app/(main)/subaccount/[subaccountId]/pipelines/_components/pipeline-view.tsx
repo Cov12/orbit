@@ -10,9 +10,9 @@ import LaneForm from '@/components/forms/lane-form'
 import CustomModal from '@/components/global/custom-modal'
 import { Button } from '@/components/ui/button'
 import {
-    LaneDetail,
-    PipelineDetailsWithLanesCardsTagsTickets,
-    TicketAndTags,
+  LaneDetail,
+  PipelineDetailsWithLanesCardsTagsTickets,
+  TicketAndTags,
 } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
 
@@ -44,8 +44,8 @@ const PipelineView = ({
   }, [lanes])
 
   const ticketsFromAllLanes: TicketAndTags[] = []
-  lanes.forEach((item) => {
-    item.Tickets.forEach((i) => {
+  lanes.forEach(item => {
+    item.Tickets.forEach(i => {
       ticketsFromAllLanes.push(i)
     })
   })
@@ -88,11 +88,9 @@ const PipelineView = ({
 
       case 'ticket': {
         const newLanes = [...allLanes]
-        const originLane = newLanes.find(
-          (lane) => lane.id === source.droppableId
-        )
+        const originLane = newLanes.find(lane => lane.id === source.droppableId)
         const destinationLane = newLanes.find(
-          (lane) => lane.id === destination.droppableId
+          lane => lane.id === destination.droppableId
         )
 
         if (!originLane || !destinationLane) {
@@ -138,13 +136,10 @@ const PipelineView = ({
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="bg-white/60 dark:bg-background/60 rounded-xl p-4 use-automation-zoom-in overflow-y-hidden">
+      <div className="use-automation-zoom-in overflow-y-hidden rounded-xl bg-white/60 p-4 dark:bg-background/60">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl">{pipelineDetails?.name}</h1>
-          <Button
-            className="flex items-center gap-4"
-            onClick={handleAddLane}
-          >
+          <Button className="flex items-center gap-4" onClick={handleAddLane}>
             <Plus size={15} />
             Create Lane
           </Button>
@@ -154,14 +149,17 @@ const PipelineView = ({
           type="lane"
           direction="horizontal"
           key="lanes"
+          isDropDisabled={false}
+          isCombineEnabled={false}
+          ignoreContainerClipping={false}
         >
-          {(provided) => (
+          {provided => (
             <div
-              className="flex item-center gap-x-2"
+              className="item-center flex gap-x-2"
               {...provided.droppableProps}
               ref={provided.innerRef}
             >
-              <div className="flex mt-4">
+              <div className="mt-4 flex">
                 {allLanes.map((lane, index) => (
                   <PipelineLane
                     allTickets={allTickets}
@@ -180,7 +178,7 @@ const PipelineView = ({
           )}
         </Droppable>
         {allLanes.length == 0 && (
-          <div className="flex items-center justify-center w-full flex-col">
+          <div className="flex w-full flex-col items-center justify-center">
             <div className="opacity-100">
               <Flag
                 width="100%"

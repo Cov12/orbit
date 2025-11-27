@@ -29,6 +29,15 @@ const PipelinePage = async ({ params }: Props) => {
 
   const lanes = (await getLanesWithTicketAndTags(pipelineId)) as LaneDetail[]
 
+  // Convert Decimal values to numbers for client component serialization
+  const serializedLanes = lanes.map(lane => ({
+    ...lane,
+    Tickets: lane.Tickets.map(ticket => ({
+      ...ticket,
+      value: ticket.value?.toNumber() ?? null,
+    })),
+  }))
+
   return (
     <Tabs defaultValue="view" className="w-full">
       <TabsList className="mb-4 h-16 w-full justify-between border-b-2 bg-transparent">
@@ -44,7 +53,7 @@ const PipelinePage = async ({ params }: Props) => {
       </TabsList>
       <TabsContent value="view">
         <PipelineView
-          lanes={lanes}
+          lanes={serializedLanes}
           pipelineDetails={pipelineDetails}
           pipelineId={pipelineId}
           subaccountId={subaccountId}

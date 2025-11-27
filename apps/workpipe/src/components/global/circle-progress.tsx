@@ -10,18 +10,18 @@ type Props = {
 
 const CircleProgress = ({ description, value = 0 }: Props) => {
   return (
-    <div className="flex gap-4 items-center">
+    <div className="flex items-center gap-4">
       <ProgressCircle
         showAnimation={true}
-        value={value?value:0}
+        value={value ? value : 0}
         radius={70}
         strokeWidth={20}
       >
-        {value?value:0}%
+        {value ? value : 0}%
       </ProgressCircle>
       <div>
         <b>Closing Rate</b>
-        <p className="text-muted-foreground">{description}</p>
+        <div className="text-muted-foreground">{description}</div>
       </div>
     </div>
   )

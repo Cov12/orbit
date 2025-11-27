@@ -9,31 +9,29 @@ import CreateLaneForm from '@/components/forms/lane-form'
 import TicketForm from '@/components/forms/ticket-form'
 import CustomModal from '@/components/global/custom-modal'
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { deleteLane, saveActivityLogsNotification } from '@/lib/queries'
 import { LaneDetail, TicketWithTags } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useModal } from '@/providers/modal-provider'
-
-
 
 import PipelineTicket from './pipeline-ticket'
 
@@ -95,14 +93,8 @@ const PipelineLane: React.FC<PipelaneLaneProps> = ({
 
   const handleEditLane = () => {
     setOpen(
-      <CustomModal
-        title="Edit Lane Details"
-        subheading=""
-      >
-        <CreateLaneForm
-          pipelineId={pipelineId}
-          defaultData={laneDetails}
-        />
+      <CustomModal title="Edit Lane Details" subheading="">
+        <CreateLaneForm pipelineId={pipelineId} defaultData={laneDetails} />
       </CustomModal>
     )
   }
@@ -150,28 +142,28 @@ const PipelineLane: React.FC<PipelaneLaneProps> = ({
           >
             <AlertDialog>
               <DropdownMenu>
-                <div className="bg-slate-200/30 dark:bg-background/20  h-[700px] w-[300px] px-4 relative rounded-lg overflow-visible flex-shrink-0 ">
+                <div className="relative h-[700px] w-[300px] flex-shrink-0 overflow-visible rounded-lg bg-slate-200/30 px-4 dark:bg-background/20">
                   <div
                     {...provided.dragHandleProps}
-                    className=" h-14 backdrop-blur-lg dark:bg-background/40 bg-slate-200/60  absolute top-0 left-0 right-0 z-10 "
+                    className="absolute left-0 right-0 top-0 z-10 h-14 bg-slate-200/60 backdrop-blur-lg dark:bg-background/40"
                   >
-                    <div className="h-full flex items-center p-4 justify-between cursor-grab border-b-[1px] ">
+                    <div className="flex h-full cursor-grab items-center justify-between border-b-[1px] p-4">
                       {/* {laneDetails.order} */}
-                      <div className="flex items-center w-full gap-2">
+                      <div className="flex w-full items-center gap-2">
                         <div
-                          className={cn('w-4 h-4 rounded-full')}
+                          className={cn('h-4 w-4 rounded-full')}
                           style={{ background: randomColor }}
                         />
-                        <span className="font-bold text-sm">
+                        <span className="text-sm font-bold">
                           {laneDetails.name}
                         </span>
                       </div>
-                      <div className="flex items-center flex-row">
+                      <div className="flex flex-row items-center">
                         <Badge className="bg-white text-black">
                           {amt.format(laneAmt)}
                         </Badge>
                         <DropdownMenuTrigger>
-                          <MoreVertical className="text-muted-foreground cursor-pointer" />
+                          <MoreVertical className="cursor-pointer text-muted-foreground" />
                         </DropdownMenuTrigger>
                       </div>
                     </div>
@@ -181,9 +173,12 @@ const PipelineLane: React.FC<PipelaneLaneProps> = ({
                     droppableId={laneDetails.id.toString()}
                     key={laneDetails.id}
                     type="ticket"
+                    isDropDisabled={false}
+                    isCombineEnabled={false}
+                    ignoreContainerClipping={false}
                   >
-                    {(provided) => (
-                      <div className=" max-h-[700px] overflow-scroll pt-12 ">
+                    {provided => (
+                      <div className="max-h-[700px] overflow-scroll pt-12">
                         <div
                           {...provided.droppableProps}
                           ref={provided.innerRef}
