@@ -8,7 +8,7 @@ import {
   updateLanesOrder,
   updateTicketsOrder,
 } from '@/lib/queries'
-import { LaneDetail } from '@/lib/types'
+import { LaneDetail, SerializedLane } from '@/lib/types'
 
 import PipelineInfoBar from '../_components/pipeline-infobar'
 import PipelineSettings from '../_components/pipeline-settings'
@@ -30,7 +30,7 @@ const PipelinePage = async ({ params }: Props) => {
   const lanes = (await getLanesWithTicketAndTags(pipelineId)) as LaneDetail[]
 
   // Convert Decimal values to numbers for client component serialization
-  const serializedLanes = lanes.map(lane => ({
+  const serializedLanes: SerializedLane[] = lanes.map(lane => ({
     ...lane,
     Tickets: lane.Tickets.map(ticket => ({
       ...ticket,

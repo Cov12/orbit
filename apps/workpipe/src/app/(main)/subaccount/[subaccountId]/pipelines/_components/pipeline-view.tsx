@@ -1,30 +1,41 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-import { Lane, Ticket } from '@prisma/client'
+import { Ticket } from '@prisma/client'
 import { Flag, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { DragDropContext, DropResult, Droppable } from 'react-beautiful-dnd'
 
 import LaneForm from '@/components/forms/lane-form'
+import TicketForm from '@/components/forms/ticket-form'
 import CustomModal from '@/components/global/custom-modal'
 import { Button } from '@/components/ui/button'
 import {
-  LaneDetail,
+  KanbanBoard,
+  KanbanCard,
+  KanbanCards,
+  KanbanHeader,
+  KanbanProvider,
+} from '@/components/ui/shadcn-io/kanban'
+import {
   PipelineDetailsWithLanesCardsTagsTickets,
-  TicketAndTags,
+  SerializedLane,
+  SerializedTicket,
+  TicketWithTags,
 } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
 
-import PipelineLane from './pipeline-lane'
+import PipelineTicketCard from './pipeline-ticket-card'
 
 type Props = {
-  lanes: LaneDetail[]
+  lanes: SerializedLane[]
   pipelineId: string
   subaccountId: string
   pipelineDetails: PipelineDetailsWithLanesCardsTagsTickets
-  updateLanesOrder: (lanes: Lane[]) => Promise<void>
   updateTicketsOrder: (tickets: Ticket[]) => Promise<void>
+}
+
+type KanbanTicket = SerializedTicket & {
+  column: string
 }
 
 const PipelineView = ({
@@ -32,29 +43,56 @@ const PipelineView = ({
   pipelineDetails,
   pipelineId,
   subaccountId,
-  updateLanesOrder,
   updateTicketsOrder,
 }: Props) => {
   const { setOpen } = useModal()
   const router = useRouter()
-  const [allLanes, setAllLanes] = useState<LaneDetail[]>([])
 
-  useEffect(() => {
-    setAllLanes(lanes)
+  // Generate random color for each lane (memoized by lane id)
+  const laneColors = useMemo(() => {
+    const colors: Record<string, string> = {}
+    lanes.forEach(lane => {
+      colors[lane.id] = `#${Math.random().toString(16).slice(2, 8)}`
+    })
+    return colors
   }, [lanes])
 
-  const ticketsFromAllLanes: TicketAndTags[] = []
-  lanes.forEach(item => {
-    item.Tickets.forEach(i => {
-      ticketsFromAllLanes.push(i)
+  // Transform lanes into kanban columns format
+  const columns = useMemo(
+    () =>
+      lanes.map(lane => ({
+        id: lane.id,
+        name: lane.name,
+        color: laneColors[lane.id],
+        order: lane.order,
+      })),
+    [lanes, laneColors]
+  )
+
+  // Transform tickets into kanban data format
+  const initialTickets: KanbanTicket[] = useMemo(() => {
+    const tickets: KanbanTicket[] = []
+    lanes.forEach(lane => {
+      lane.Tickets.forEach(ticket => {
+        tickets.push({
+          ...ticket,
+          column: lane.id,
+        })
+      })
     })
-  })
-  const [allTickets, setAllTickets] = useState(ticketsFromAllLanes)
+    return tickets
+  }, [lanes])
+
+  const [tickets, setTickets] = useState<KanbanTicket[]>(initialTickets)
+
+  useEffect(() => {
+    setTickets(initialTickets)
+  }, [initialTickets])
 
   const handleAddLane = () => {
     setOpen(
       <CustomModal
-        title=" Create A Lane"
+        title="Create A Lane"
         subheading="Lanes allow you to group tickets"
       >
         <LaneForm pipelineId={pipelineId} />
@@ -62,134 +100,149 @@ const PipelineView = ({
     )
   }
 
-  const onDragEnd = (dropResult: DropResult) => {
-    console.log(dropResult)
-    const { destination, source, type } = dropResult
-    if (
-      !destination ||
-      (destination.droppableId === source.droppableId &&
-        destination.index === source.index)
-    ) {
-      return
-    }
+  const handleAddTicket = (laneId: string) => {
+    setOpen(
+      <CustomModal title="Create A Ticket" subheading="">
+        <TicketForm
+          getNewTicket={(ticket: TicketWithTags[0]) => {
+            // Ticket value is already serialized from server action
+            const serializedTicket = ticket as SerializedTicket
+            // Add the new ticket to state
+            setTickets(prev => [
+              ...prev,
+              { ...serializedTicket, column: laneId },
+            ])
+            router.refresh()
+          }}
+          laneId={laneId}
+          subaccountId={subaccountId}
+        />
+      </CustomModal>
+    )
+  }
 
-    switch (type) {
-      case 'lane': {
-        const newLanes = [...allLanes]
-          .toSpliced(source.index, 1)
-          .toSpliced(destination.index, 0, allLanes[source.index])
-          .map((lane, idx) => {
-            return { ...lane, order: idx }
-          })
+  const handleDataChange = async (newData: KanbanTicket[]) => {
+    setTickets(newData)
 
-        setAllLanes(newLanes)
-        updateLanesOrder(newLanes)
-      }
+    // Update tickets that changed lanes
+    const ticketsToUpdate = newData.filter((ticket, index) => {
+      const oldTicket = tickets[index]
+      return oldTicket && ticket.column !== oldTicket.column
+    })
 
-      case 'ticket': {
-        const newLanes = [...allLanes]
-        const originLane = newLanes.find(lane => lane.id === source.droppableId)
-        const destinationLane = newLanes.find(
-          lane => lane.id === destination.droppableId
-        )
+    if (ticketsToUpdate.length > 0) {
+      // Map the tickets back to the database format
+      const updatedTickets = ticketsToUpdate.map((ticket, idx) => ({
+        ...ticket,
+        laneId: ticket.column,
+        order: idx,
+      }))
 
-        if (!originLane || !destinationLane) {
-          return
-        }
-
-        if (source.droppableId === destination.droppableId) {
-          const newOrderedTickets = [...originLane.Tickets]
-            .toSpliced(source.index, 1)
-            .toSpliced(destination.index, 0, originLane.Tickets[source.index])
-            .map((item, idx) => {
-              return { ...item, order: idx }
-            })
-          originLane.Tickets = newOrderedTickets
-          setAllLanes(newLanes)
-          updateTicketsOrder(newOrderedTickets)
-          router.refresh()
-        } else {
-          const [currentTicket] = originLane.Tickets.splice(source.index, 1)
-
-          originLane.Tickets.forEach((ticket, idx) => {
-            ticket.order = idx
-          })
-
-          destinationLane.Tickets.splice(destination.index, 0, {
-            ...currentTicket,
-            laneId: destination.droppableId,
-          })
-
-          destinationLane.Tickets.forEach((ticket, idx) => {
-            ticket.order = idx
-          })
-          setAllLanes(newLanes)
-          updateTicketsOrder([
-            ...destinationLane.Tickets,
-            ...originLane.Tickets,
-          ])
-          router.refresh()
-        }
-      }
+      await updateTicketsOrder(updatedTickets as Ticket[])
+      router.refresh()
     }
   }
 
+  const handleTicketUpdate = (updatedTicket: SerializedTicket) => {
+    setTickets(prevTickets =>
+      prevTickets.map(ticket =>
+        ticket.id === updatedTicket.id
+          ? { ...updatedTicket, column: updatedTicket.laneId }
+          : ticket
+      )
+    )
+  }
+
+  const handleTicketDelete = (ticketId: string) => {
+    setTickets(prevTickets =>
+      prevTickets.filter(ticket => ticket.id !== ticketId)
+    )
+  }
+
+  const amt = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+  })
+
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="use-automation-zoom-in overflow-y-hidden rounded-xl bg-white/60 p-4 dark:bg-background/60">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl">{pipelineDetails?.name}</h1>
-          <Button className="flex items-center gap-4" onClick={handleAddLane}>
-            <Plus size={15} />
-            Create Lane
-          </Button>
-        </div>
-        <Droppable
-          droppableId="lanes"
-          type="lane"
-          direction="horizontal"
-          key="lanes"
-          isDropDisabled={false}
-          isCombineEnabled={false}
-          ignoreContainerClipping={false}
-        >
-          {provided => (
-            <div
-              className="item-center flex gap-x-2"
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-            >
-              <div className="mt-4 flex">
-                {allLanes.map((lane, index) => (
-                  <PipelineLane
-                    allTickets={allTickets}
-                    setAllTickets={setAllTickets}
-                    subaccountId={subaccountId}
-                    pipelineId={pipelineId}
-                    tickets={lane.Tickets}
-                    laneDetails={lane}
-                    index={index}
-                    key={lane.id}
-                  />
-                ))}
-                {provided.placeholder}
-              </div>
-            </div>
-          )}
-        </Droppable>
-        {allLanes.length == 0 && (
-          <div className="flex w-full flex-col items-center justify-center">
-            <div className="opacity-100">
-              <Flag
-                width="100%"
-                height="100%"
-                className="text-muted-foreground"
-              />
-            </div>
-          </div>
-        )}
+    <div className="use-automation-zoom-in overflow-y-hidden rounded-xl bg-white/60 p-4 dark:bg-background/60">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl">{pipelineDetails?.name}</h1>
+        <Button className="flex items-center gap-4" onClick={handleAddLane}>
+          <Plus size={15} />
+          Create Lane
+        </Button>
       </div>
-    </DragDropContext>
+
+      {columns.length === 0 ? (
+        <div className="flex w-full flex-col items-center justify-center">
+          <div className="opacity-100">
+            <Flag
+              width="100%"
+              height="100%"
+              className="text-muted-foreground"
+            />
+          </div>
+        </div>
+      ) : (
+        <KanbanProvider
+          columns={columns}
+          data={tickets}
+          onDataChange={handleDataChange}
+        >
+          {column => (
+            <KanbanBoard id={column.id} key={column.id} className="group">
+              <KanbanHeader>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: column.color }}
+                    />
+                    <span>{column.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="rounded bg-white px-2 py-0.5 text-xs text-black dark:bg-slate-800 dark:text-white">
+                      {amt.format(
+                        tickets
+                          .filter(t => t.column === column.id)
+                          .reduce((sum, t) => sum + (Number(t.value) || 0), 0)
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleAddTicket(column.id)}
+                      className="flex h-5 w-5 items-center justify-center rounded opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                      type="button"
+                      title="Add ticket"
+                    >
+                      <Plus className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+              </KanbanHeader>
+              <KanbanCards id={column.id}>
+                {(ticket: KanbanTicket) => (
+                  <KanbanCard
+                    column={column.id}
+                    id={ticket.id}
+                    key={ticket.id}
+                    name={ticket.name}
+                    className="group"
+                  >
+                    <PipelineTicketCard
+                      ticket={ticket}
+                      subaccountId={subaccountId}
+                      onUpdate={handleTicketUpdate}
+                      onDelete={handleTicketDelete}
+                    />
+                  </KanbanCard>
+                )}
+              </KanbanCards>
+            </KanbanBoard>
+          )}
+        </KanbanProvider>
+      )}
+    </div>
   )
 }
 

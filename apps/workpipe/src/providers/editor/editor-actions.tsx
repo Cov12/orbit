@@ -1,4 +1,5 @@
 import React from 'react'
+
 import { DeviceTypes, EditorElement } from './editor-provider'
 
 export type EditorAction =
@@ -27,10 +28,10 @@ export type EditorAction =
         elementDetails?:
           | EditorElement
           | {
-              id: ''
-              content: []
-              name: ''
-              styles: {} as React.CSSProperties
+              id: string
+              content: EditorElement[]
+              name: string
+              styles: React.CSSProperties
               type: null
             }
       }

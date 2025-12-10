@@ -617,7 +617,11 @@ export const getTicketsWithTags = async (pipelineId: string) => {
     },
     include: { Tags: true, Assigned: true, Customer: true },
   })
-  return response
+  // Convert Decimal to number for client component serialization
+  return response.map(ticket => ({
+    ...ticket,
+    value: ticket.value?.toNumber() ?? null,
+  }))
 }
 
 export const getTagsForSubaccount = async (subaccountId: string) => {
@@ -982,17 +986,19 @@ export const upsertTicket = async (
     },
   })
 
-  return response
+  // Convert Decimal to number for client component serialization
+  return {
+    ...response,
+    value: response.value?.toNumber() ?? null,
+  }
 }
 
 export const deleteTicket = async (ticketId: string) => {
-  const response = await db.ticket.delete({
+  await db.ticket.delete({
     where: {
       id: ticketId,
     },
   })
-
-  return response
 }
 
 export const updateTicketsOrder = async (tickets: Ticket[]) => {

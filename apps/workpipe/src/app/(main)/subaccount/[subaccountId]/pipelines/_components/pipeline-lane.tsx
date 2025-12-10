@@ -70,7 +70,10 @@ const PipelineLane: React.FC<PipelaneLaneProps> = ({
     )
   }, [tickets])
 
-  const randomColor = `#${Math.random().toString(16).slice(2, 8)}`
+  const randomColor = useMemo(
+    () => `#${Math.random().toString(16).slice(2, 8)}`,
+    []
+  )
 
   const addNewTicket = (ticket: TicketWithTags[0]) => {
     setAllTickets([...allTickets, ticket])
@@ -121,13 +124,13 @@ const PipelineLane: React.FC<PipelaneLaneProps> = ({
     >
       {(provided, snapshot) => {
         if (snapshot.isDragging) {
-          //@ts-ignore
+          // @ts-expect-error - Offset dragging position for visual adjustment
           const offset = { x: 300, y: 0 }
-          //@ts-ignore
+          // @ts-expect-error - Style properties may not match exact types
           const x = provided.draggableProps.style?.left - offset.x
-          //@ts-ignore
+          // @ts-expect-error - Style properties may not match exact types
           const y = provided.draggableProps.style?.top - offset.y
-          //@ts-ignore
+          // @ts-expect-error - Modifying draggable style for custom positioning
           provided.draggableProps.style = {
             ...provided.draggableProps.style,
             top: y,

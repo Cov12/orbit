@@ -21,6 +21,9 @@
   "dependencies": {
     "@clerk/nextjs": "^6.35.5",
     "@clerk/themes": "^2.4.40",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.10.0",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -75,6 +78,7 @@
     "stripe": "^20.0.0",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
+    "tunnel-rat": "^0.1.2",
     "uploadthing": "^6.7.0",
     "uuid": "^9.0.1",
     "vaul": "^0.9.0",

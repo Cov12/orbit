@@ -3,17 +3,20 @@ import { NextResponse } from 'next/server'
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
+  '/',
   '/site',
   '/site/(.*)',
   '/api/uploadthing',
   '/sign-in(.*)',
-  '/sign-up(.*)'
+  '/sign-up(.*)',
+  '/business/sign-in(.*)',
+  '/business/sign-up(.*)',
 ])
 
-export default clerkMiddleware((auth, req) => {
+export default clerkMiddleware(async (auth, req) => {
   // Handle authentication for protected routes
   if (!isPublicRoute(req)) {
-    auth().protect()
+    await auth.protect()
   }
 
   // URL rewriting logic (same as before)
