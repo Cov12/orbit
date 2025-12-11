@@ -1,7 +1,7 @@
 import React from 'react'
 
 import { Contact, SubAccount, Ticket } from '@prisma/client'
-import format from 'date-fns/format'
+import { format } from 'date-fns/format'
 
 import BlurPage from '@/components/global/blur-page'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'

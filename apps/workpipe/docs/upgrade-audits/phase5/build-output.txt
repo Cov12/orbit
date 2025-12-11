@@ -1,0 +1,354 @@
+
+> workpipe@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.7
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 3.3min
+   Linting and checking validity of types ...
+
+./src/app/(main)/business/[businessId]/all-subaccounts/_components/create-subaccount-btn.tsx
+27:46  Warning: 'id' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/business/[businessId]/billing/page.tsx
+50:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+69:3  Warning: Expected an assignment or function call and instead saw an expression.  @typescript-eslint/no-unused-expressions
+129:15  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+131:19  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+
+./src/app/(main)/business/[businessId]/billing/_components/pricing-card.tsx
+53:9  Warning: 'router' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/business/[businessId]/billing/_components/subscription-helper.tsx
+41:6  Warning: React Hook useEffect has missing dependencies: 'customerId', 'planExists', 'prices', and 'setOpen'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/(main)/business/[businessId]/kickstart/page.tsx
+67:16  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+
+./src/app/(main)/business/[businessId]/layout.tsx
+42:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(main)/business/[businessId]/page.tsx
+33:9  Warning: 'startDate' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+34:9  Warning: 'endDate' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/business/[businessId]/team/columns.tsx
+154:11  Warning: 'data' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/data-table.tsx
+41:11  Warning: 'isOpen' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+41:28  Warning: 'setClose' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor/funnel-editor-components/checkout.tsx
+88:13  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+112:9  Warning: 'goToNextPage' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor/funnel-editor-components/contact-form-component.tsx
+89:14  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor/funnel-editor-components/container.tsx
+17:24  Warning: 'name' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+20:45  Warning: 'type' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+166:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+185:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+204:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+223:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+243:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+261:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+281:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+301:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor/funnel-editor-components/two-columns.tsx
+22:45  Warning: 'type' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor/index.tsx
+26:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+43:6  Warning: React Hook useEffect has missing dependencies: 'dispatch' and 'liveMode'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-navigation.tsx
+54:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+100:15  Warning: 'Funnel' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+117:14  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+152:14  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/index.tsx
+24:18  Warning: 'dispatch' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/animated-text-placeholder.tsx
+10:34  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/checkout-placeholder.tsx
+9:30  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/code-block-placeholder.tsx
+10:31  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/contact-form-placeholder.tsx
+9:42  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/container-placeholder.tsx
+7:31  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/divider-placeholder.tsx
+10:29  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/heading-placeholder.tsx
+8:29  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/icon-placeholder.tsx
+10:26  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/index.tsx
+30:26  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/link-placeholder.tsx
+9:26  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/qr-code-placeholder.tsx
+10:28  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/rich-text-placeholder.tsx
+10:30  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/spacer-placeholder.tsx
+10:28  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/text-placeholder.tsx
+9:26  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/two-columns-placeholder.tsx
+8:32  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/components-tab/video-placeholder.tsx
+9:27  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/index.tsx
+7:18  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-sidebar/tabs/settings-tab.tsx
+41:22  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+44:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+65:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/_components/funnel-products-table.tsx
+56:7  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+59:5  Warning: Expected an assignment or function call and instead saw an expression.  @typescript-eslint/no-unused-expressions
+64:15  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+68:9  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+72:13  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+74:13  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+98:23  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+118:19  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+125:19  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/_components/funnel-step-card.tsx
+25:11  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+27:11  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+30:13  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+
+./src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/_components/funnel-steps.tsx
+53:11  Warning: 'value' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/layout.tsx
+33:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(main)/subaccount/[subaccountId]/page.tsx
+35:43  Warning: 'searchParams' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/pipelines/page.tsx
+26:12  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/pipelines/_components/pipeline-infobar.tsx
+33:34  Warning: 'setClose' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/app/(main)/subaccount/[subaccountId]/pipelines/_components/pipeline-settings.tsx
+59:28  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+
+./src/app/api/stripe/create-checkout-session/route.ts
+9:5  Warning: 'subaccountId' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+88:5  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+
+./src/app/api/stripe/create-subscription/route.ts
+51:9  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+69:9  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+
+./src/app/api/stripe/webhook/route.ts
+34:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/forms/business-details.tsx
+99:6  Warning: React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+139:13  Warning: 'newUserData' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+182:13  Warning: 'response' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/components/forms/contact-form.tsx
+31:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/forms/contact-user-form.tsx
+55:6  Warning: React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+79:14  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+
+./src/components/forms/create-pipeline-form.tsx
+46:11  Warning: 'data' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+46:17  Warning: 'isOpen' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+46:25  Warning: 'setOpen' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+62:6  Warning: React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+86:14  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+
+./src/components/forms/funnel-form.tsx
+65:6  Warning: React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/forms/funnel-page.tsx
+69:6  Warning: React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/forms/lane-form.tsx
+63:6  Warning: React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+92:14  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+
+./src/components/forms/subaccount-details.tsx
+66:3  Warning: 'userId' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+120:14  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+133:6  Warning: React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/forms/subscription-form/subscription-form-wrapper.tsx
+86:6  Warning: React Hook useEffect has missing dependencies: 'router' and 'setClose'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+92:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+108:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+123:13  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+
+./src/components/forms/ticket-form.tsx
+104:11  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+111:6  Warning: React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+147:14  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+
+./src/components/forms/user-details.tsx
+129:6  Warning: React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/funnel-builder/content/animated-text-component.tsx
+44:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/funnel-builder/content/heading-component.tsx
+45:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/funnel-builder/content/rich-text-component.tsx
+37:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/funnel-builder/editor-sidebar/property-editor.tsx
+40:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+59:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+76:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+382:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+383:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/global/coming-soon-page.tsx
+7:27  Warning: 'children' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/components/global/subaccount-funnel-chart.tsx
+4:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+29:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+53:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/global/tag-creator.tsx
+59:6  Warning: React Hook useEffect has a missing dependency: 'getSelectedTags'. Either include it or remove the dependency array. If 'getSelectedTags' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+113:14  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+142:14  Warning: 'error' is defined but never used.  unused-imports/no-unused-vars
+
+./src/components/media/upload-buttons.tsx
+13:11  Warning: 'isOpen' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+13:28  Warning: 'setClose' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/components/sidebar/menu-options.tsx
+46:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+47:9  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+53:3  Warning: 'id' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/components/ui/calendar.tsx
+58:25  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+59:26  Warning: 'props' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+
+./src/components/ui/use-toast.ts
+21:7  Warning: 'actionTypes' is assigned a value but only used as a type. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/lib/funnel-component-manager.ts
+163:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+173:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+233:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/funnel-components.ts
+15:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/queries.ts
+680:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/stripe/stripe-actions.ts
+29:7  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+31:7  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+34:7  Warning: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+40:11  Warning: 'res' is assigned a value but never used. Allowed unused vars must match /^_/u.  unused-imports/no-unused-vars
+
+./src/providers/modal-provider.tsx
+28:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+35:13  Warning: 'modal' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+35:37  Warning: 'fetchData' is defined but never used. Allowed unused args must match /^_/u.  unused-imports/no-unused-vars
+35:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+51:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/13) ...
+   Generating static pages (3/13) 
+   Generating static pages (6/13) 
+   Generating static pages (9/13) 
+ ✓ Generating static pages (13/13)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                                                 Size  First Load JS
+┌ ○ /_not-found                                                             1 kB         103 kB
+├ ƒ /[domain]                                                            1.35 kB         180 kB
+├ ƒ /[domain]/[path]                                                     1.35 kB         180 kB
+├ ƒ /api/stripe/create-checkout-session                                    179 B         102 kB
+├ ƒ /api/stripe/create-customer                                            179 B         102 kB
+├ ƒ /api/stripe/create-subscription                                        179 B         102 kB
+├ ƒ /api/stripe/webhook                                                    179 B         102 kB
+├ ƒ /api/uploadthing                                                       179 B         102 kB
+├ ƒ /business                                                            3.14 kB         201 kB
+├ ƒ /business/[businessId]                                                1.2 kB         238 kB
+├ ƒ /business/[businessId]/all-subaccounts                               6.29 kB         204 kB
+├ ƒ /business/[businessId]/billing                                       4.22 kB         143 kB
+├ ƒ /business/[businessId]/calendar                                        179 B         102 kB
+├ ƒ /business/[businessId]/files                                           179 B         102 kB
+├ ƒ /business/[businessId]/kickstart                                       186 B         111 kB
+├ ƒ /business/[businessId]/settings                                        951 B         225 kB
+├ ƒ /business/[businessId]/team                                          7.43 kB         244 kB
+├ ƒ /business/sign-in/[[...sign-in]]                                       525 B         138 kB
+├ ƒ /business/sign-up/[[...sign-up]]                                       525 B         138 kB
+├ ○ /business/unauthorized                                                 170 B         105 kB
+├ ƒ /site                                                                  186 B         111 kB
+├ ○ /site-simple                                                           179 B         102 kB
+├ ƒ /subaccount                                                            170 B         105 kB
+├ ƒ /subaccount/[subaccountId]                                           12.3 kB         276 kB
+├ ƒ /subaccount/[subaccountId]/calendar                                    179 B         102 kB
+├ ƒ /subaccount/[subaccountId]/contacts                                  6.88 kB         171 kB
+├ ƒ /subaccount/[subaccountId]/files                                       179 B         102 kB
+├ ƒ /subaccount/[subaccountId]/funnels                                   1.97 kB         228 kB
+├ ƒ /subaccount/[subaccountId]/funnels/[funnelId]                        40.5 kB         261 kB
+├ ƒ /subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]  21.3 kB         299 kB
+├ ƒ /subaccount/[subaccountId]/kickstart                                   186 B         111 kB
+├ ƒ /subaccount/[subaccountId]/media                                     3.39 kB         222 kB
+├ ƒ /subaccount/[subaccountId]/pipelines                                   179 B         102 kB
+├ ƒ /subaccount/[subaccountId]/pipelines/[pipelineId]                    29.3 kB         243 kB
+├ ƒ /subaccount/[subaccountId]/settings                                  2.14 kB         215 kB
+└ ○ /test                                                                  179 B         102 kB
++ First Load JS shared by all                                             102 kB
+  ├ chunks/1255-096fef3513ac9d7a.js                                      45.6 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js                                  54.2 kB
+  └ other shared chunks (total)                                           2.1 kB
+
+
+ƒ Middleware                                                             82.1 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

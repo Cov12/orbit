@@ -4,7 +4,7 @@ import Image from 'next/image'
 
 import { EditorBtns } from '@/lib/constants'
 
-type Props = {}
+type Props = Record<string, never>
 
 const CheckoutPlaceholder = (props: Props) => {
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
@@ -14,8 +14,8 @@ const CheckoutPlaceholder = (props: Props) => {
   return (
     <div
       draggable
-      onDragStart={(e) => handleDragStart(e, 'paymentForm')}
-      className=" h-14 w-14 bg-muted rounded-lg flex items-center justify-center"
+      onDragStart={e => handleDragStart(e, 'paymentForm')}
+      className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted"
     >
       <Image
         src="/stripelogo.png"

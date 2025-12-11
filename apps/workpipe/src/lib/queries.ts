@@ -70,7 +70,8 @@ export const initUser = async (newUser: Partial<User>) => {
     },
   })
 
-  await clerkClient.users.updateUserMetadata(user.id, {
+  const client = await clerkClient()
+  await client.users.updateUserMetadata(user.id, {
     privateMetadata: {
       role: newUser.role || 'SUBACCOUNT_USER',
     },
@@ -113,7 +114,8 @@ export const verifyAndAcceptInvitation = async () => {
     })
 
     if (userDetails) {
-      await clerkClient.users.updateUserMetadata(user.id, {
+      const client = await clerkClient()
+      await client.users.updateUserMetadata(user.id, {
         privateMetadata: {
           role: userDetails.role || 'SUBACCOUNT_USER',
         },
@@ -465,7 +467,8 @@ export const getUser = async (id: string) => {
 }
 
 export const deleteUser = async (userId: string) => {
-  await clerkClient.users.updateUserMetadata(userId, {
+  const client = await clerkClient()
+  await client.users.updateUserMetadata(userId, {
     privateMetadata: {
       role: undefined,
     },
@@ -481,7 +484,8 @@ export const updateUser = async (user: Partial<User>) => {
     data: { ...user },
   })
 
-  await clerkClient.users.updateUserMetadata(response.id, {
+  const client = await clerkClient()
+  await client.users.updateUserMetadata(response.id, {
     privateMetadata: {
       role: user.role || 'SUBACCOUNT_USER',
     },
@@ -669,10 +673,11 @@ export const sendInvitation = async (
 
   // Check for and revoke any existing invitations in Clerk
   try {
-    const invitations = await clerkClient.invitations.getInvitationList()
+    const client = await clerkClient()
+    const invitations = await client.invitations.getInvitationList()
     console.log('invitation list: ', invitations)
-    const clerkInvitation = invitations.find(
-      invitation => invitation.emailAddress === email
+    const clerkInvitation = invitations.data.find(
+      (invitation: any) => invitation.emailAddress === email
     )
     console.log('invitation match: ', clerkInvitation?.emailAddress)
     if (
@@ -682,7 +687,7 @@ export const sendInvitation = async (
         clerkInvitation.status === 'revoked')
     ) {
       // Revoke the existing invitation in Clerk
-      await clerkClient.invitations.revokeInvitation(clerkInvitation.id)
+      await client.invitations.revokeInvitation(clerkInvitation.id)
     }
   } catch (error) {
     console.log('Error handling Clerk invitation:', error)
@@ -696,7 +701,8 @@ export const sendInvitation = async (
 
   // Create a new invitation in Clerk
   try {
-    await clerkClient.invitations.createInvitation({
+    const client = await clerkClient()
+    await client.invitations.createInvitation({
       emailAddress: email,
       redirectUrl: process.env.NEXT_PUBLIC_URL,
       publicMetadata: {

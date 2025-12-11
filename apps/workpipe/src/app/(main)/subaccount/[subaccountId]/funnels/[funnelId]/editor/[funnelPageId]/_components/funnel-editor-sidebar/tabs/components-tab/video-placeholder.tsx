@@ -4,7 +4,7 @@ import { Youtube } from 'lucide-react'
 
 import { EditorBtns } from '@/lib/constants'
 
-type Props = {}
+type Props = Record<string, never>
 
 const VideoPlaceholder = (props: Props) => {
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
@@ -14,13 +14,10 @@ const VideoPlaceholder = (props: Props) => {
   return (
     <div
       draggable
-      onDragStart={(e) => handleDragStart(e, 'video')}
-      className="h-14 w-14 bg-muted rounded-lg flex items-center justify-center"
+      onDragStart={e => handleDragStart(e, 'video')}
+      className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted"
     >
-      <Youtube
-        size={40}
-        className="text-muted-foreground"
-      />
+      <Youtube size={40} className="text-muted-foreground" />
     </div>
   )
 }

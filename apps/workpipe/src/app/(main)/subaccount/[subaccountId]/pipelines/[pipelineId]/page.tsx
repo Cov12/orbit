@@ -5,7 +5,6 @@ import { db } from '@/lib/db'
 import {
   getLanesWithTicketAndTags,
   getPipelineDetails,
-  updateLanesOrder,
   updateTicketsOrder,
 } from '@/lib/queries'
 import { LaneDetail, SerializedLane } from '@/lib/types'
@@ -57,7 +56,6 @@ const PipelinePage = async ({ params }: Props) => {
           pipelineDetails={pipelineDetails}
           pipelineId={pipelineId}
           subaccountId={subaccountId}
-          updateLanesOrder={updateLanesOrder}
           updateTicketsOrder={updateTicketsOrder}
         />
       </TabsContent>
