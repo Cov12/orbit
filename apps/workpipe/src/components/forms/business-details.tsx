@@ -1,20 +1,20 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Business } from '@prisma/client'
-import { NumberInput } from '@tremor/react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { v4 } from 'uuid'
 import * as z from 'zod'
 
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Business } from '@prisma/client'
+import { NumberInput } from '@tremor/react'
+
 import {
+  deleteBusiness,
   initUser,
   saveActivityLogsNotification,
-  upsertBusiness,
   updateBusinessDetails,
-  deleteBusiness,
+  upsertBusiness,
 } from '@/lib/queries'
 
 import FileUpload from '../global/file-upload'
@@ -96,7 +96,7 @@ const BusinessDetails = ({ data }: Props) => {
     if (data) {
       form.reset(data)
     }
-  }, [data])
+  }, [data, form])
 
   const handleSubmit = async (values: z.infer<typeof FormSchema>) => {
     try {
@@ -136,10 +136,10 @@ const BusinessDetails = ({ data }: Props) => {
         custId = customerData.customerId
       }
 
-      const newUserData = await initUser({ role: 'BUSINESS_OWNER' })
+      await initUser({ role: 'BUSINESS_OWNER' })
       if (!data?.customerId && !custId) return
 
-      const response = await upsertBusiness({
+      await upsertBusiness({
         id: data?.id ? data.id : v4(),
         customerId: data?.customerId || custId || '',
         address: values.address,
@@ -160,10 +160,7 @@ const BusinessDetails = ({ data }: Props) => {
       toast({
         title: 'Created Business',
       })
-      if (data?.id) return router.refresh()
-      if (response) {
-        return router.refresh()
-      }
+      return router.refresh()
     } catch (error) {
       console.log(error)
       toast({
@@ -179,7 +176,7 @@ const BusinessDetails = ({ data }: Props) => {
     //Cleanup
     //To Do: discontinue the subscription
     try {
-      const response = await deleteBusiness(data.id)
+      await deleteBusiness(data.id)
       toast({
         title: 'Deleted Business',
         description: 'Deleted your business and all subaccounts',

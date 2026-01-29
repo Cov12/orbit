@@ -4,7 +4,7 @@ type Props = {
   children: React.ReactNode
 }
 
-const ComingSoonPage = ({ children }: Props) => {
+const ComingSoonPage = (_props: Props) => {
   return (
     <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-900 to-blue-900 text-white">
       <div className="container mx-auto px-4">
