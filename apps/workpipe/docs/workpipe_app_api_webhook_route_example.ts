@@ -1,11 +1,11 @@
 // app/api/stripe/webhook/route.ts
+import { PrismaClient } from '@prisma/client'
+import { headers } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { headers } from 'next/headers'
-import { PrismaClient } from '@prisma/client'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2025-11-17.clover',
 })
 
 const prisma = new PrismaClient()
@@ -50,15 +50,23 @@ export async function POST(req: NextRequest) {
           select: { id: true },
         })
         if (!business) {
-          console.warn('Invoice received for unknown business', stripeCustomerId)
+          console.warn(
+            'Invoice received for unknown business',
+            stripeCustomerId
+          )
           break
         }
 
         const amountDue = invoice.amount_due ?? 0
         const amountPaid = invoice.amount_paid ?? 0
-        const pdf = typeof invoice.invoice_pdf === 'string' ? invoice.invoice_pdf : null
-        const periodStart = new Date((invoice.lines?.data?.[0]?.period?.start ?? invoice.created) * 1000)
-        const periodEnd = new Date((invoice.lines?.data?.[0]?.period?.end ?? invoice.created) * 1000)
+        const pdf =
+          typeof invoice.invoice_pdf === 'string' ? invoice.invoice_pdf : null
+        const periodStart = new Date(
+          (invoice.lines?.data?.[0]?.period?.start ?? invoice.created) * 1000
+        )
+        const periodEnd = new Date(
+          (invoice.lines?.data?.[0]?.period?.end ?? invoice.created) * 1000
+        )
 
         await prisma.invoice.upsert({
           where: { stripeInvoiceId: invoice.id },
@@ -114,6 +122,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true })
   } catch (err) {
     console.error('⚠️ Webhook handler error', err)
-    return NextResponse.json({ error: 'Webhook handler error' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Webhook handler error' },
+      { status: 500 }
+    )
   }
 }

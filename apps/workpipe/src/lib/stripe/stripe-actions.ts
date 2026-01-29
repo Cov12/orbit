@@ -26,6 +26,7 @@ export const subscriptionCreated = async (
       active: subscription.status === 'active',
       businessId: business.id,
       customerId,
+      //@ts-ignore - TODO: Fix after Stripe API version upgrade
       currentPeriodEndDate: new Date(subscription.current_period_end * 1000),
       //@ts-ignore
       priceId: subscription.plan.id,
@@ -34,7 +35,7 @@ export const subscriptionCreated = async (
       plan: subscription.plan.id,
     }
 
-    console.log('stripe data: ',data)
+    console.log('stripe data: ', data)
 
     const res = await db.subscription.upsert({
       where: {

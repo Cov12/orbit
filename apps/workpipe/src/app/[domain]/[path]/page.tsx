@@ -9,12 +9,11 @@ import EditorProvider from '@/providers/editor/editor-provider'
 const Page = async ({
   params,
 }: {
-  params: { domain: string; path: string }
+  params: Promise<{ domain: string; path: string }>
 }) => {
-  const domainData = await getDomainContent(params.domain.slice(0, -1))
-  const pageData = domainData?.FunnelPages.find(
-    page => page.pathName === params.path
-  )
+  const { domain, path } = await params
+  const domainData = await getDomainContent(domain.slice(0, -1))
+  const pageData = domainData?.FunnelPages.find(page => page.pathName === path)
 
   if (!pageData || !domainData) return notFound()
 

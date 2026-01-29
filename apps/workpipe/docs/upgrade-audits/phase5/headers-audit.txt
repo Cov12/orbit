@@ -1,0 +1,4 @@
+src/app/api/stripe/webhook/route.ts:1:import { headers } from 'next/headers'
+=== headers() usage ===
+src/app/api/stripe/webhook/route.ts:22:  const headersList = await headers()
+=== cookies() usage ===

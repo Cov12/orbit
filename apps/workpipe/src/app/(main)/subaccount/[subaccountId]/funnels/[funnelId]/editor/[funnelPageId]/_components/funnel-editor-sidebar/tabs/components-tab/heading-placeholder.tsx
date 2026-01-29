@@ -3,7 +3,7 @@ import React from 'react'
 
 import { EditorBtns } from '@/lib/constants'
 
-type Props = {}
+type Props = Record<string, never>
 
 const HeadingPlaceholder = (props: Props) => {
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
@@ -13,8 +13,8 @@ const HeadingPlaceholder = (props: Props) => {
   return (
     <div
       draggable
-      onDragStart={(e) => handleDragStart(e, 'heading')}
-      className=" h-14 w-14 bg-muted rounded-lg flex items-center justify-center cursor-grab hover:bg-muted/80 transition-colors"
+      onDragStart={e => handleDragStart(e, 'heading')}
+      className="flex h-14 w-14 cursor-grab items-center justify-center rounded-lg bg-muted transition-colors hover:bg-muted/80"
     >
       <div className="text-xs font-bold">H1</div>
     </div>

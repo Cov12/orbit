@@ -4,23 +4,23 @@ import Link from 'next/link'
 
 import { AlertDescription } from '@/components/ui/alert'
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
 } from '@/components/ui/command'
 import { getAuthUserDetails } from '@/lib/queries'
 
@@ -28,20 +28,21 @@ import CreateSubaccountButton from './_components/create-subaccount-btn'
 import DeleteButton from './_components/delete-button'
 
 type Props = {
-  params: { businessId: string }
+  params: Promise<{ businessId: string }>
 }
 
 const AllSubaccountsPage = async ({ params }: Props) => {
+  const { businessId } = await params
   const user = await getAuthUserDetails()
   if (!user) return
 
   return (
     <AlertDialog>
-      <div className="flex flex-col ">
+      <div className="flex flex-col">
         <CreateSubaccountButton
           user={user}
-          id={params.businessId}
-          className="w-[200px] self-end m-6"
+          id={businessId}
+          className="m-6 w-[200px] self-end"
         />
         <Command className="rounded-lg bg-transparent">
           <CommandInput placeholder="Search Account..." />
@@ -52,24 +53,24 @@ const AllSubaccountsPage = async ({ params }: Props) => {
                 user.Business.SubAccount.map((subaccount: SubAccount) => (
                   <CommandItem
                     key={subaccount.id}
-                    className="h-32 !bg-background my-2 text-primary border-[1px] border-border p-4 rounded-lg hover:!bg-background cursor-pointer transition-all"
+                    className="my-2 h-32 cursor-pointer rounded-lg border-[1px] border-border !bg-background p-4 text-primary transition-all hover:!bg-background"
                   >
                     <Link
                       href={`/subaccount/${subaccount.id}`}
-                      className="flex gap-4 w-full h-full"
+                      className="flex h-full w-full gap-4"
                     >
                       <div className="relative w-32">
                         <Image
                           src={subaccount.subAccountLogo}
                           alt="subaccount logo"
                           fill
-                          className="rounded-md object-contain bg-muted/50 p-4"
+                          className="rounded-md bg-muted/50 object-contain p-4"
                         />
                       </div>
                       <div className="flex flex-col justify-between">
                         <div className="flex flex-col">
                           {subaccount.name}
-                          <span className="text-muted-foreground text-xs">
+                          <span className="text-xs text-muted-foreground">
                             {subaccount.address}
                           </span>
                         </div>
@@ -79,7 +80,7 @@ const AllSubaccountsPage = async ({ params }: Props) => {
                       <Button
                         size={'sm'}
                         variant={'destructive'}
-                        className="w-20 hover:bg-red-600 hover:text-white !text-white"
+                        className="w-20 !text-white hover:bg-red-600 hover:text-white"
                       >
                         Delete
                       </Button>
@@ -106,7 +107,7 @@ const AllSubaccountsPage = async ({ params }: Props) => {
                   </CommandItem>
                 ))
               ) : (
-                <div className="text-muted-foreground text-center p-4">
+                <div className="p-4 text-center text-muted-foreground">
                   No Sub accounts
                 </div>
               )}

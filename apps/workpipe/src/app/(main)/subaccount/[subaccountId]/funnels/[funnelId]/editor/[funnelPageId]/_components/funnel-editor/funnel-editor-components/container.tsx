@@ -9,8 +9,6 @@ import { Badge } from '@/components/ui/badge'
 import { EditorBtns, defaultStyles } from '@/lib/constants'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
 
-
-
 import Recursive from './recursive'
 
 type Props = { element: EditorElement }
@@ -165,7 +163,7 @@ const Container = ({ element }: Props) => {
                 text: 'Heading',
                 level: 'h2',
                 alignment: 'left',
-              },
+              } as any,
               id: v4(),
               name: 'Heading',
               styles: { ...defaultStyles },
@@ -184,7 +182,7 @@ const Container = ({ element }: Props) => {
                 text: 'Animated Text',
                 animation: 'fade',
                 duration: 1000,
-              },
+              } as any,
               id: v4(),
               name: 'Animated Text',
               styles: { ...defaultStyles },
@@ -203,7 +201,7 @@ const Container = ({ element }: Props) => {
                 content: '<p>Rich text content here...</p>',
                 placeholder: 'Start typing...',
                 editable: true,
-              },
+              } as any,
               id: v4(),
               name: 'Rich Text',
               styles: { ...defaultStyles },
@@ -222,7 +220,7 @@ const Container = ({ element }: Props) => {
                 icon: 'star',
                 size: 24,
                 color: '#000000',
-              },
+              } as any,
               id: v4(),
               name: 'Icon',
               styles: { ...defaultStyles },
@@ -242,7 +240,7 @@ const Container = ({ element }: Props) => {
                 thickness: 1,
                 color: '#e5e5e5',
                 spacing: 20,
-              },
+              } as any,
               id: v4(),
               name: 'Divider',
               styles: { ...defaultStyles },
@@ -260,7 +258,7 @@ const Container = ({ element }: Props) => {
               content: {
                 height: 40,
                 responsive: true,
-              },
+              } as any,
               id: v4(),
               name: 'Spacer',
               styles: { ...defaultStyles },
@@ -280,7 +278,7 @@ const Container = ({ element }: Props) => {
                 language: 'javascript',
                 showLineNumbers: true,
                 theme: 'dark',
-              },
+              } as any,
               id: v4(),
               name: 'Code Block',
               styles: { ...defaultStyles },
@@ -300,7 +298,7 @@ const Container = ({ element }: Props) => {
                 size: 200,
                 backgroundColor: '#ffffff',
                 foregroundColor: '#000000',
-              },
+              } as any,
               id: v4(),
               name: 'QR Code',
               styles: { ...defaultStyles },
@@ -343,33 +341,33 @@ const Container = ({ element }: Props) => {
   return (
     <div
       style={styles}
-      className={clsx('relative p-4 transition-all group', {
-        'max-w-full w-full': type === 'container' || type === '2Col',
+      className={clsx('group relative p-4 transition-all', {
+        'w-full max-w-full': type === 'container' || type === '2Col',
         'h-fit': type === 'container',
         'h-full': type === '__body',
-        'overflow-scroll ': type === '__body',
+        'overflow-scroll': type === '__body',
         'flex flex-col md:!flex-row': type === '2Col',
         '!border-blue-500':
           state.editor.selectedElement.id === id &&
           !state.editor.liveMode &&
           state.editor.selectedElement.type !== '__body',
-        '!border-yellow-400 !border-4':
+        '!border-4 !border-yellow-400':
           state.editor.selectedElement.id === id &&
           !state.editor.liveMode &&
           state.editor.selectedElement.type === '__body',
         '!border-solid':
           state.editor.selectedElement.id === id && !state.editor.liveMode,
-        'border-dashed border-[1px] border-slate-300': !state.editor.liveMode,
+        'border-[1px] border-dashed border-slate-300': !state.editor.liveMode,
       })}
-      onDrop={(e) => handleOnDrop(e, id)}
+      onDrop={e => handleOnDrop(e, id)}
       onDragOver={handleDragOver}
       draggable={type !== '__body'}
       onClick={handleOnClickBody}
-      onDragStart={(e) => handleDragStart(e, 'container')}
+      onDragStart={e => handleDragStart(e, 'container')}
     >
       <Badge
         className={clsx(
-          'absolute -top-[23px] -left-[1px] rounded-none rounded-t-lg hidden',
+          'absolute -left-[1px] -top-[23px] hidden rounded-none rounded-t-lg',
           {
             block:
               state.editor.selectedElement.id === element.id &&
@@ -381,21 +379,15 @@ const Container = ({ element }: Props) => {
       </Badge>
 
       {Array.isArray(content) &&
-        content.map((childElement) => (
-          <Recursive
-            key={childElement.id}
-            element={childElement}
-          />
+        content.map(childElement => (
+          <Recursive key={childElement.id} element={childElement} />
         ))}
 
       {state.editor.selectedElement.id === element.id &&
         !state.editor.liveMode &&
         state.editor.selectedElement.type !== '__body' && (
-          <div className="absolute bg-primary px-2.5 py-1 text-xs font-bold  -top-[25px] -right-[1px] rounded-none rounded-t-lg ">
-            <Trash
-              size={16}
-              onClick={handleDeleteElement}
-            />
+          <div className="absolute -right-[1px] -top-[25px] rounded-none rounded-t-lg bg-primary px-2.5 py-1 text-xs font-bold">
+            <Trash size={16} onClick={handleDeleteElement} />
           </div>
         )}
     </div>

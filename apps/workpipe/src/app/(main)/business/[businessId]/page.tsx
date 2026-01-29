@@ -1,10 +1,5 @@
 import { AreaChart } from '@tremor/react'
-import {
-  Contact2,
-  DollarSign,
-  Goal,
-  ShoppingCart
-} from 'lucide-react'
+import { Contact2, DollarSign, Goal, ShoppingCart } from 'lucide-react'
 
 import CircleProgress from '@/components/global/circle-progress'
 import {
@@ -23,23 +18,24 @@ import { db } from '@/lib/db'
 const Page = async ({
   params,
 }: {
-  params: { businessId: string }
-  searchParams: { code: string }
+  params: Promise<{ businessId: string }>
+  searchParams: Promise<{ code: string }>
 }) => {
+  const { businessId } = await params
   const currency = 'USD'
   let sessions
   let totalClosedSessions
   let totalPendingSessions
-  const net = 0
-  const potentialIncome = 0
-  const closingRate = 0
+  const net: number = 0
+  const potentialIncome: number = 0
+  const closingRate: number = 0
   const currentYear = new Date().getFullYear()
   const startDate = new Date(`${currentYear}-01-01T00:00:00Z`).getTime() / 1000
   const endDate = new Date(`${currentYear}-12-31T23:59:59Z`).getTime() / 1000
 
   const businessDetails = await db.business.findUnique({
     where: {
-      id: params.businessId,
+      id: businessId,
     },
   })
 
@@ -47,52 +43,52 @@ const Page = async ({
 
   const subaccounts = await db.subAccount.findMany({
     where: {
-      businessId: params.businessId,
+      businessId: businessId,
     },
   })
 
-//   if (businessDetails.connectAccountId) {
-//     const response = await stripe.accounts.retrieve({
-//       stripeAccount: businessDetails.connectAccountId,
-//     })
+  //   if (businessDetails.connectAccountId) {
+  //     const response = await stripe.accounts.retrieve({
+  //       stripeAccount: businessDetails.connectAccountId,
+  //     })
 
-//     currency = response.default_currency?.toUpperCase() || 'USD'
-//     const checkoutSessions = await stripe.checkout.sessions.list(
-//       {
-//         created: { gte: startDate, lte: endDate },
-//         limit: 100,
-//       },
-//       { stripeAccount: businessDetails.connectAccountId }
-//     )
-//     sessions = checkoutSessions.data
-//     totalClosedSessions = checkoutSessions.data
-//       .filter((session) => session.status === 'complete')
-//       .map((session) => ({
-//         ...session,
-//         created: new Date(session.created).toLocaleDateString(),
-//         amount_total: session.amount_total ? session.amount_total / 100 : 0,
-//       }))
+  //     currency = response.default_currency?.toUpperCase() || 'USD'
+  //     const checkoutSessions = await stripe.checkout.sessions.list(
+  //       {
+  //         created: { gte: startDate, lte: endDate },
+  //         limit: 100,
+  //       },
+  //       { stripeAccount: businessDetails.connectAccountId }
+  //     )
+  //     sessions = checkoutSessions.data
+  //     totalClosedSessions = checkoutSessions.data
+  //       .filter((session) => session.status === 'complete')
+  //       .map((session) => ({
+  //         ...session,
+  //         created: new Date(session.created).toLocaleDateString(),
+  //         amount_total: session.amount_total ? session.amount_total / 100 : 0,
+  //       }))
 
-//     totalPendingSessions = checkoutSessions.data
-//       .filter((session) => session.status === 'open')
-//       .map((session) => ({
-//         ...session,
-//         created: new Date(session.created).toLocaleDateString(),
-//         amount_total: session.amount_total ? session.amount_total / 100 : 0,
-//       }))
-//     net = +totalClosedSessions
-//       .reduce((total, session) => total + (session.amount_total || 0), 0)
-//       .toFixed(2)
+  //     totalPendingSessions = checkoutSessions.data
+  //       .filter((session) => session.status === 'open')
+  //       .map((session) => ({
+  //         ...session,
+  //         created: new Date(session.created).toLocaleDateString(),
+  //         amount_total: session.amount_total ? session.amount_total / 100 : 0,
+  //       }))
+  //     net = +totalClosedSessions
+  //       .reduce((total, session) => total + (session.amount_total || 0), 0)
+  //       .toFixed(2)
 
-//     potentialIncome = +totalPendingSessions
-//       .reduce((total, session) => total + (session.amount_total || 0), 0)
-//       .toFixed(2)
+  //     potentialIncome = +totalPendingSessions
+  //       .reduce((total, session) => total + (session.amount_total || 0), 0)
+  //       .toFixed(2)
 
-//     closingRate = +(
-//       (totalClosedSessions.length / checkoutSessions.data.length) *
-//       100
-//     ).toFixed(2)
-//   }
+  //     closingRate = +(
+  //       (totalClosedSessions.length / checkoutSessions.data.length) *
+  //       100
+  //     ).toFixed(2)
+  //   }
 
   return (
     <div className="relative h-full">
@@ -116,12 +112,12 @@ const Page = async ({
           </Card>
         </div>
       )} */}
-      
+
       <h1 className="text-4xl">Dashboard</h1>
-      <Separator className=" my-6" />
+      <Separator className="my-6" />
       <div className="flex flex-col gap-4 pb-6">
-        <div className="flex gap-4 flex-col xl:!flex-row">
-          <Card className="flex-1 relative">
+        <div className="flex flex-col gap-4 xl:!flex-row">
+          <Card className="relative flex-1">
             <CardHeader>
               <CardDescription>Income</CardDescription>
               <CardTitle className="text-4xl">
@@ -136,7 +132,7 @@ const Page = async ({
             </CardContent>
             <DollarSign className="absolute right-4 top-4 text-muted-foreground" />
           </Card>
-          <Card className="flex-1 relative">
+          <Card className="relative flex-1">
             <CardHeader>
               <CardDescription>Potential Income</CardDescription>
               <CardTitle className="text-4xl">
@@ -153,7 +149,7 @@ const Page = async ({
             </CardContent>
             <DollarSign className="absolute right-4 top-4 text-muted-foreground" />
           </Card>
-          <Card className="flex-1 relative">
+          <Card className="relative flex-1">
             <CardHeader>
               <CardDescription>Active Clients</CardDescription>
               <CardTitle className="text-4xl">{subaccounts.length}</CardTitle>
@@ -163,23 +159,20 @@ const Page = async ({
             </CardContent>
             <Contact2 className="absolute right-4 top-4 text-muted-foreground" />
           </Card>
-          <Card className="flex-1 relative">
+          <Card className="relative flex-1">
             <CardHeader>
               <CardTitle>Business Goal</CardTitle>
-              <CardDescription>
-                <p className="mt-2">
-                  Reflects the number of sub accounts you want to own and
-                  manage.
-                </p>
+              <CardDescription className="mt-2">
+                Reflects the number of sub accounts you want to own and manage.
               </CardDescription>
             </CardHeader>
             <CardFooter>
-              <div className="flex flex-col w-full">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground text-sm">
+              <div className="flex w-full flex-col">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
                     Current: {subaccounts.length}
                   </span>
-                  <span className="text-muted-foreground text-sm">
+                  <span className="text-sm text-muted-foreground">
                     Goal: {businessDetails.goal}
                   </span>
                 </div>
@@ -191,13 +184,13 @@ const Page = async ({
             <Goal className="absolute right-4 top-4 text-muted-foreground" />
           </Card>
         </div>
-        <div className="flex gap-4 xl:!flex-row flex-col">
-          <Card className="p-4 flex-1">
+        <div className="flex flex-col gap-4 xl:!flex-row">
+          <Card className="flex-1 p-4">
             <CardHeader>
               <CardTitle>Transaction History</CardTitle>
             </CardHeader>
             <AreaChart
-              className="text-sm stroke-primary"
+              className="stroke-primary text-sm"
               data={[
                 ...(totalClosedSessions || []),
                 ...(totalPendingSessions || []),
@@ -209,7 +202,7 @@ const Page = async ({
               showAnimation={true}
             />
           </Card>
-          <Card className="xl:w-[400px] w-full">
+          <Card className="w-full xl:w-[400px]">
             <CardHeader>
               <CardTitle>Conversions</CardTitle>
             </CardHeader>

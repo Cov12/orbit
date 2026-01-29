@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 import { Role } from '@prisma/client'
 import { redirect } from 'next/navigation'
 
@@ -8,18 +8,21 @@ import InfoBar from '@/components/global/infobar'
 import Sidebar from '@/components/sidebar'
 import Unauthorized from '@/components/unauthorized'
 import {
-    getAuthUserDetails,
-    getNotificationAndUser,
-    verifyAndAcceptInvitation,
+  getAuthUserDetails,
+  getNotificationAndUser,
+  verifyAndAcceptInvitation,
 } from '@/lib/queries'
 
+// Force dynamic rendering to support Clerk's headers access in Next.js 15
+export const dynamic = 'force-dynamic'
 
 type Props = {
   children: React.ReactNode
-  params: { subaccountId: string }
+  params: Promise<{ subaccountId: string }>
 }
 
 const SubaccountLayout = async ({ children, params }: Props) => {
+  const { subaccountId } = await params
   const businessId = await verifyAndAcceptInvitation()
   if (!businessId) return <Unauthorized />
   const user = await currentUser()
@@ -34,8 +37,8 @@ const SubaccountLayout = async ({ children, params }: Props) => {
   } else {
     const allPermissions = await getAuthUserDetails()
     const hasPermission = allPermissions?.Permissions.find(
-      (permissions) =>
-        permissions.access && permissions.subAccountId === params.subaccountId
+      permissions =>
+        permissions.access && permissions.subAccountId === subaccountId
     )
     if (!hasPermission) {
       return <Unauthorized />
@@ -50,7 +53,7 @@ const SubaccountLayout = async ({ children, params }: Props) => {
       notifications = allNotifications
     } else {
       const filteredNoti = allNotifications?.filter(
-        (item) => item.subAccountId === params.subaccountId
+        item => item.subAccountId === subaccountId
       )
       if (filteredNoti) notifications = filteredNoti
     }
@@ -58,21 +61,18 @@ const SubaccountLayout = async ({ children, params }: Props) => {
 
   return (
     <div className="h-screen overflow-hidden">
-      <Sidebar
-        id={params.subaccountId}
-        type="subaccount"
-      />
+      <Sidebar id={subaccountId} type="subaccount" />
 
       <div className="md:pl-[300px]">
         <InfoBar
           notifications={notifications}
           role={user.privateMetadata.role as Role}
-          subAccountId={params.subaccountId as string}
+          subAccountId={subaccountId as string}
         />
         <div className="relative">{children}</div>
       </div>
     </div>
   )
-} 
+}
 
 export default SubaccountLayout

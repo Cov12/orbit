@@ -1,4 +1,4 @@
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 import { Plus } from 'lucide-react'
 
 import SendInvitation from '@/components/forms/send-invitation'
@@ -7,16 +7,20 @@ import { db } from '@/lib/db'
 import { columns } from './columns'
 import DataTable from './data-table'
 
+// Force dynamic rendering to support Clerk's headers access in Next.js 15
+export const dynamic = 'force-dynamic'
+
 type Props = {
-  params: { businessId: string }
+  params: Promise<{ businessId: string }>
 }
 
 const TeamPage = async ({ params }: Props) => {
+  const { businessId } = await params
   const authUser = await currentUser()
   const teamMembers = await db.user.findMany({
     where: {
       Business: {
-        id: params.businessId,
+        id: businessId,
       },
     },
     include: {
@@ -28,7 +32,7 @@ const TeamPage = async ({ params }: Props) => {
   if (!authUser) return null
   const businessDetails = await db.business.findUnique({
     where: {
-      id: params.businessId,
+      id: businessId,
     },
     include: {
       SubAccount: true,

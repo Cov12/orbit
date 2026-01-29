@@ -1,14 +1,18 @@
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 
 import BusinessDetails from '@/components/forms/business-details'
 import UserDetails from '@/components/forms/user-details'
 import { db } from '@/lib/db'
 
+// Force dynamic rendering to support Clerk's headers access in Next.js 15
+export const dynamic = 'force-dynamic'
+
 type Props = {
-  params: { businessId: string }
+  params: Promise<{ businessId: string }>
 }
 
 const SettingsPage = async ({ params }: Props) => {
+  const { businessId } = await params
   const authUser = await currentUser()
   if (!authUser) return null
 
@@ -21,7 +25,7 @@ const SettingsPage = async ({ params }: Props) => {
   if (!userDetails) return null
   const businessDetails = await db.business.findUnique({
     where: {
-      id: params.businessId,
+      id: businessId,
     },
     include: {
       SubAccount: true,
@@ -33,11 +37,11 @@ const SettingsPage = async ({ params }: Props) => {
   const subAccounts = businessDetails.SubAccount
 
   return (
-    <div className="flex lg:!flex-row flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:!flex-row">
       <BusinessDetails data={businessDetails} />
       <UserDetails
         type="business"
-        id={params.businessId}
+        id={businessId}
         subAccounts={subAccounts}
         userData={userDetails}
       />

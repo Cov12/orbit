@@ -34,7 +34,7 @@ const RichTextComponent: React.FC<RichTextComponentProps> = ({ element }) => {
           content: {
             ...content,
             content: newContent,
-          },
+          } as any,
         },
       },
     })
@@ -62,17 +62,18 @@ const RichTextComponent: React.FC<RichTextComponentProps> = ({ element }) => {
           // Edit mode - simple textarea for now
           // TODO: Replace with shadcn minimal-tiptap component
           <div className="space-y-2">
-            <div className="text-xs text-gray-500 font-medium">
+            <div className="text-xs font-medium text-gray-500">
               Rich Text Editor (Preview Mode)
             </div>
             <textarea
               value={htmlContent}
-              onChange={(e) => handleContentChange(e.target.value)}
+              onChange={e => handleContentChange(e.target.value)}
               placeholder={content?.placeholder || 'Start typing...'}
-              className="w-full min-h-[150px] p-3 border border-gray-200 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-h-[150px] w-full resize-none rounded-md border border-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <div className="text-xs text-gray-400">
-              Note: Full rich text editor with toolbar will be implemented using shadcn minimal-tiptap
+              Note: Full rich text editor with toolbar will be implemented using
+              shadcn minimal-tiptap
             </div>
           </div>
         )}

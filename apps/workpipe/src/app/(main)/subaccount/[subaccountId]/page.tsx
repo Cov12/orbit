@@ -20,19 +20,20 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from '@/components/ui/table'
 import { db } from '@/lib/db'
 import { stripe } from '@/lib/stripe'
 
 type Props = {
-  params: { subaccountId: string }
-  searchParams: {
+  params: Promise<{ subaccountId: string }>
+  searchParams: Promise<{
     code: string
-  }
+  }>
 }
 
 const SubaccountPageId = async ({ params, searchParams }: Props) => {
+  const { subaccountId } = await params
   let currency = 'USD'
   let sessions
   let totalClosedSessions
@@ -43,7 +44,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
 
   const subaccountDetails = await db.subAccount.findUnique({
     where: {
-      id: params.subaccountId,
+      id: subaccountId,
     },
   })
 
@@ -64,15 +65,15 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
         stripeAccount: subaccountDetails.connectAccountId,
       }
     )
-    sessions = checkoutSessions.data.map((session) => ({
+    sessions = checkoutSessions.data.map(session => ({
       ...session,
       created: new Date(session.created).toLocaleDateString(),
       amount_total: session.amount_total ? session.amount_total / 100 : 0,
     }))
 
     totalClosedSessions = checkoutSessions.data
-      .filter((session) => session.status === 'complete')
-      .map((session) => ({
+      .filter(session => session.status === 'complete')
+      .map(session => ({
         ...session,
         created: new Date(session.created).toLocaleDateString(),
         amount_total: session.amount_total ? session.amount_total / 100 : 0,
@@ -80,9 +81,9 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
 
     totalPendingSessions = checkoutSessions.data
       .filter(
-        (session) => session.status === 'open' || session.status === 'expired'
+        session => session.status === 'open' || session.status === 'expired'
       )
-      .map((session) => ({
+      .map(session => ({
         ...session,
         created: new Date(session.created).toLocaleDateString(),
         amount_total: session.amount_total ? session.amount_total / 100 : 0,
@@ -104,14 +105,14 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
 
   const funnels = await db.funnel.findMany({
     where: {
-      subAccountId: params.subaccountId,
+      subAccountId: subaccountId,
     },
     include: {
       FunnelPages: true,
     },
   })
 
-  const funnelPerformanceMetrics = funnels.map((funnel) => ({
+  const funnelPerformanceMetrics = funnels.map(funnel => ({
     ...funnel,
     totalFunnelVisits: funnel.FunnelPages.reduce(
       (total, page) => total + page.visits,
@@ -123,7 +124,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
     <BlurPage>
       <div className="relative h-full">
         {!subaccountDetails.connectAccountId && (
-          <div className="absolute -top-10 -left-10 right-0 bottom-0 z-30 flex items-center justify-center backdrop-blur-md bg-background/50">
+          <div className="absolute -left-10 -top-10 bottom-0 right-0 z-30 flex items-center justify-center bg-background/50 backdrop-blur-md">
             <Card>
               <CardHeader>
                 <CardTitle>Connect Your Stripe</CardTitle>
@@ -132,7 +133,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
                 </CardDescription>
                 <Link
                   href={`/subaccount/${subaccountDetails.id}/kickstart`}
-                  className="p-2 w-fit bg-secondary text-white rounded-md flex items-center gap-2"
+                  className="flex w-fit items-center gap-2 rounded-md bg-secondary p-2 text-white"
                 >
                   <ClipboardIcon />
                   Launch Pad
@@ -142,8 +143,8 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
           </div>
         )}
         <div className="flex flex-col gap-4 pb-6">
-          <div className="flex gap-4 flex-col xl:!flex-row">
-            <Card className="flex-1 relative">
+          <div className="flex flex-col gap-4 xl:!flex-row">
+            <Card className="relative flex-1">
               <CardHeader>
                 <CardDescription>Income</CardDescription>
                 <CardTitle className="text-4xl">
@@ -158,7 +159,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
               </CardContent>
               <DollarSign className="absolute right-4 top-4 text-muted-foreground" />
             </Card>
-            <Card className="flex-1 relative">
+            <Card className="relative flex-1">
               <CardHeader>
                 <CardDescription>Potential Income</CardDescription>
                 <CardTitle className="text-4xl">
@@ -175,7 +176,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
               </CardContent>
               <Contact2 className="absolute right-4 top-4 text-muted-foreground" />
             </Card>
-            <PipelineValue subaccountId={params.subaccountId} />
+            <PipelineValue subaccountId={subaccountId} />
 
             <Card className="xl:w-fit">
               <CardHeader>
@@ -209,12 +210,12 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
             </Card>
           </div>
 
-          <div className="flex gap-4 flex-col xl:!flex-row">
+          <div className="flex flex-col gap-4 xl:!flex-row">
             <Card className="relative">
               <CardHeader>
                 <CardDescription>Funnel Performance</CardDescription>
               </CardHeader>
-              <CardContent className=" text-sm text-muted-foreground flex flex-col gap-12 justify-between ">
+              <CardContent className="flex flex-col justify-between gap-12 text-sm text-muted-foreground">
                 <SubaccountFunnelChart data={funnelPerformanceMetrics} />
                 <div className="lg:w-[150px]">
                   Total page visits across all funnels. Hover over to get more
@@ -223,12 +224,12 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
               </CardContent>
               <Contact2 className="absolute right-4 top-4 text-muted-foreground" />
             </Card>
-            <Card className="p-4 flex-1">
+            <Card className="flex-1 p-4">
               <CardHeader>
                 <CardTitle>Checkout Activity</CardTitle>
               </CardHeader>
               <AreaChart
-                className="text-sm stroke-primary"
+                className="stroke-primary text-sm"
                 data={sessions || []}
                 index="created"
                 categories={['amount_total']}
@@ -238,8 +239,8 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
               />
             </Card>
           </div>
-          <div className="flex gap-4 xl:!flex-row flex-col">
-            <Card className="p-4 flex-1 h-[450px] overflow-scroll relative">
+          <div className="flex flex-col gap-4 xl:!flex-row">
+            <Card className="relative h-[450px] flex-1 overflow-scroll p-4">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   Transition History
@@ -249,7 +250,9 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
                     // isIncreasePositive={true}
                     size="xs"
                   >
-                    {sessions && sessions[0]?.amount_total ? sessions[0]?.amount_total : 0}
+                    {sessions && sessions[0]?.amount_total
+                      ? sessions[0]?.amount_total
+                      : 0}
                     {/* +12.3% */}
                   </BadgeDelta>
                 </CardTitle>
@@ -262,9 +265,9 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
                       <TableHead className="text-right">Value</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody className="font-medium truncate">
+                  <TableBody className="truncate font-medium">
                     {totalClosedSessions
-                      ? totalClosedSessions.map((session) => (
+                      ? totalClosedSessions.map(session => (
                           <TableRow key={session.id}>
                             <TableCell>
                               {session.customer_details?.email || '-'}

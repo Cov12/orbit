@@ -18,5 +18,5 @@ export { default as PropertyEditor } from './editor-sidebar/property-editor'
 export * from './content'
 
 // Component Management
-export { FunnelComponentManager } from '../lib/funnel-component-manager'
-export * from '../lib/funnel-components'
+export { FunnelComponentManager } from '../../lib/funnel-component-manager'
+export * from '../../lib/funnel-components'

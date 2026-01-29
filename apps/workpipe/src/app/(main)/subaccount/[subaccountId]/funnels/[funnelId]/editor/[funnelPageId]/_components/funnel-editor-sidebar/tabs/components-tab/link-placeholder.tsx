@@ -4,7 +4,7 @@ import { Link2Icon } from 'lucide-react'
 
 import { EditorBtns } from '@/lib/constants'
 
-type Props = {}
+type Props = Record<string, never>
 
 const LinkPlaceholder = (props: Props) => {
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
@@ -14,13 +14,10 @@ const LinkPlaceholder = (props: Props) => {
   return (
     <div
       draggable
-      onDragStart={(e) => handleDragStart(e, 'link')}
-      className=" h-14 w-14 bg-muted rounded-lg flex items-center justify-center"
+      onDragStart={e => handleDragStart(e, 'link')}
+      className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted"
     >
-      <Link2Icon
-        size={40}
-        className="text-muted-foreground"
-      />
+      <Link2Icon size={40} className="text-muted-foreground" />
     </div>
   )
 }

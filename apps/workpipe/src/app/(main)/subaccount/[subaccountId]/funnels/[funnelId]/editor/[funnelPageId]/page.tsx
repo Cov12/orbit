@@ -8,45 +8,44 @@ import FunnelEditorNavigation from './_components/funnel-editor-navigation'
 import FunnelEditorSidebar from './_components/funnel-editor-sidebar'
 
 type Props = {
-  params: {
+  params: Promise<{
     subaccountId: string
     funnelId: string
     funnelPageId: string
-  }
+  }>
 }
 
 const Page = async ({ params }: Props) => {
+  const { subaccountId, funnelId, funnelPageId } = await params
   const funnelPageDetails = await db.funnelPage.findFirst({
     where: {
-      id: params.funnelPageId,
+      id: funnelPageId,
     },
     include: {
       Funnel: true,
     },
   })
   if (!funnelPageDetails) {
-    return redirect(
-      `/subaccount/${params.subaccountId}/funnels/${params.funnelId}`
-    )
+    return redirect(`/subaccount/${subaccountId}/funnels/${funnelId}`)
   }
 
   return (
-    <div className="fixed top-0 bottom-0 left-0 right-0 z-[20] bg-background overflow-hidden">
+    <div className="fixed bottom-0 left-0 right-0 top-0 z-[20] overflow-hidden bg-background">
       <EditorProvider
-        subaccountId={params.subaccountId}
-        funnelId={params.funnelId}
+        subaccountId={subaccountId}
+        funnelId={funnelId}
         pageDetails={funnelPageDetails}
       >
         <FunnelEditorNavigation
-          funnelId={params.funnelId}
+          funnelId={funnelId}
           funnelPageDetails={funnelPageDetails}
-          subaccountId={params.subaccountId}
+          subaccountId={subaccountId}
         />
-        <div className="h-full flex justify-center">
-          <FunnelEditor funnelPageId={params.funnelPageId} />
+        <div className="flex h-full justify-center">
+          <FunnelEditor funnelPageId={funnelPageId} />
         </div>
 
-        <FunnelEditorSidebar subaccountId={params.subaccountId} />
+        <FunnelEditorSidebar subaccountId={subaccountId} />
       </EditorProvider>
     </div>
   )

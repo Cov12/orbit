@@ -15,15 +15,17 @@ import { stripe } from '@/lib/stripe'
 import { getStripeOAuthLink } from '@/lib/utils'
 
 type Props = {
-  params: {
+  params: Promise<{
     businessId: string
-  }
-  searchParams: { code: string }
+  }>
+  searchParams: Promise<{ code: string }>
 }
 
 const LaunchPadPage = async ({ params, searchParams }: Props) => {
+  const { businessId } = await params
+  const { code } = await searchParams
   const businessDetails = await db.business.findUnique({
-    where: { id: params.businessId },
+    where: { id: businessId },
   })
 
   if (!businessDetails) return
@@ -46,20 +48,19 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
   )
 
   //cleanup
-    // const stripeOAuthLink = `kickstart___${businessDetails.id}`
-
+  // const stripeOAuthLink = `kickstart___${businessDetails.id}`
 
   let connectedStripeAccount = false
 
-  if (searchParams.code) {
+  if (code) {
     if (!businessDetails.connectAccountId) {
       try {
         const response = await stripe.oauth.token({
           grant_type: 'authorization_code',
-          code: searchParams.code,
+          code: code,
         })
         await db.business.update({
-          where: { id: params.businessId },
+          where: { id: businessId },
           data: { connectAccountId: response.stripe_user_id },
         })
         connectedStripeAccount = true
@@ -70,8 +71,8 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
   }
 
   return (
-    <div className="flex flex-col justify-center items-center">
-      <div className="w-full h-full max-w-[800px]">
+    <div className="flex flex-col items-center justify-center">
+      <div className="h-full w-full max-w-[800px]">
         <Card className="border-none">
           <CardHeader>
             <CardTitle>Lets get started!</CardTitle>
@@ -80,8 +81,8 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="flex justify-between items-center w-full border p-4 rounded-lg gap-2">
-              <div className="flex md:items-center gap-4 flex-col md:!flex-row">
+            <div className="flex w-full items-center justify-between gap-2 rounded-lg border p-4">
+              <div className="flex flex-col gap-4 md:!flex-row md:items-center">
                 <Image
                   src="/appstore.png"
                   alt="app logo"
@@ -93,8 +94,8 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
               </div>
               <Button>Start</Button>
             </div>
-            <div className="flex justify-between items-center w-full border p-4 rounded-lg gap-2">
-              <div className="flex md:items-center gap-4 flex-col md:!flex-row">
+            <div className="flex w-full items-center justify-between gap-2 rounded-lg border p-4">
+              <div className="flex flex-col gap-4 md:!flex-row md:items-center">
                 <Image
                   src="/stripelogo.png"
                   alt="app logo"
@@ -110,19 +111,19 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
               {businessDetails.connectAccountId || connectedStripeAccount ? (
                 <CheckCircleIcon
                   size={50}
-                  className=" text-primary p-2 flex-shrink-0"
+                  className="flex-shrink-0 p-2 text-primary"
                 />
               ) : (
                 <Link
-                  className="bg-primary py-2 px-4 rounded-md text-white"
+                  className="rounded-md bg-primary px-4 py-2 text-white"
                   href={stripeOAuthLink}
                 >
                   Start
                 </Link>
               )}
             </div>
-            <div className="flex justify-between items-center w-full border p-4 rounded-lg gap-2">
-              <div className="flex md:items-center gap-4 flex-col md:!flex-row">
+            <div className="flex w-full items-center justify-between gap-2 rounded-lg border p-4">
+              <div className="flex flex-col gap-4 md:!flex-row md:items-center">
                 <Image
                   src={businessDetails.businessLogo}
                   alt="app logo"
@@ -135,12 +136,12 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
               {allDetailsExist ? (
                 <CheckCircleIcon
                   size={50}
-                  className="text-primary p-2 flex-shrink-0"
+                  className="flex-shrink-0 p-2 text-primary"
                 />
               ) : (
                 <Link
-                  className="bg-primary py-2 px-4 rounded-md text-white"
-                  href={`/business/${params.businessId}/settings`}
+                  className="rounded-md bg-primary px-4 py-2 text-white"
+                  href={`/business/${businessId}/settings`}
                 >
                   Start
                 </Link>

@@ -3,43 +3,46 @@ import { redirect } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { db } from '@/lib/db'
 import {
-    getLanesWithTicketAndTags,
-    getPipelineDetails,
-    updateLanesOrder,
-    updateTicketsOrder,
+  getLanesWithTicketAndTags,
+  getPipelineDetails,
+  updateTicketsOrder,
 } from '@/lib/queries'
-import { LaneDetail } from '@/lib/types'
+import { LaneDetail, SerializedLane } from '@/lib/types'
 
 import PipelineInfoBar from '../_components/pipeline-infobar'
 import PipelineSettings from '../_components/pipeline-settings'
 import PipelineView from '../_components/pipeline-view'
 
 type Props = {
-  params: { subaccountId: string; pipelineId: string }
+  params: Promise<{ subaccountId: string; pipelineId: string }>
 }
 
 const PipelinePage = async ({ params }: Props) => {
-  const pipelineDetails = await getPipelineDetails(params.pipelineId)
-  if (!pipelineDetails)
-    return redirect(`/subaccount/${params.subaccountId}/pipelines`)
+  const { subaccountId, pipelineId } = await params
+  const pipelineDetails = await getPipelineDetails(pipelineId)
+  if (!pipelineDetails) return redirect(`/subaccount/${subaccountId}/pipelines`)
 
   const pipelines = await db.pipeline.findMany({
-    where: { subAccountId: params.subaccountId },
+    where: { subAccountId: subaccountId },
   })
 
-  const lanes = (await getLanesWithTicketAndTags(
-    params.pipelineId
-  )) as LaneDetail[]
+  const lanes = (await getLanesWithTicketAndTags(pipelineId)) as LaneDetail[]
+
+  // Convert Decimal values to numbers for client component serialization
+  const serializedLanes: SerializedLane[] = lanes.map(lane => ({
+    ...lane,
+    Tickets: lane.Tickets.map(ticket => ({
+      ...ticket,
+      value: ticket.value?.toNumber() ?? null,
+    })),
+  }))
 
   return (
-    <Tabs
-      defaultValue="view"
-      className="w-full"
-    >
-      <TabsList className="bg-transparent border-b-2 h-16 w-full justify-between mb-4">
+    <Tabs defaultValue="view" className="w-full">
+      <TabsList className="mb-4 h-16 w-full justify-between border-b-2 bg-transparent">
         <PipelineInfoBar
-          pipelineId={params.pipelineId}
-          subAccountId={params.subaccountId}
+          pipelineId={pipelineId}
+          subAccountId={subaccountId}
           pipelines={pipelines}
         />
         <div>
@@ -49,19 +52,18 @@ const PipelinePage = async ({ params }: Props) => {
       </TabsList>
       <TabsContent value="view">
         <PipelineView
-          lanes={lanes}
+          lanes={serializedLanes}
           pipelineDetails={pipelineDetails}
-          pipelineId={params.pipelineId}
-          subaccountId={params.subaccountId}
-          updateLanesOrder={updateLanesOrder}
+          pipelineId={pipelineId}
+          subaccountId={subaccountId}
           updateTicketsOrder={updateTicketsOrder}
         />
       </TabsContent>
       <TabsContent value="settings">
         <PipelineSettings
-          pipelineId={params.pipelineId}
+          pipelineId={pipelineId}
           pipelines={pipelines}
-          subaccountId={params.subaccountId}
+          subaccountId={subaccountId}
         />
       </TabsContent>
     </Tabs>

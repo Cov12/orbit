@@ -2,7 +2,7 @@ import React from 'react'
 
 import { EditorBtns } from '@/lib/constants'
 
-type Props = {}
+type Props = Record<string, never>
 
 const ContainerPlaceholder = (props: Props) => {
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
@@ -12,10 +12,10 @@ const ContainerPlaceholder = (props: Props) => {
   return (
     <div
       draggable
-      onDragStart={(e) => handleDragStart(e, 'container')}
-      className=" h-14 w-14 bg-muted/70 rounded-lg p-2 flex flex-row gap-[4px]"
+      onDragStart={e => handleDragStart(e, 'container')}
+      className="flex h-14 w-14 flex-row gap-[4px] rounded-lg bg-muted/70 p-2"
     >
-      <div className="border-dashed border-[1px] h-full rounded-sm bg-muted border-muted-foreground/50 w-full" />
+      <div className="h-full w-full rounded-sm border-[1px] border-dashed border-muted-foreground/50 bg-muted" />
     </div>
   )
 }

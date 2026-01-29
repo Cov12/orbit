@@ -5,7 +5,7 @@ import { Edit3 } from 'lucide-react'
 
 import { EditorBtns } from '@/lib/constants'
 
-type Props = {}
+type Props = Record<string, never>
 
 const RichTextPlaceholder = (props: Props) => {
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
@@ -15,8 +15,8 @@ const RichTextPlaceholder = (props: Props) => {
   return (
     <div
       draggable
-      onDragStart={(e) => handleDragStart(e, 'rich-text')}
-      className="h-14 w-14 bg-muted rounded-lg flex items-center justify-center cursor-grab hover:bg-muted/80 transition-colors"
+      onDragStart={e => handleDragStart(e, 'rich-text')}
+      className="flex h-14 w-14 cursor-grab items-center justify-center rounded-lg bg-muted transition-colors hover:bg-muted/80"
     >
       <Edit3 className="h-6 w-6" />
     </div>
