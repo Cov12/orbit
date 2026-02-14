@@ -48,7 +48,8 @@ const SubscriptionFormWrapper = ({ customerId, planExists }: Props) => {
   )
 
   useEffect(() => {
-    if (!selectedPriceId) return
+    // Guard: don't attempt subscription creation without a Stripe customer ID
+    if (!selectedPriceId || !customerId) return
     const createSecret = async () => {
       const subscriptionResponse = await fetch(
         '/api/stripe/create-subscription',
@@ -84,6 +85,18 @@ const SubscriptionFormWrapper = ({ customerId, planExists }: Props) => {
     };
     initializeStripe();
   }, [data, selectedPriceId, customerId, planExists]);
+
+  // If no Stripe customer is set up, prompt the user to set up billing first
+  if (!customerId) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-4">
+        <p className="text-center text-muted-foreground">
+          You need to set up billing before subscribing to a plan.
+          Please contact support or set up your payment details first.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="border-none transition-all">

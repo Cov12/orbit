@@ -1,7 +1,6 @@
 import React from 'react'
 
 import { currentUser } from '@clerk/nextjs/server'
-import { Plan } from '@prisma/client'
 import { redirect } from 'next/navigation'
 
 import BusinessDetails from '@/components/forms/business-details'
@@ -13,7 +12,7 @@ export const dynamic = 'force-dynamic'
 const Page = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ plan: Plan; state: string; code: string }>
+  searchParams: Promise<{ plan: string; state: string; code: string }>
 }) => {
   const { plan, state, code } = await searchParams
   // cleanup
@@ -36,9 +35,8 @@ const Page = async ({
       user?.role === 'BUSINESS_OWNER' ||
       user?.role === 'BUSINESS_ADMIN'
     ) {
-      if (plan) {
-        return redirect(`/business/${businessId}/billing?plan=${plan}`)
-      }
+      // Removed auto-redirect to billing when plan param exists.
+      // Users now go to their dashboard after signup and can set up billing when ready.
       if (state) {
         const statePath = state.split('___')[0]
         const stateBusinessId = state.split('___')[1]

@@ -20,7 +20,8 @@ const SubscriptionHelper = ({ customerId, planExists, prices }: Props) => {
   const plan = searchParams.get('plan')
 
   useEffect(() => {
-    if (plan)
+    // Only auto-open subscription modal if user has a Stripe customer ID
+    if (plan && customerId)
       setOpen(
         <CustomModal
           title="Upgrade Plan!"
