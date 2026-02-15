@@ -82,7 +82,7 @@ model Permissions {
 model Business {
   id               String                @id @default(uuid())
   connectAccountId String?               @default("")
-  customerId       String                @default("")//customer subscribed to platform, not subaccount
+  customerId       String?               @default("")//customer subscribed to platform, not subaccount — made optional so businesses can onboard without Stripe
   name             String
   businessLogo     String                @db.Text
   companyEmail     String                @db.Text

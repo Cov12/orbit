@@ -100,48 +100,15 @@ const BusinessDetails = ({ data }: Props) => {
 
   const handleSubmit = async (values: z.infer<typeof FormSchema>) => {
     try {
-      let custId
-      if (!data?.id) {
-        const bodyData = {
-          email: values.companyEmail,
-          name: values.name,
-          shipping: {
-            address: {
-              city: values.city,
-              country: values.country,
-              line1: values.address,
-              postal_code: values.zipCode,
-              state: values.zipCode,
-            },
-            name: values.name,
-          },
-          address: {
-            city: values.city,
-            country: values.country,
-            line1: values.address,
-            postal_code: values.zipCode,
-            state: values.zipCode,
-          },
-        }
-
-        const customerResponse = await fetch('/api/stripe/create-customer', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(bodyData),
-        })
-        const customerData: { customerId: string } =
-          await customerResponse.json()
-        custId = customerData.customerId
-      }
+      // Stripe customer creation is no longer required during signup.
+      // Businesses can set up billing later from the billing page.
+      // The Stripe infrastructure (create-customer API, etc.) remains intact for on-demand use.
 
       await initUser({ role: 'BUSINESS_OWNER' })
-      if (!data?.customerId && !custId) return
 
       await upsertBusiness({
         id: data?.id ? data.id : v4(),
-        customerId: data?.customerId || custId || '',
+        customerId: data?.customerId || '',
         address: values.address,
         businessLogo: values.businessLogo,
         city: values.city,
