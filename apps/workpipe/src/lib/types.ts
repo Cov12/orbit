@@ -176,3 +176,16 @@ export type ProfilesForSubAccount = Prisma.PromiseReturnType<
 export type UpsertFunnelPage = Prisma.FunnelPageCreateWithoutFunnelInput
 
 export type UpsertProfilePage = Prisma.ProfilePageCreateWithoutProfileInput
+
+export const CalendarEventFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  start: z.string().min(1, "Start date is required"),
+  end: z.string().optional(),
+  allDay: z.boolean().default(false),
+  color: z.string().optional(),
+  subAccountId: z.string(),
+  contactId: z.string().optional(),
+  ticketId: z.string().optional(),
+  category: z.string().optional(),
+})
