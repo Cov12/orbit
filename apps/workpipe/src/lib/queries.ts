@@ -87,7 +87,16 @@ export const createTeamUser = async (businessId: string, user: User) => {
 }
 
 export const verifyAndAcceptInvitation = async () => {
-  const user = await currentUser()
+  let user
+  try {
+    user = await currentUser()
+  } catch (error) {
+    console.log(
+      'Clerk currentUser() error in verifyAndAcceptInvitation:',
+      error
+    )
+    return redirect('/sign-in')
+  }
   if (!user) return redirect('/sign-in')
   const invitationExists = await db.invitation.findUnique({
     where: {
