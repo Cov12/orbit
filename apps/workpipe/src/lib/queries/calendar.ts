@@ -36,10 +36,15 @@ export const getCalendarEvents = async (
     where.start = { lte: endDate }
   }
 
-  return await db.calendarEvent.findMany({
-    where,
-    orderBy: { start: 'asc' },
-  })
+  try {
+    return await db.calendarEvent.findMany({
+      where,
+      orderBy: { start: 'asc' },
+    })
+  } catch (error) {
+    console.error('CalendarEvent query failed (table may not exist yet - run prisma db push):', error)
+    return []
+  }
 }
 
 export const getCalendarEventById = async (eventId: string) => {
