@@ -33,7 +33,6 @@ import FileUpload from '../global/file-upload'
 import Loading from '../global/loading'
 import { useToast } from '../ui/use-toast'
 
-
 const formSchema = z.object({
   name: z.string(),
   companyEmail: z.string(),
@@ -72,19 +71,20 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: details?.name,
-      companyEmail: details?.companyEmail,
-      companyPhone: details?.companyPhone,
-      address: details?.address,
-      city: details?.city,
-      zipCode: details?.zipCode,
-      state: details?.state,
-      country: details?.country,
-      subAccountLogo: details?.subAccountLogo,
+      name: details?.name || '',
+      companyEmail: details?.companyEmail || '',
+      companyPhone: details?.companyPhone || '',
+      address: details?.address || '',
+      city: details?.city || '',
+      zipCode: details?.zipCode || '',
+      state: details?.state || '',
+      country: details?.country || '',
+      subAccountLogo: details?.subAccountLogo || '',
     },
   })
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit() {
+    const values = form.getValues()
     try {
       const response = await upsertSubAccount({
         id: details?.id ? details.id : v4(),
@@ -127,7 +127,7 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
   }
 
   useEffect(() => {
-    if (details) {
+    if (details?.id) {
       form.reset(details)
     }
   }, [details])
@@ -142,10 +142,7 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               disabled={isLoading}
               control={form.control}
@@ -164,7 +161,7 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
                 </FormItem>
               )}
             />
-            <div className="flex md:flex-row gap-4">
+            <div className="flex gap-4 md:flex-row">
               <FormField
                 disabled={isLoading}
                 control={form.control}
@@ -191,17 +188,14 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
                   <FormItem className="flex-1">
                     <FormLabel>Acount Email</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Email"
-                        {...field}
-                      />
+                      <Input placeholder="Email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-            <div className="flex md:flex-row gap-4">
+            <div className="flex gap-4 md:flex-row">
               <FormField
                 disabled={isLoading}
                 control={form.control}
@@ -210,11 +204,7 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
                   <FormItem className="flex-1">
                     <FormLabel>Acount Phone Number</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Phone"
-                        required
-                        {...field}
-                      />
+                      <Input placeholder="Phone" required {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -230,17 +220,13 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
                 <FormItem className="flex-1">
                   <FormLabel>Address</FormLabel>
                   <FormControl>
-                    <Input
-                      required
-                      placeholder="123 st..."
-                      {...field}
-                    />
+                    <Input required placeholder="123 st..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="flex md:flex-row gap-4">
+            <div className="flex gap-4 md:flex-row">
               <FormField
                 disabled={isLoading}
                 control={form.control}
@@ -249,11 +235,7 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
                   <FormItem className="flex-1">
                     <FormLabel>City</FormLabel>
                     <FormControl>
-                      <Input
-                        required
-                        placeholder="City"
-                        {...field}
-                      />
+                      <Input required placeholder="City" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -267,11 +249,7 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
                   <FormItem className="flex-1">
                     <FormLabel>State</FormLabel>
                     <FormControl>
-                      <Input
-                        required
-                        placeholder="State"
-                        {...field}
-                      />
+                      <Input required placeholder="State" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -285,11 +263,7 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
                   <FormItem className="flex-1">
                     <FormLabel>Zipcpde</FormLabel>
                     <FormControl>
-                      <Input
-                        required
-                        placeholder="Zipcode"
-                        {...field}
-                      />
+                      <Input required placeholder="Zipcode" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -304,20 +278,13 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
                 <FormItem className="flex-1">
                   <FormLabel>Country</FormLabel>
                   <FormControl>
-                    <Input
-                      required
-                      placeholder="Country"
-                      {...field}
-                    />
+                    <Input required placeholder="Country" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              disabled={isLoading}
-            >
+            <Button type="submit" disabled={isLoading}>
               {isLoading ? <Loading /> : 'Save Account Information'}
             </Button>
           </form>

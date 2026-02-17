@@ -16,7 +16,12 @@ const Page = async ({
 }) => {
   const { plan, state, code } = await searchParams
   // cleanup
-  const authUser = await currentUser()
+  let authUser
+  try {
+    authUser = await currentUser()
+  } catch {
+    return redirect('/sign-in')
+  }
   if (!authUser) {
     return redirect('/sign-in')
   }

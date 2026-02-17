@@ -135,6 +135,7 @@ model SubAccount {
   Services         Service[]
   Documents        Document[]
   Invoices         Invoice[]
+  CalendarEvent    CalendarEvent[]
 
   Business         Business                    @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
@@ -212,6 +213,8 @@ model Ticket {
   assignedUserId String?
   Assigned       User?   @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
 
+  CalendarEvent  CalendarEvent[]
+
   @@index([laneId])
   @@index([customerId])
   @@index([assignedUserId])
@@ -288,8 +291,9 @@ model Contact {
   updatedAt    DateTime @updatedAt
   subAccountId String
 
-  Subaccount SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
-  Ticket     Ticket[]
+  Subaccount      SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  Ticket          Ticket[]
+  CalendarEvent   CalendarEvent[]
 
   @@index([subAccountId])
 }
@@ -552,4 +556,41 @@ model AddOns {
   Business    Business?  @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
+}
+
+model CalendarEvent {
+  id             String    @id @default(uuid())
+  title          String
+  description    String?
+  start          DateTime
+  end            DateTime?
+  allDay         Boolean   @default(false)
+  color          String?
+
+  subAccountId   String
+  createdById    String?
+
+  contactId      String?
+  ticketId       String?
+
+  category       String?
+
+  provider       String?
+  externalId     String?
+  syncStatus     String?
+  lastSyncedAt   DateTime?
+
+  recurrenceRule String?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  SubAccount     SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  Contact        Contact?   @relation(fields: [contactId], references: [id])
+  Ticket         Ticket?    @relation(fields: [ticketId], references: [id])
+
+  @@index([subAccountId])
+  @@index([contactId])
+  @@index([start, end])
+  @@index([externalId, provider])
 }

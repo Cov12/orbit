@@ -87,7 +87,16 @@ export const createTeamUser = async (businessId: string, user: User) => {
 }
 
 export const verifyAndAcceptInvitation = async () => {
-  const user = await currentUser()
+  let user
+  try {
+    user = await currentUser()
+  } catch (error) {
+    console.log(
+      'Clerk currentUser() error in verifyAndAcceptInvitation:',
+      error
+    )
+    return redirect('/sign-in')
+  }
   if (!user) return redirect('/sign-in')
   const invitationExists = await db.invitation.findUnique({
     where: {
@@ -394,6 +403,21 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
             name: 'Contacts',
             icon: 'person',
             link: `/subaccount/${subAccount.id}/contacts`,
+          },
+          {
+            name: 'Calendar',
+            icon: 'calendar',
+            link: `/subaccount/${subAccount.id}/calendar`,
+          },
+          {
+            name: 'Services',
+            icon: 'clipboardIcon',
+            link: `/subaccount/${subAccount.id}/services`,
+          },
+          {
+            name: 'Documents',
+            icon: 'database',
+            link: `/subaccount/${subAccount.id}/documents`,
           },
           {
             name: 'Dashboard',

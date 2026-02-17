@@ -78,27 +78,28 @@ const BusinessDetails = ({ data }: Props) => {
     mode: 'onChange',
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      name: data?.name,
-      companyEmail: data?.companyEmail,
-      companyPhone: data?.companyPhone,
+      name: data?.name || '',
+      companyEmail: data?.companyEmail || '',
+      companyPhone: data?.companyPhone || '',
       whiteLabel: data?.whiteLabel || false,
-      address: data?.address,
-      city: data?.city,
-      zipCode: data?.zipCode,
-      state: data?.state,
+      address: data?.address || '',
+      city: data?.city || '',
+      zipCode: data?.zipCode || '',
+      state: data?.state || '',
       country: data?.country || '',
-      businessLogo: data?.businessLogo,
+      businessLogo: data?.businessLogo || '',
     },
   })
   const isLoading = form.formState.isSubmitting
 
   useEffect(() => {
-    if (data) {
+    if (data?.id) {
       form.reset(data)
     }
   }, [data, form])
 
-  const handleSubmit = async (values: z.infer<typeof FormSchema>) => {
+  const handleSubmit = async () => {
+    const values = form.getValues()
     try {
       // Stripe customer creation is no longer required during signup.
       // Businesses can set up billing later from the billing page.
