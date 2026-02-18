@@ -76,12 +76,27 @@ const CalendarEventModal = ({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const formatForInput = (dateStr: string, allDay: boolean) => {
+  const initAllDay = event ? event.allDay : defaultAllDay
+  const [allDay, setAllDay] = useState(initAllDay)
+
+  // Reset allDay state when modal opens with new data
+  const prevInitAllDay = useState(initAllDay)[0]
+  if (prevInitAllDay !== initAllDay && open) {
+    setAllDay(initAllDay)
+  }
+
+  const formatForInput = (dateStr: string, isAllDay: boolean) => {
     if (!dateStr) return ''
     try {
       const d = new Date(dateStr)
-      if (allDay) return d.toISOString().split('T')[0]
-      return d.toISOString().slice(0, 16)
+      if (isAllDay) return d.toISOString().split('T')[0]
+      // Format as local datetime for datetime-local input
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      const hours = String(d.getHours()).padStart(2, '0')
+      const minutes = String(d.getMinutes()).padStart(2, '0')
+      return `${year}-${month}-${day}T${hours}:${minutes}`
     } catch {
       return dateStr
     }
@@ -89,11 +104,13 @@ const CalendarEventModal = ({
 
   const isEdit = !!event?.id
 
+  const initStart = formatForInput(event?.start || defaultStart, allDay)
+  const initEnd = formatForInput(event?.end || defaultEnd, allDay)
+
   const handleSubmit = (formData: FormData) => {
     const title = formData.get('title') as string
     if (!title) return
 
-    const allDay = formData.get('allDay') === 'on'
     const start = formData.get('start') as string
     const end = formData.get('end') as string
     const contactId = formData.get('contactId') as string
@@ -127,10 +144,6 @@ const CalendarEventModal = ({
     })
   }
 
-  const initAllDay = event ? event.allDay : defaultAllDay
-  const initStart = formatForInput(event?.start || defaultStart, initAllDay)
-  const initEnd = formatForInput(event?.end || defaultEnd, initAllDay)
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -162,20 +175,21 @@ const CalendarEventModal = ({
 
           <div className="flex items-center gap-2">
             <Switch
-              id="allDay"
-              name="allDay"
-              defaultChecked={initAllDay}
+              id="allDay-toggle"
+              checked={allDay}
+              onCheckedChange={setAllDay}
             />
-            <Label htmlFor="allDay">All day</Label>
+            <Label htmlFor="allDay-toggle">All day</Label>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start">Start</Label>
               <Input
+                key={`start-${allDay}`}
                 id="start"
                 name="start"
-                type={initAllDay ? 'date' : 'datetime-local'}
+                type={allDay ? 'date' : 'datetime-local'}
                 defaultValue={initStart}
                 required
               />
@@ -183,9 +197,10 @@ const CalendarEventModal = ({
             <div className="space-y-2">
               <Label htmlFor="end">End</Label>
               <Input
+                key={`end-${allDay}`}
                 id="end"
                 name="end"
-                type={initAllDay ? 'date' : 'datetime-local'}
+                type={allDay ? 'date' : 'datetime-local'}
                 defaultValue={initEnd}
               />
             </div>
