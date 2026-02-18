@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Contact } from '@prisma/client'
 
@@ -79,11 +79,12 @@ const CalendarEventModal = ({
   const initAllDay = event ? event.allDay : defaultAllDay
   const [allDay, setAllDay] = useState(initAllDay)
 
-  // Reset allDay state when modal opens with new data
-  const prevInitAllDay = useState(initAllDay)[0]
-  if (prevInitAllDay !== initAllDay && open) {
-    setAllDay(initAllDay)
-  }
+  // Reset allDay state when modal opens with new event data
+  useEffect(() => {
+    if (open) {
+      setAllDay(initAllDay)
+    }
+  }, [open, initAllDay])
 
   const formatForInput = (dateStr: string, isAllDay: boolean) => {
     if (!dateStr) return ''
