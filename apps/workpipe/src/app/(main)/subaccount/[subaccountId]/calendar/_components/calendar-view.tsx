@@ -184,6 +184,7 @@ const CalendarView = ({ events, subAccountId, contacts }: Props) => {
         eventResize={handleEventResize}
         height="auto"
         nowIndicator={true}
+        timeZone="UTC"
       />
       <CalendarEventModal
         open={modalOpen}
