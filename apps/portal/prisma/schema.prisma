@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  clerkOrgId    String?        @unique
+  logoUrl       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  members       Member[]
+  subscriptions Subscription[]
+  appAccess     AppAccess[]
+}
+
+model Member {
+  id          String     @id @default(cuid())
+  clerkUserId String
+  email       String?
+  name        String?
+  orgId       String
+  role        MemberRole @default(MEMBER)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([clerkUserId, orgId])
+  @@index([clerkUserId])
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Subscription {
+  id               String    @id @default(cuid())
+  orgId            String
+  stripeCustomerId String?
+  stripeSubId      String?   @unique
+  plan             Plan      @default(FREE)
+  status           SubStatus @default(ACTIVE)
+  currentPeriodEnd DateTime?
+  org              Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([orgId])
+  @@index([orgId])
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum SubStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+model AppAccess {
+  id      String  @id @default(cuid())
+  orgId   String
+  app     AppType
+  enabled Boolean @default(true)
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, app])
+  @@index([orgId])
+}
+
+enum AppType {
+  WORKPIPE
+  ATRIUM
+}
