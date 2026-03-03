@@ -38,12 +38,17 @@ export default clerkMiddleware(async (auth, req) => {
     )
   }
 
-  if (url.pathname === '/sign-in') {
-    return NextResponse.redirect(new URL(`/business/sign-in`, req.url))
+  // Auth routes redirect to Orbit Portal (centralized auth)
+  const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'
+
+  if (url.pathname === '/sign-in' || url.pathname.startsWith('/business/sign-in')) {
+    const returnUrl = encodeURIComponent(`${url.origin}/business`)
+    return NextResponse.redirect(new URL(`${PORTAL_URL}/sign-in?redirect_url=${returnUrl}`))
   }
 
-  if (url.pathname === '/sign-up') {
-    return NextResponse.redirect(new URL(`/business/sign-up`, req.url))
+  if (url.pathname === '/sign-up' || url.pathname.startsWith('/business/sign-up')) {
+    const returnUrl = encodeURIComponent(`${url.origin}/business`)
+    return NextResponse.redirect(new URL(`${PORTAL_URL}/sign-up?redirect_url=${returnUrl}`))
   }
 
   if (
