@@ -1,9 +1,8 @@
-import { currentUser } from "@clerk/nextjs/server";
+"use client";
+
 import { UserProfile } from "@clerk/nextjs";
 
-export default async function SettingsPage() {
-  const user = await currentUser();
-
+export default function SettingsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
@@ -13,29 +12,14 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      {/* Organization Info */}
-      <div className="glass p-6 space-y-4">
-        <h2 className="text-lg font-semibold">Organization</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm text-gray-400">Organization Name</label>
-            <p className="mt-1 font-medium">—</p>
-          </div>
-          <div>
-            <label className="text-sm text-gray-400">Slug</label>
-            <p className="mt-1 font-medium text-gray-500">Set up an organization to get started</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Clerk Profile */}
-      <div className="glass p-6 space-y-4">
-        <h2 className="text-lg font-semibold">Profile</h2>
+      <div className="glass p-6">
         <UserProfile
+          routing="hash"
           appearance={{
             elements: {
               rootBox: "w-full",
               card: "bg-transparent shadow-none border-0",
+              navbar: "hidden",
             },
           }}
         />
