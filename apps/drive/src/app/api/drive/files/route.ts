@@ -27,6 +27,7 @@ export async function GET(req: Request) {
         size: true,
         status: true,
         folderId: true,
+        uploadedBy: true,
         createdAt: true,
         updatedAt: true,
       },

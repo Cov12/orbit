@@ -27,6 +27,7 @@ export async function GET(req: Request, context: RouteContext) {
         status: true,
         folderId: true,
         checksum: true,
+        uploadedBy: true,
         createdAt: true,
         updatedAt: true,
         deletedAt: true,
@@ -46,6 +47,62 @@ export async function GET(req: Request, context: RouteContext) {
     });
 
     return NextResponse.json({ file: serializeBigInts(file) });
+  } catch (error) {
+    return driveErrorResponse(error);
+  }
+}
+
+export async function POST(req: Request, context: RouteContext) {
+  try {
+    const { userId, orgId } = await getDriveContext();
+    const { fileId } = await context.params;
+
+    const file = await db.driveFile.findFirst({
+      where: { id: fileId, orgId, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        mimeType: true,
+        size: true,
+        status: true,
+        folderId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!file || file.status === DriveFileStatus.DELETED) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
+
+    const updated =
+      file.status === DriveFileStatus.ACTIVE
+        ? file
+        : await db.driveFile.update({
+            where: { id: fileId },
+            data: { status: DriveFileStatus.ACTIVE },
+            select: {
+              id: true,
+              name: true,
+              mimeType: true,
+              size: true,
+              status: true,
+              folderId: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          });
+
+    await logDriveAudit({
+      orgId,
+      userId,
+      fileId,
+      action: DriveAuditAction.FILE_METADATA,
+      metadata: { confirmedUpload: true },
+      request: req,
+    });
+
+    return NextResponse.json({ file: serializeBigInts(updated) });
   } catch (error) {
     return driveErrorResponse(error);
   }
