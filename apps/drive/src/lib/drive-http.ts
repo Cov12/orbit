@@ -11,6 +11,9 @@ export function driveErrorResponse(error: unknown) {
     if (error.message === "FORBIDDEN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    if (error.message === "DRIVE_ACCESS_DENIED") {
+      return NextResponse.json({ error: "Drive access requires an active subscription. Upgrade at portal.orbit.example/billing" }, { status: 403 });
+    }
   }
 
   console.error("[Drive API]", error);
