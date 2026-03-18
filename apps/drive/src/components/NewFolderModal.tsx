@@ -1,50 +1,63 @@
 "use client";
 
 import { useState } from "react";
-import { useDriveClient } from "@/lib/drive-client";
+import { driveClient } from "@/lib/drive-client";
 
-export function NewFolderModal({ parentId, onCreated }: { parentId?: string | null; onCreated: () => void }) {
-  const [open, setOpen] = useState(false);
+type Props = {
+  parentId: string | null;
+  onCreated: () => void;
+  onClose: () => void;
+};
+
+export default function NewFolderModal({ parentId, onCreated, onClose }: Props) {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-  const client = useDriveClient();
+  const [error, setError] = useState("");
 
-  const submit = async () => {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
-    await client.createFolder(name.trim(), parentId);
-    setLoading(false);
-    setName("");
-    setOpen(false);
-    onCreated();
-  };
+    setError("");
+    try {
+      await driveClient.createFolder(name.trim(), parentId);
+      onCreated();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create folder");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <>
-      <button className="rounded-xl border border-white/10 px-4 py-2 text-sm" onClick={() => setOpen(true)}>
-        New Folder
-      </button>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[rgba(28,28,33,0.9)] p-6 backdrop-blur">
-            <h3 className="text-lg font-semibold">Create folder</h3>
-            <input
-              className="mt-4 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2"
-              placeholder="Folder name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <button className="rounded-xl border border-white/10 px-3 py-2" onClick={() => setOpen(false)}>
-                Cancel
-              </button>
-              <button className="rounded-xl bg-[#6961ff] px-3 py-2" onClick={() => void submit()} disabled={loading}>
-                Create
-              </button>
-            </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="glass rounded-2xl p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold mb-4">New Folder</h3>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Folder name"
+            autoFocus
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-[#6961ff] transition"
+          />
+          {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+          <div className="flex gap-3 mt-4 justify-end">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-slate-400 hover:text-white transition">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !name.trim()}
+              className="px-5 py-2 rounded-xl text-sm font-semibold bg-[#6961ff] text-white hover:bg-[#5a52e0] disabled:opacity-40 transition"
+            >
+              {loading ? "Creating..." : "Create"}
+            </button>
           </div>
-        </div>
-      )}
-    </>
+        </form>
+      </div>
+    </div>
   );
 }

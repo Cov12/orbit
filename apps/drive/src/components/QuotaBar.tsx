@@ -1,41 +1,39 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { formatBytes, type StorageQuota, useDriveClient } from "@/lib/drive-client";
+import { useEffect, useState } from "react";
+import { driveClient, formatFileSize } from "@/lib/drive-client";
 
-export function QuotaBar() {
-  const client = useDriveClient();
-  const [quota, setQuota] = useState<StorageQuota | null>(null);
+export default function QuotaBar() {
+  const [quota, setQuota] = useState<{ used: number; total: number; files: number } | null>(null);
 
   useEffect(() => {
-    client.getQuota().then((res) => setQuota(res.quota)).catch(() => setQuota(null));
-  }, [client]);
-
-  const { percent, color } = useMemo(() => {
-    if (!quota) return { percent: 0, color: "bg-emerald-500" };
-    const used = Number(quota.usedBytes);
-    const total = Number(quota.quotaBytes);
-    const p = total > 0 ? Math.min((used / total) * 100, 100) : 0;
-    return {
-      percent: p,
-      color: p > 90 ? "bg-red-500" : p >= 70 ? "bg-yellow-500" : "bg-emerald-500",
-    };
-  }, [quota]);
+    driveClient.getQuota().then(({ quota: q }) => {
+      setQuota({
+        used: parseInt(q.usedBytes, 10),
+        total: parseInt(q.quotaBytes, 10),
+        files: q.fileCount,
+      });
+    }).catch(() => {});
+  }, []);
 
   if (!quota) {
-    return <div className="h-10 w-56 animate-pulse rounded-xl border border-white/10 bg-white/5" />;
+    return <div className="h-2 w-full rounded-full bg-white/5 animate-pulse" />;
   }
 
+  const pct = quota.total > 0 ? (quota.used / quota.total) * 100 : 0;
+  const color = pct > 90 ? "#ef4444" : pct > 70 ? "#eab308" : "#20B2AA";
+
   return (
-    <div className="w-full max-w-xs rounded-xl border border-white/10 bg-white/5 p-3">
-      <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
-        <span>Storage</span>
-        <span>
-          {formatBytes(quota.usedBytes)} / {formatBytes(quota.quotaBytes)}
-        </span>
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs text-slate-400">
+        <span>{formatFileSize(quota.used)} of {formatFileSize(quota.total)}</span>
+        <span>{quota.files} files</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-        <div className={`h-full ${color} transition-all`} style={{ width: `${percent}%` }} />
+      <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color }}
+        />
       </div>
     </div>
   );

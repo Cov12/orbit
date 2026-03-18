@@ -1,120 +1,134 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useDriveClient } from "@/lib/drive-client";
-
-type UploadModalProps = {
-  open: boolean;
-  folderId?: string | null;
-  onClose: () => void;
-  onComplete: () => void;
-};
+import { useCallback, useState, useRef } from "react";
+import { driveClient } from "@/lib/drive-client";
 
 type UploadItem = {
-  name: string;
+  file: File;
   progress: number;
   status: "pending" | "uploading" | "done" | "error";
+  error?: string;
 };
 
-export function UploadModal({ open, folderId, onClose, onComplete }: UploadModalProps) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const client = useDriveClient();
+type Props = {
+  folderId: string | null;
+  onUploaded: () => void;
+  onClose: () => void;
+};
+
+export default function UploadModal({ folderId, onUploaded, onClose }: Props) {
   const [items, setItems] = useState<UploadItem[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  if (!open) return null;
+  const addFiles = useCallback((files: FileList | File[]) => {
+    const newItems: UploadItem[] = Array.from(files).map((f) => ({
+      file: f,
+      progress: 0,
+      status: "pending" as const,
+    }));
+    setItems((prev) => [...prev, ...newItems]);
+  }, []);
 
-  const runUpload = async (files: FileList | File[]) => {
-    setIsUploading(true);
-    const fileArray = Array.from(files);
-    setItems(fileArray.map((f) => ({ name: f.name, progress: 0, status: "pending" })));
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+  }, [addFiles]);
 
-    await Promise.all(
-      fileArray.map(async (file, index) => {
-        try {
-          setItems((prev) => prev.map((item, i) => (i === index ? { ...item, status: "uploading" } : item)));
-          const init = await client.beginUpload({
-            name: file.name,
-            mimeType: file.type || "application/octet-stream",
-            size: file.size,
-            folderId,
-          });
+  async function uploadAll() {
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].status !== "pending") continue;
 
-          await new Promise<void>((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open("PUT", init.uploadUrl);
-            xhr.upload.onprogress = (event) => {
-              if (!event.lengthComputable) return;
-              const p = Math.round((event.loaded / event.total) * 100);
-              setItems((prev) => prev.map((item, i) => (i === index ? { ...item, progress: p } : item)));
-            };
-            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error("Upload failed")));
-            xhr.onerror = () => reject(new Error("Upload failed"));
-            xhr.send(file);
-          });
+      setItems((prev) => prev.map((item, idx) => idx === i ? { ...item, status: "uploading" } : item));
 
-          await client.confirmUpload(init.fileId);
-          setItems((prev) =>
-            prev.map((item, i) => (i === index ? { ...item, progress: 100, status: "done" } : item)),
-          );
-        } catch {
-          setItems((prev) => prev.map((item, i) => (i === index ? { ...item, status: "error" } : item)));
-        }
-      }),
-    );
+      try {
+        const { uploadUrl } = await driveClient.initUpload(
+          items[i].file.name,
+          items[i].file.type || "application/octet-stream",
+          items[i].file.size,
+          folderId
+        );
 
-    setIsUploading(false);
-    onComplete();
-  };
+        await driveClient.uploadToR2(uploadUrl, items[i].file, (pct) => {
+          setItems((prev) => prev.map((item, idx) => idx === i ? { ...item, progress: pct } : item));
+        });
+
+        setItems((prev) => prev.map((item, idx) => idx === i ? { ...item, status: "done", progress: 100 } : item));
+      } catch (err) {
+        setItems((prev) =>
+          prev.map((item, idx) =>
+            idx === i ? { ...item, status: "error", error: err instanceof Error ? err.message : "Failed" } : item
+          )
+        );
+      }
+    }
+    onUploaded();
+  }
+
+  const pendingCount = items.filter((i) => i.status === "pending").length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[rgba(28,28,33,0.9)] p-6 backdrop-blur">
-        <h3 className="text-lg font-semibold">Upload files</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="glass rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Upload Files</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        {/* Drop zone */}
         <div
-          className="mt-4 rounded-2xl border border-dashed border-white/20 p-8 text-center text-slate-300"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            void runUpload(e.dataTransfer.files);
-          }}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${
+            dragging ? "border-[#6961ff] bg-[#6961ff]/10" : "border-white/10 hover:border-white/20"
+          }`}
         >
-          Drag & drop files here
-          <div className="mt-3">
-            <button
-              className="rounded-xl bg-[#6961ff] px-4 py-2 text-sm font-medium"
-              onClick={() => inputRef.current?.click()}
-            >
-              Choose files
-            </button>
+          <span className="material-symbols-outlined text-4xl text-slate-500 mb-2 block">cloud_upload</span>
+          <p className="text-sm text-slate-400">Drag & drop files here or <span className="text-[#6961ff] font-medium">browse</span></p>
+          <input ref={inputRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && addFiles(e.target.files)} />
+        </div>
+
+        {/* File list */}
+        {items.length > 0 && (
+          <div className="mt-4 space-y-2 overflow-y-auto flex-1 min-h-0">
+            {items.map((item, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-2">
+                <span className="material-symbols-outlined text-sm text-slate-400">
+                  {item.status === "done" ? "check_circle" : item.status === "error" ? "error" : "draft"}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate">{item.file.name}</p>
+                  {item.status === "uploading" && (
+                    <div className="h-1 mt-1 rounded-full bg-white/5 overflow-hidden">
+                      <div className="h-full rounded-full bg-[#6961ff] transition-all" style={{ width: `${item.progress}%` }} />
+                    </div>
+                  )}
+                  {item.status === "error" && <p className="text-xs text-red-400">{item.error}</p>}
+                </div>
+                <span className="text-xs text-slate-500">
+                  {item.status === "done" ? "✓" : item.status === "uploading" ? `${item.progress}%` : ""}
+                </span>
+              </div>
+            ))}
           </div>
-        </div>
+        )}
 
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={(e) => e.target.files && void runUpload(e.target.files)}
-        />
-
-        <div className="mt-4 space-y-2">
-          {items.map((item) => (
-            <div key={item.name} className="rounded-xl border border-white/10 p-2 text-sm">
-              <div className="mb-1 flex justify-between">
-                <span className="truncate">{item.name}</span>
-                <span className="text-slate-400">{item.status}</span>
-              </div>
-              <div className="h-2 rounded-full bg-slate-800">
-                <div className="h-full rounded-full bg-[#20B2AA]" style={{ width: `${item.progress}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <button className="rounded-xl border border-white/10 px-3 py-2 text-sm" onClick={onClose} disabled={isUploading}>
-            Close
+        {/* Actions */}
+        <div className="flex gap-3 mt-4 justify-end">
+          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-slate-400 hover:text-white transition">
+            Cancel
+          </button>
+          <button
+            onClick={uploadAll}
+            disabled={pendingCount === 0}
+            className="px-5 py-2 rounded-xl text-sm font-semibold bg-[#6961ff] text-white hover:bg-[#5a52e0] disabled:opacity-40 transition"
+          >
+            Upload {pendingCount > 0 ? `(${pendingCount})` : ""}
           </button>
         </div>
       </div>
