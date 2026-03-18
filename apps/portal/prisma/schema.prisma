@@ -84,6 +84,7 @@ model AppAccess {
 enum AppType {
   WORKPIPE
   ATRIUM
+  DRIVE
 }
 
 model DriveFolder {
