@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { getAuthContext } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 type DriveContext = {
@@ -40,7 +40,7 @@ async function checkDriveAccess(orgId: string): Promise<boolean> {
  * If user belongs to one org, auto-selects it.
  */
 export async function getDriveContext(req?: Request): Promise<DriveContext> {
-  const { userId } = await auth();
+  const { userId } = await getAuthContext();
 
   if (!userId) {
     throw new Error("UNAUTHORIZED");

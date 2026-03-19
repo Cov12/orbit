@@ -1,6 +1,6 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
+import { UserAvatar } from "@/lib/auth-client";
 
 type Props = {
   onUpload: () => void;
@@ -41,7 +41,7 @@ export default function TopBar({ onUpload, onNewFolder }: Props) {
           Upload
         </button>
         <div className="ml-2">
-          <UserButton
+          <UserAvatar
             appearance={{
               elements: {
                 avatarBox: "w-8 h-8",

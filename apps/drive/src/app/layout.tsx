@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
+import { AuthProvider, dark } from "@/lib/auth-client";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
@@ -13,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider
+    <AuthProvider
       appearance={{
         baseTheme: dark,
         variables: {
@@ -29,6 +28,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </head>
         <body>{children}</body>
       </html>
-    </ClerkProvider>
+    </AuthProvider>
   );
 }

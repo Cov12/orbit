@@ -19,7 +19,7 @@ export async function GET(req: Request, context: RouteContext) {
     return handlePublicDownload(req, context, shareToken);
   }
 
-  // Authenticated download — requires Clerk session
+  // Authenticated download — requires authenticated session
   return handleAuthDownload(req, context);
 }
 

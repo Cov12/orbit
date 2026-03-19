@@ -2,7 +2,7 @@
 
 import Sidebar from "@/components/Sidebar";
 import QuotaBar from "@/components/QuotaBar";
-import { UserProfile } from "@clerk/nextjs";
+import { UserSettings } from "@/lib/auth-client";
 
 export default function SettingsPage() {
   return (
@@ -20,7 +20,7 @@ export default function SettingsPage() {
         {/* Profile */}
         <div className="max-w-2xl">
           <h2 className="text-sm font-semibold text-white mb-3">Account</h2>
-          <UserProfile
+          <UserSettings
             routing="hash"
             appearance={{
               elements: {
