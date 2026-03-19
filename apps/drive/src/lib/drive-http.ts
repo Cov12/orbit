@@ -11,6 +11,9 @@ export function driveErrorResponse(error: unknown) {
     if (error.message === "FORBIDDEN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    if (error.message === "MULTI_ORG_SELECT_REQUIRED") {
+      return NextResponse.json({ error: "Multiple organizations found. Set X-Org-Id header to select one." }, { status: 400 });
+    }
     if (error.message === "DRIVE_ACCESS_DENIED") {
       return NextResponse.json({ error: "Drive access requires an active subscription. Upgrade at portal.orbit.example/billing" }, { status: 403 });
     }

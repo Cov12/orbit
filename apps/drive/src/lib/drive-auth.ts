@@ -3,8 +3,8 @@ import { db } from "@/lib/db";
 
 type DriveContext = {
   userId: string;
-  clerkOrgId: string;
   orgId: string;
+  memberRole: string;
 };
 
 /**
@@ -28,41 +28,60 @@ async function checkDriveAccess(orgId: string): Promise<boolean> {
   return true;
 }
 
-export async function getDriveContext(): Promise<DriveContext> {
-  const { userId, orgId } = await auth();
+/**
+ * Get Drive context for authenticated requests.
+ * 
+ * Auth flow (decoupled from Clerk's org layer):
+ * 1. Clerk provides userId (authentication only — "who are you?")
+ * 2. DB Member table maps userId → org (authorization — "what can you access?")
+ * 3. This keeps org management in our DB, not Clerk's
+ * 
+ * If user belongs to multiple orgs, uses X-Org-Id header to select.
+ * If user belongs to one org, auto-selects it.
+ */
+export async function getDriveContext(req?: Request): Promise<DriveContext> {
+  const { userId } = await auth();
 
   if (!userId) {
     throw new Error("UNAUTHORIZED");
   }
 
-  if (!orgId) {
+  // Look up user's org memberships from our DB (not Clerk)
+  const memberships = await db.member.findMany({
+    where: { clerkUserId: userId },
+    include: { org: true },
+  });
+
+  if (memberships.length === 0) {
     throw new Error("NO_ORG");
   }
 
-  // Verify org exists and user is a member
-  const org = await db.organization.findUnique({
-    where: { clerkOrgId: orgId },
-    include: {
-      members: {
-        where: { clerkUserId: userId },
-        take: 1,
-      },
-    },
-  });
+  let membership;
 
-  if (!org || org.members.length === 0) {
-    throw new Error("FORBIDDEN");
+  if (memberships.length === 1) {
+    // Single org — auto-select
+    membership = memberships[0];
+  } else {
+    // Multiple orgs — check X-Org-Id header
+    const requestedOrgId = req?.headers.get("x-org-id");
+    if (!requestedOrgId) {
+      throw new Error("MULTI_ORG_SELECT_REQUIRED");
+    }
+    membership = memberships.find((m: typeof memberships[0]) => m.orgId === requestedOrgId);
+    if (!membership) {
+      throw new Error("FORBIDDEN");
+    }
   }
 
   // Check subscription/access (Phase 1: always passes)
-  const hasAccess = await checkDriveAccess(org.id);
+  const hasAccess = await checkDriveAccess(membership.orgId);
   if (!hasAccess) {
     throw new Error("DRIVE_ACCESS_DENIED");
   }
 
   return {
     userId,
-    clerkOrgId: orgId,
-    orgId: org.id,
+    orgId: membership.orgId,
+    memberRole: membership.role,
   };
 }
