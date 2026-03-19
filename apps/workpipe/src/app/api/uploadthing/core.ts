@@ -1,12 +1,13 @@
-import { auth } from '@clerk/nextjs/server'
 import { createUploadthing, type FileRouter } from 'uploadthing/next'
+
+import { getAuthContext } from '@/lib/auth'
 
 const f = createUploadthing()
 
-const authenticateUser = () => {
-  const user = auth()
+const authenticateUser = async () => {
+  const user = await getAuthContext()
   // If you throw, the user will not be able to upload
-  if (!user) throw new Error('Unauthorized')
+  if (!user.userId) throw new Error('Unauthorized')
   // Whatever is returned here is accessible in onUploadComplete as `metadata`
   return user
 }

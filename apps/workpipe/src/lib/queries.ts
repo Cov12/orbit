@@ -1,6 +1,5 @@
 'use server'
 
-import { clerkClient, currentUser } from '@clerk/nextjs/server'
 import {
   Business,
   Lane,
@@ -18,6 +17,7 @@ import { v4 } from 'uuid'
 import { z } from 'zod'
 
 import { db } from './db'
+import { getAuthAdmin, getCurrentUser } from './auth'
 import {
   CreateFunnelFormSchema,
   CreateMediaType,
@@ -25,14 +25,14 @@ import {
 } from './types'
 
 export const getAuthUserDetails = async () => {
-  const user = await currentUser()
+  const user = await getCurrentUser()
   if (!user) {
     return
   }
 
   const userData = await db.user.findUnique({
     where: {
-      email: user.emailAddresses[0].emailAddress,
+      email: user.email,
     },
     include: {
       Business: {
@@ -53,24 +53,24 @@ export const getAuthUserDetails = async () => {
 }
 
 export const initUser = async (newUser: Partial<User>) => {
-  const user = await currentUser()
+  const user = await getCurrentUser()
   if (!user) return
 
   const userData = await db.user.upsert({
     where: {
-      email: user.emailAddresses[0].emailAddress,
+      email: user.email,
     },
     update: newUser,
     create: {
       id: user.id,
-      avatarUrl: user.imageUrl,
-      email: user.emailAddresses[0].emailAddress,
-      name: `${user.firstName} ${user.lastName}`,
+      avatarUrl: user.avatar,
+      email: user.email,
+      name: user.name,
       role: newUser.role || 'SUBACCOUNT_USER',
     },
   })
 
-  const client = await clerkClient()
+  const client = await getAuthAdmin()
   await client.users.updateUserMetadata(user.id, {
     privateMetadata: {
       role: newUser.role || 'SUBACCOUNT_USER',
@@ -89,10 +89,10 @@ export const createTeamUser = async (businessId: string, user: User) => {
 export const verifyAndAcceptInvitation = async () => {
   let user
   try {
-    user = await currentUser()
+    user = await getCurrentUser()
   } catch (error) {
     console.log(
-      'Clerk currentUser() error in verifyAndAcceptInvitation:',
+      'Auth wrapper getCurrentUser() error in verifyAndAcceptInvitation:',
       error
     )
     return redirect('/sign-in')
@@ -100,7 +100,7 @@ export const verifyAndAcceptInvitation = async () => {
   if (!user) return redirect('/sign-in')
   const invitationExists = await db.invitation.findUnique({
     where: {
-      email: user.emailAddresses[0].emailAddress,
+      email: user.email,
       status: 'PENDING',
     },
   })
@@ -109,9 +109,9 @@ export const verifyAndAcceptInvitation = async () => {
     const userDetails = await createTeamUser(invitationExists.businessId, {
       email: invitationExists.email,
       businessId: invitationExists.businessId,
-      avatarUrl: user.imageUrl,
+      avatarUrl: user.avatar,
       id: user.id,
-      name: `${user.firstName} ${user.lastName}`,
+      name: user.name,
       role: invitationExists.role,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -123,7 +123,7 @@ export const verifyAndAcceptInvitation = async () => {
     })
 
     if (userDetails) {
-      const client = await clerkClient()
+      const client = await getAuthAdmin()
       await client.users.updateUserMetadata(user.id, {
         privateMetadata: {
           role: userDetails.role || 'SUBACCOUNT_USER',
@@ -139,7 +139,7 @@ export const verifyAndAcceptInvitation = async () => {
   } else {
     const business = await db.user.findUnique({
       where: {
-        email: user.emailAddresses[0].emailAddress,
+        email: user.email,
       },
     })
     return business ? business.businessId : null
@@ -155,7 +155,7 @@ export const saveActivityLogsNotification = async ({
   description: string
   subaccountId?: string
 }) => {
-  const authUser = await currentUser()
+  const authUser = await getCurrentUser()
   let userData
   if (!authUser) {
     const response = await db.user.findFirst({
@@ -172,7 +172,7 @@ export const saveActivityLogsNotification = async ({
     }
   } else {
     userData = await db.user.findUnique({
-      where: { email: authUser?.emailAddresses[0].emailAddress },
+      where: { email: authUser.email },
     })
   }
 
@@ -491,7 +491,7 @@ export const getUser = async (id: string) => {
 }
 
 export const deleteUser = async (userId: string) => {
-  const client = await clerkClient()
+  const client = await getAuthAdmin()
   await client.users.updateUserMetadata(userId, {
     privateMetadata: {
       role: undefined,
@@ -508,7 +508,7 @@ export const updateUser = async (user: Partial<User>) => {
     data: { ...user },
   })
 
-  const client = await clerkClient()
+  const client = await getAuthAdmin()
   await client.users.updateUserMetadata(response.id, {
     privateMetadata: {
       role: user.role || 'SUBACCOUNT_USER',
@@ -697,7 +697,7 @@ export const sendInvitation = async (
 
   // Check for and revoke any existing invitations in Clerk
   try {
-    const client = await clerkClient()
+    const client = await getAuthAdmin()
     const invitations = await client.invitations.getInvitationList()
     console.log('invitation list: ', invitations)
     const clerkInvitation = invitations.data.find(
@@ -725,7 +725,7 @@ export const sendInvitation = async (
 
   // Create a new invitation in Clerk
   try {
-    const client = await clerkClient()
+    const client = await getAuthAdmin()
     await client.invitations.createInvitation({
       emailAddress: email,
       redirectUrl: process.env.NEXT_PUBLIC_URL,

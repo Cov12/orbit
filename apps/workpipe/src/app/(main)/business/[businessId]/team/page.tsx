@@ -1,7 +1,7 @@
-import { currentUser } from '@clerk/nextjs/server'
 import { Plus } from 'lucide-react'
 
 import SendInvitation from '@/components/forms/send-invitation'
+import { getCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 import { columns } from './columns'
@@ -16,7 +16,7 @@ type Props = {
 
 const TeamPage = async ({ params }: Props) => {
   const { businessId } = await params
-  const authUser = await currentUser()
+  const authUser = await getCurrentUser()
   const teamMembers = await db.user.findMany({
     where: {
       Business: {

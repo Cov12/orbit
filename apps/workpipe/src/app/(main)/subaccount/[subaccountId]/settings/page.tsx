@@ -1,8 +1,7 @@
-import { currentUser } from '@clerk/nextjs/server'
-
 import SubAccountDetails from '@/components/forms/subaccount-details'
 import UserDetails from '@/components/forms/user-details'
 import BlurPage from '@/components/global/blur-page'
+import { getCurrentUser } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 // Force dynamic rendering to support Clerk's headers access in Next.js 15
@@ -14,11 +13,11 @@ type Props = {
 
 const SubaccountSettingPage = async ({ params }: Props) => {
   const { subaccountId } = await params
-  const authUser = await currentUser()
+  const authUser = await getCurrentUser()
   if (!authUser) return
   const userDetails = await db.user.findUnique({
     where: {
-      email: authUser.emailAddresses[0].emailAddress,
+      email: authUser.email,
     },
   })
   if (!userDetails) return

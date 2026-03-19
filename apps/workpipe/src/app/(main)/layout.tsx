@@ -1,11 +1,10 @@
 import React from 'react'
 
-import { ClerkProvider } from '@clerk/nextjs'
-import { dark } from '@clerk/themes'
+import { AuthProvider, dark } from '@/lib/auth-client'
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <ClerkProvider appearance={{ baseTheme: dark }}>{children}</ClerkProvider>
+    <AuthProvider appearance={{ baseTheme: dark }}>{children}</AuthProvider>
   )
 }
 

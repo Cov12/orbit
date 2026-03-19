@@ -1,12 +1,12 @@
 import React from 'react'
 
-import { currentUser } from '@clerk/nextjs/server'
 import { Role } from '@prisma/client'
 import { redirect } from 'next/navigation'
 
 import InfoBar from '@/components/global/infobar'
 import Sidebar from '@/components/sidebar'
 import Unauthorized from '@/components/unauthorized'
+import { requireAuth } from '@/lib/auth'
 import {
   getAuthUserDetails,
   getNotificationAndUser,
@@ -25,17 +25,17 @@ const SubaccountLayout = async ({ children, params }: Props) => {
   const { subaccountId } = await params
   const businessId = await verifyAndAcceptInvitation()
   if (!businessId) return <Unauthorized />
-  const user = await currentUser()
+  const user = await requireAuth().catch(() => null)
   if (!user) {
     return redirect('/')
   }
 
   let notifications: any = []
+  const allPermissions = await getAuthUserDetails()
 
-  if (!user.privateMetadata.role) {
+  if (!allPermissions?.role) {
     return <Unauthorized />
   } else {
-    const allPermissions = await getAuthUserDetails()
     const hasPermission = allPermissions?.Permissions.find(
       permissions =>
         permissions.access && permissions.subAccountId === subaccountId
@@ -47,8 +47,8 @@ const SubaccountLayout = async ({ children, params }: Props) => {
     const allNotifications = await getNotificationAndUser(businessId)
 
     if (
-      user.privateMetadata.role === 'BUSINESS_ADMIN' ||
-      user.privateMetadata.role === 'BUSINESS_OWNER'
+      allPermissions.role === 'BUSINESS_ADMIN' ||
+      allPermissions.role === 'BUSINESS_OWNER'
     ) {
       notifications = allNotifications
     } else {
@@ -66,7 +66,7 @@ const SubaccountLayout = async ({ children, params }: Props) => {
       <div className="md:pl-[300px]">
         <InfoBar
           notifications={notifications}
-          role={user.privateMetadata.role as Role}
+          role={allPermissions.role as Role}
           subAccountId={subaccountId as string}
         />
         <div className="relative">{children}</div>

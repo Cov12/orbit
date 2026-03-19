@@ -1,9 +1,9 @@
 import React from 'react'
 
-import { currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 
 import BusinessDetails from '@/components/forms/business-details'
+import { requireAuth } from '@/lib/auth'
 import { getAuthUserDetails, verifyAndAcceptInvitation } from '@/lib/queries'
 
 // Force dynamic rendering to support Clerk's headers access in Next.js 15
@@ -18,11 +18,8 @@ const Page = async ({
   // cleanup
   let authUser
   try {
-    authUser = await currentUser()
+    authUser = await requireAuth()
   } catch {
-    return redirect('/sign-in')
-  }
-  if (!authUser) {
     return redirect('/sign-in')
   }
 
@@ -59,9 +56,7 @@ const Page = async ({
     <div className="mt-4 flex items-center justify-center">
       <div className="max-w-[850px] rounded-xl border-[1px] p-4">
         <h1 className="text-4xl"> Business Onboarding</h1>
-        <BusinessDetails
-          data={{ companyEmail: authUser?.emailAddresses[0].emailAddress }}
-        />
+        <BusinessDetails data={{ companyEmail: authUser.email }} />
       </div>
     </div>
   )

@@ -1,11 +1,11 @@
 'use client'
 import { useState } from 'react'
 
-import { UserButton } from '@clerk/nextjs'
 import { Role } from '@prisma/client'
 import { Bell } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 
+import { UserAvatar } from '@/lib/auth-client'
 import { NotificationWithUser } from '@/lib/types'
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
@@ -39,31 +39,31 @@ const InfoBar = ({ notifications, subAccountId, className, role }: Props) => {
     } else {
       if (notifications?.length !== 0) {
         setAllNotifications(
-          notifications?.filter((item) => item.subAccountId === subAccountId) ??
+          notifications?.filter(item => item.subAccountId === subAccountId) ??
             []
         )
       }
     }
-    setShowAll((prev) => !prev)
+    setShowAll(prev => !prev)
   }
 
   return (
     <>
       <div
         className={twMerge(
-          'fixed z-[20] md:left-[300px] left-0 right-0 top-0 p-4 bg-background/80 backdrop-blur-md flex  gap-4 items-center border-b-[1px] ',
+          'fixed left-0 right-0 top-0 z-[20] flex items-center gap-4 border-b-[1px] bg-background/80 p-4 backdrop-blur-md md:left-[300px]',
           className
         )}
       >
-        <div className="flex items-center gap-2 ml-auto">
-          <UserButton afterSignOutUrl="/" />
+        <div className="ml-auto flex items-center gap-2">
+          <UserAvatar afterSignOutUrl="/" />
           <Sheet>
             <SheetTrigger>
-              <div className="rounded-full w-9 h-9 bg-primary flex items-center justify-center text-white">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white">
                 <Bell size={17} />
               </div>
             </SheetTrigger>
-<SheetContent className="mt-4 mr-4 pr-4 overflow-auto">
+            <SheetContent className="mr-4 mt-4 overflow-auto pr-4">
               <SheetHeader className="text-left">
                 <SheetTitle>Notifications</SheetTitle>
                 <SheetDescription>
@@ -75,10 +75,10 @@ const InfoBar = ({ notifications, subAccountId, className, role }: Props) => {
                   )}
                 </SheetDescription>
               </SheetHeader>
-              {allNotifications?.map((notification) => (
-<div
+              {allNotifications?.map(notification => (
+                <div
                   key={notification.id}
-                  className="flex flex-col gap-y-2 mb-2 overflow-x-hidden text-ellipsis"
+                  className="mb-2 flex flex-col gap-y-2 overflow-x-hidden text-ellipsis"
                 >
                   <div className="flex gap-2">
                     <Avatar>
@@ -102,12 +102,15 @@ const InfoBar = ({ notifications, subAccountId, className, role }: Props) => {
                           {notification.notification.split('|')[2]}
                         </span>
                       </p>
-<small className="text-xs text-muted-foreground">
-                        {new Date(notification.createdAt).toLocaleDateString("en-US", {
-                          month: "2-digit",
-                          day: "2-digit",
-                          year: "numeric",
-                        })}
+                      <small className="text-xs text-muted-foreground">
+                        {new Date(notification.createdAt).toLocaleDateString(
+                          'en-US',
+                          {
+                            month: '2-digit',
+                            day: '2-digit',
+                            year: 'numeric',
+                          }
+                        )}
                       </small>
                     </div>
                   </div>

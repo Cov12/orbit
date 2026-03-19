@@ -1,13 +1,14 @@
 import React from 'react'
 
-import { currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 
 import BlurPage from '@/components/global/blur-page'
 import InfoBar from '@/components/global/infobar'
 import Sidebar from '@/components/sidebar'
 import Unauthorized from '@/components/unauthorized'
+import { requireAuth } from '@/lib/auth'
 import {
+  getAuthUserDetails,
   getNotificationAndUser,
   verifyAndAcceptInvitation,
 } from '@/lib/queries'
@@ -23,7 +24,8 @@ type Props = {
 const layout = async ({ children, params }: Props) => {
   const { businessId: businessIdParam } = await params
   const businessId = await verifyAndAcceptInvitation()
-  const user = await currentUser()
+  const user = await requireAuth().catch(() => null)
+  const userDetails = await getAuthUserDetails()
 
   if (!user) {
     return redirect('/')
@@ -34,8 +36,8 @@ const layout = async ({ children, params }: Props) => {
   }
 
   if (
-    user.privateMetadata.role !== 'BUSINESS_OWNER' &&
-    user.privateMetadata.role !== 'BUSINESS_ADMIN'
+    userDetails?.role !== 'BUSINESS_OWNER' &&
+    userDetails?.role !== 'BUSINESS_ADMIN'
   )
     return <Unauthorized />
 
