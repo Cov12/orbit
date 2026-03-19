@@ -3,7 +3,7 @@ import type { DriveAuditAction } from "@prisma/client";
 
 export async function logDriveAudit(input: {
   orgId: string;
-  userId?: string;
+  userId?: string | null;
   fileId?: string;
   action: DriveAuditAction;
   metadata?: Record<string, unknown>;

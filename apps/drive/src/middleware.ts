@@ -5,6 +5,12 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  // Allow public downloads via share token (no auth required)
+  const url = new URL(req.url);
+  if (url.pathname.includes('/download') && url.searchParams.has('token')) {
+    return;
+  }
+
   if (isProtectedRoute(req)) {
     await auth.protect();
   }
