@@ -15,14 +15,20 @@ export async function GET(_req: Request, context: RouteContext) {
   try {
     const { shareId } = await context.params;
 
-    const share = await db.driveShare.findUnique({
-      where: { id: shareId },
-      include: {
-        file: {
-          select: { id: true, name: true, size: true, mimeType: true },
+    let share;
+    try {
+      share = await db.driveShare.findUnique({
+        where: { id: shareId },
+        include: {
+          file: {
+            select: { id: true, name: true, size: true, mimeType: true },
+          },
         },
-      },
-    });
+      });
+    } catch {
+      // Invalid ID format (e.g. not a valid CUID/UUID)
+      return NextResponse.json({ error: "Share not found" }, { status: 404 });
+    }
 
     if (!share || !share.file) {
       return NextResponse.json({ error: "Share not found" }, { status: 404 });
