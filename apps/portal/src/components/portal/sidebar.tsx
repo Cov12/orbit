@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, OrganizationSwitcher } from "@clerk/nextjs";
 import { Logo } from "@/components/shared/logo";
 
 const navItems = [
@@ -21,6 +21,23 @@ export function Sidebar() {
       <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
         <Logo />
         <span className="font-semibold text-lg">Orbit Portal</span>
+      </div>
+
+      {/* Organization Switcher */}
+      <div className="px-4 py-3 border-b border-white/10">
+        <OrganizationSwitcher
+          hidePersonal
+          createOrganizationMode="modal"
+          afterCreateOrganizationUrl="/dashboard"
+          afterSelectOrganizationUrl="/dashboard"
+          appearance={{
+            elements: {
+              rootBox: "w-full",
+              organizationSwitcherTrigger:
+                "w-full justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white hover:bg-white/10 transition-colors",
+            },
+          }}
+        />
       </div>
 
       {/* Nav */}
