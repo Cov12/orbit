@@ -16,6 +16,7 @@ export default function DrivePage() {
 
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [folders, setFolders] = useState<DriveFolder[]>([]);
+  const [breadcrumbs, setBreadcrumbs] = useState<DriveFolder[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedFile, setSelectedFile] = useState<DriveFile | null>(null);
@@ -33,6 +34,7 @@ export default function DrivePage() {
       ]);
       setFiles(fileRes.files);
       setFolders(folderRes.folders);
+      setBreadcrumbs((folderRes as any).breadcrumbs || []);
     } catch {
       // silently fail — Clerk may not be ready
     } finally {
@@ -84,12 +86,21 @@ export default function DrivePage() {
           <button onClick={() => router.push("/drive")} className={`text-sm font-medium transition ${!folderId ? "text-white" : "text-slate-400 hover:text-white"}`}>
             My Drive
           </button>
-          {folderId && (
-            <>
+          {breadcrumbs.map((crumb) => (
+            <span key={crumb.id} className="flex items-center gap-2">
               <span className="text-slate-600">/</span>
-              <span className="text-sm text-white font-medium">Subfolder</span>
-            </>
-          )}
+              {crumb.id === folderId ? (
+                <span className="text-sm text-white font-medium">{crumb.name}</span>
+              ) : (
+                <button
+                  onClick={() => navigateToFolder(crumb.id)}
+                  className="text-sm text-slate-400 hover:text-white transition font-medium"
+                >
+                  {crumb.name}
+                </button>
+              )}
+            </span>
+          ))}
           <div className="flex-1" />
           <div className="flex items-center gap-1 rounded-lg bg-white/5 p-0.5">
             <button onClick={() => setViewMode("grid")} className={`p-1.5 rounded-md transition ${viewMode === "grid" ? "bg-white/10 text-white" : "text-slate-500"}`}>
