@@ -2,6 +2,7 @@
 
 interface SubscriptionCardProps {
   name: string;
+  description: string;
   price: number;
   features: string[];
   highlighted?: boolean;
@@ -12,6 +13,7 @@ interface SubscriptionCardProps {
 
 export function SubscriptionCard({
   name,
+  description,
   price,
   features,
   highlighted,
@@ -34,7 +36,10 @@ export function SubscriptionCard({
       )}
 
       <div className="space-y-4">
-        <h3 className="font-semibold text-lg">{name}</h3>
+        <div>
+          <h3 className="font-semibold text-lg">{name}</h3>
+          <p className="text-sm text-gray-400 mt-1">{description}</p>
+        </div>
 
         <div className="flex items-baseline gap-1">
           <span className="text-4xl font-bold">${price}</span>

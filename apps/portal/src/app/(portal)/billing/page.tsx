@@ -6,6 +6,7 @@ import { SubscriptionCard } from "@/components/portal/subscription-card";
 const plans = [
   {
     name: "Free",
+    description: "Get started with the essentials. Perfect for solo founders exploring Orbit.",
     price: 0,
     plan: "FREE",
     features: [
@@ -18,6 +19,7 @@ const plans = [
   },
   {
     name: "Starter",
+    description: "For growing teams ready to unlock the full power of WorkPipe.",
     price: 0,
     plan: "STARTER",
     features: [
@@ -31,6 +33,7 @@ const plans = [
   },
   {
     name: "Pro",
+    description: "AI-powered operations. Your team gets a Fortune 500 org structure on autopilot.",
     price: 0,
     plan: "PRO",
     features: [
@@ -47,6 +50,7 @@ const plans = [
   },
   {
     name: "Enterprise",
+    description: "Full platform with white-label, custom integrations, and dedicated support.",
     price: 0,
     plan: "ENTERPRISE",
     features: [
@@ -117,6 +121,7 @@ export default function BillingPage() {
             <SubscriptionCard
               key={p.name}
               name={p.name}
+              description={p.description}
               price={p.price}
               features={p.features}
               highlighted={p.highlighted}
