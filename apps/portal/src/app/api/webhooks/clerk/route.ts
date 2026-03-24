@@ -43,93 +43,96 @@ export async function POST(req: Request) {
 
   try {
     switch (type) {
-      case "organization.created": {
-        const { id, name, slug } = data as { id: string; name: string; slug: string };
-        await db.organization.create({
-          data: {
-            name,
-            slug,
-            clerkOrgId: id,
-            subscriptions: {
-              create: { plan: "FREE", status: "ACTIVE" },
+      case "user.created": {
+        // Auto-create a personal workspace for new users
+        const { id, email_addresses, first_name, last_name } = data as {
+          id: string;
+          email_addresses: Array<{ email_address: string }>;
+          first_name?: string;
+          last_name?: string;
+        };
+
+        const email = email_addresses?.[0]?.email_address;
+        const displayName = [first_name, last_name].filter(Boolean).join(" ") || "My Workspace";
+
+        // Check if user already has a workspace (e.g., created via /api/workspaces)
+        const existing = await db.member.findFirst({
+          where: { clerkUserId: id },
+        });
+
+        if (!existing) {
+          await db.organization.create({
+            data: {
+              name: `${displayName}'s Workspace`,
+              slug: `ws-${id.slice(-8).toLowerCase()}`,
+              members: {
+                create: {
+                  clerkUserId: id,
+                  email,
+                  name: displayName !== "My Workspace" ? displayName : null,
+                  role: "OWNER",
+                },
+              },
+              subscriptions: {
+                create: { plan: "FREE", status: "ACTIVE" },
+              },
+              appAccess: {
+                create: [
+                  { app: "WORKPIPE", enabled: true },
+                  { app: "DRIVE", enabled: true },
+                ],
+              },
             },
-            appAccess: {
-              create: { app: "WORKPIPE", enabled: true },
+          });
+        }
+        break;
+      }
+
+      case "user.updated": {
+        const { id, email_addresses, first_name, last_name } = data as {
+          id: string;
+          email_addresses: Array<{ email_address: string }>;
+          first_name?: string;
+          last_name?: string;
+        };
+
+        const email = email_addresses?.[0]?.email_address;
+        const name = [first_name, last_name].filter(Boolean).join(" ") || null;
+
+        // Update all member records for this user
+        await db.member.updateMany({
+          where: { clerkUserId: id },
+          data: { email, name },
+        });
+        break;
+      }
+
+      case "user.deleted": {
+        const { id } = data as { id: string };
+
+        // Find all workspaces where user is OWNER and sole member
+        const ownedMemberships = await db.member.findMany({
+          where: { clerkUserId: id, role: "OWNER" },
+          include: {
+            org: {
+              include: { members: true },
             },
           },
         });
-        break;
-      }
 
-      case "organization.updated": {
-        const { id, name, slug } = data as { id: string; name: string; slug: string };
-        await db.organization.update({
-          where: { clerkOrgId: id },
-          data: { name, slug },
-        });
-        break;
-      }
-
-      case "organization.deleted": {
-        const { id } = data as { id: string };
-        await db.organization.delete({
-          where: { clerkOrgId: id },
-        });
-        break;
-      }
-
-      case "organizationMembership.created": {
-        const membership = data as {
-          organization: { id: string };
-          public_user_data: { user_id: string; identifier?: string; first_name?: string; last_name?: string };
-          role: string;
-        };
-        const org = await db.organization.findUnique({
-          where: { clerkOrgId: membership.organization.id },
-        });
-        if (org) {
-          const userData = membership.public_user_data;
-          const name = [userData.first_name, userData.last_name].filter(Boolean).join(" ") || null;
-          await db.member.upsert({
-            where: {
-              clerkUserId_orgId: {
-                clerkUserId: userData.user_id,
-                orgId: org.id,
-              },
-            },
-            create: {
-              clerkUserId: userData.user_id,
-              email: userData.identifier,
-              name,
-              orgId: org.id,
-              role: membership.role === "admin" ? "ADMIN" : "MEMBER",
-            },
-            update: {
-              role: membership.role === "admin" ? "ADMIN" : "MEMBER",
-              email: userData.identifier,
-              name,
-            },
-          });
+        // Delete workspaces where user is the only member
+        for (const membership of ownedMemberships) {
+          if (membership.org.members.length === 1) {
+            await db.organization.delete({
+              where: { id: membership.org.id },
+            });
+          }
         }
-        break;
-      }
 
-      case "organizationMembership.deleted": {
-        const membership = data as {
-          organization: { id: string };
-          public_user_data: { user_id: string };
-        };
-        const org = await db.organization.findUnique({
-          where: { clerkOrgId: membership.organization.id },
+        // Remove user from any remaining workspaces
+        await db.member.deleteMany({
+          where: { clerkUserId: id },
         });
-        if (org) {
-          await db.member.deleteMany({
-            where: {
-              clerkUserId: membership.public_user_data.user_id,
-              orgId: org.id,
-            },
-          });
-        }
         break;
       }
 
