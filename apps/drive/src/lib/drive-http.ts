@@ -19,8 +19,10 @@ export function driveErrorResponse(error: unknown) {
     }
   }
 
-  console.error("[Drive API]", error);
-  return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  const errorDetail = error instanceof Error ? error.message : String(error);
+  const errorStack = error instanceof Error ? error.stack?.split('\n').slice(0, 3).join(' | ') : '';
+  console.error("[Drive API]", errorDetail, errorStack);
+  return NextResponse.json({ error: "Internal server error", debug: errorDetail }, { status: 500 });
 }
 
 export function serializeBigInts<T>(payload: T): T {
