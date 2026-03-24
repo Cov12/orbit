@@ -13,13 +13,16 @@
     "@aws-sdk/s3-request-presigner": "^3.1011.0",
     "@clerk/nextjs": "^6.39.0",
     "@clerk/themes": "^2.4.57",
+    "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.4.2",
     "@prisma/fetch-engine": "^7.5.0",
     "@stripe/stripe-js": "^8.8.0",
+    "@tailwindcss/postcss": "^4.2.2",
     "@types/jsonwebtoken": "^9.0.10",
     "clsx": "^2.1.1",
     "jsonwebtoken": "^9.0.3",
     "next": "16.1.6",
+    "pg": "^8.20.0",
     "postcss": "^8.5.8",
     "prisma": "^7.4.2",
     "react": "19.2.3",
@@ -27,8 +30,7 @@
     "stripe": "^20.4.0",
     "svix": "^1.86.0",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss": "^4.2.2",
-    "@tailwindcss/postcss": "^4.2.2"
+    "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
     "@types/node": "^20",
