@@ -11,7 +11,7 @@ const plans = [
     plan: "FREE",
     features: [
       "1 team member",
-      "Basic CRM (WorkPipe)",
+      "WorkPipe CRM (basic)",
       "Orbit Drive (1 GB)",
       "100 contacts",
       "Community support",
@@ -24,7 +24,7 @@ const plans = [
     plan: "STARTER",
     features: [
       "5 team members",
-      "Full CRM (WorkPipe)",
+      "WorkPipe CRM",
       "Orbit Drive (10 GB)",
       "1,000 contacts",
       "Email support",
@@ -38,7 +38,7 @@ const plans = [
     plan: "PRO",
     features: [
       "25 team members",
-      "Full CRM (WorkPipe)",
+      "WorkPipe CRM",
       "Orbit Drive (100 GB)",
       "Atrium (AI departments)",
       "Unlimited contacts",
@@ -55,7 +55,7 @@ const plans = [
     plan: "ENTERPRISE",
     features: [
       "Unlimited team members",
-      "Full CRM (WorkPipe)",
+      "WorkPipe CRM",
       "Orbit Drive (unlimited)",
       "Atrium (AI departments)",
       "Unlimited contacts",
