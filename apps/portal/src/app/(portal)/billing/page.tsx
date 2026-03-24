@@ -1,25 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import { SubscriptionCard } from "@/components/portal/subscription-card";
 
 const plans = [
   {
     name: "Free",
     price: 0,
+    plan: "FREE",
     features: [
       "1 team member",
       "Basic CRM (WorkPipe)",
+      "Orbit Drive (1 GB)",
       "100 contacts",
       "Community support",
     ],
-    current: true,
   },
   {
     name: "Starter",
     price: 0,
+    plan: "STARTER",
     features: [
       "5 team members",
       "Full CRM (WorkPipe)",
+      "Orbit Drive (10 GB)",
       "1,000 contacts",
       "Email support",
       "Basic automations",
@@ -28,9 +32,11 @@ const plans = [
   {
     name: "Pro",
     price: 0,
+    plan: "PRO",
     features: [
       "25 team members",
       "Full CRM (WorkPipe)",
+      "Orbit Drive (100 GB)",
       "Atrium (AI departments)",
       "Unlimited contacts",
       "Priority support",
@@ -42,9 +48,11 @@ const plans = [
   {
     name: "Enterprise",
     price: 0,
+    plan: "ENTERPRISE",
     features: [
       "Unlimited team members",
       "Full CRM (WorkPipe)",
+      "Orbit Drive (unlimited)",
       "Atrium (AI departments)",
       "Unlimited contacts",
       "Dedicated support",
@@ -57,6 +65,28 @@ const plans = [
 ];
 
 export default function BillingPage() {
+  const [loading, setLoading] = useState<string | null>(null);
+
+  async function handleSelect(plan: string) {
+    if (plan === "FREE") return;
+    setLoading(plan);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      // noop
+    } finally {
+      setLoading(null);
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div>
@@ -83,18 +113,16 @@ export default function BillingPage() {
       <div>
         <h2 className="text-lg font-semibold mb-6">Choose a Plan</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {plans.map((plan) => (
+          {plans.map((p) => (
             <SubscriptionCard
-              key={plan.name}
-              name={plan.name}
-              price={plan.price}
-              features={plan.features}
-              highlighted={plan.highlighted}
-              current={plan.current}
-              onSelect={() => {
-                // TODO: Stripe checkout session
-                console.log(`Selected plan: ${plan.name}`);
-              }}
+              key={p.name}
+              name={p.name}
+              price={p.price}
+              features={p.features}
+              highlighted={p.highlighted}
+              current={p.plan === "FREE"}
+              loading={loading === p.plan}
+              onSelect={() => handleSelect(p.plan)}
             />
           ))}
         </div>

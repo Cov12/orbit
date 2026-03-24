@@ -6,6 +6,7 @@ interface SubscriptionCardProps {
   features: string[];
   highlighted?: boolean;
   current?: boolean;
+  loading?: boolean;
   onSelect?: () => void;
 }
 
@@ -15,6 +16,7 @@ export function SubscriptionCard({
   features,
   highlighted,
   current,
+  loading,
   onSelect,
 }: SubscriptionCardProps) {
   return (
@@ -50,16 +52,18 @@ export function SubscriptionCard({
 
         <button
           onClick={onSelect}
-          disabled={current}
+          disabled={current || loading}
           className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all ${
             current
               ? "bg-white/5 text-gray-500 cursor-default"
-              : highlighted
-                ? "gradient-primary hover:opacity-90"
-                : "bg-white/10 hover:bg-white/15 text-white"
+              : loading
+                ? "bg-white/5 text-gray-400 cursor-wait"
+                : highlighted
+                  ? "gradient-primary hover:opacity-90"
+                  : "bg-white/10 hover:bg-white/15 text-white"
           }`}
         >
-          {current ? "Current Plan" : "Upgrade"}
+          {current ? "Current Plan" : loading ? "Redirecting..." : "Upgrade"}
         </button>
       </div>
     </div>
