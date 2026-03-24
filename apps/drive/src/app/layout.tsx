@@ -13,12 +13,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider
-      isSatellite
-      domain="drive.orbit.example"
-      signInUrl="https://portal.orbit.example/sign-in"
-      signUpUrl="https://portal.orbit.example/sign-up"
-      signInForceRedirectUrl="https://drive.orbit.example/drive"
-      signUpForceRedirectUrl="https://drive.orbit.example/drive"
       appearance={{
         baseTheme: dark,
         variables: {
