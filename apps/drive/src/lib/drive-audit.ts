@@ -18,7 +18,7 @@ export async function logDriveAudit(input: {
       userId: input.userId,
       fileId: input.fileId,
       action: input.action,
-      metadata: input.metadata,
+      metadata: input.metadata as any,
       ip,
       userAgent,
     },
