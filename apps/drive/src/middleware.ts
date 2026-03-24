@@ -10,8 +10,9 @@ const isApiRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  // Allow public share downloads (no auth required)
   const url = new URL(req.url);
+
+  // Allow public share downloads (no auth required)
   if (url.pathname.includes('/download') && url.searchParams.has('token')) {
     return;
   }
@@ -22,17 +23,19 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (isProtectedRoute(req)) {
-    try {
-      await auth.protect();
-    } catch {
-      // Return JSON 401 for API routes instead of Clerk's HTML redirect
+    const { userId } = await auth();
+    if (!userId) {
+      // Return JSON 401 for API routes (called by frontend JS)
       if (isApiRoute(req)) {
         return NextResponse.json(
-          { error: 'Unauthorized', message: 'Authentication required' },
+          { error: 'Unauthorized', message: 'Authentication required. Please sign in at portal.orbit.example' },
           { status: 401 }
         );
       }
-      throw new Error('Unauthorized');
+      // Redirect browser requests to Portal sign-in
+      const signInUrl = new URL('https://portal.orbit.example/sign-in');
+      signInUrl.searchParams.set('redirect_url', req.url);
+      return NextResponse.redirect(signInUrl);
     }
   }
 });
