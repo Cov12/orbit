@@ -43,7 +43,7 @@ export default function UploadModal({ folderId, onUploaded, onClose }: Props) {
       setItems((prev) => prev.map((item, idx) => idx === i ? { ...item, status: "uploading" } : item));
 
       try {
-        const { uploadUrl } = await driveClient.initUpload(
+        const { fileId, uploadUrl } = await driveClient.initUpload(
           items[i].file.name,
           items[i].file.type || "application/octet-stream",
           items[i].file.size,
@@ -53,6 +53,9 @@ export default function UploadModal({ folderId, onUploaded, onClose }: Props) {
         await driveClient.uploadToR2(uploadUrl, items[i].file, (pct) => {
           setItems((prev) => prev.map((item, idx) => idx === i ? { ...item, progress: pct } : item));
         });
+
+        // Confirm upload — flips status from UPLOADING to ACTIVE
+        await driveClient.confirmUpload(fileId);
 
         setItems((prev) => prev.map((item, idx) => idx === i ? { ...item, status: "done", progress: 100 } : item));
       } catch (err) {

@@ -80,7 +80,12 @@ export const driveClient = {
     return apiFetch<{ success: boolean }>(`/api/drive/files/${fileId}`, { method: 'DELETE' });
   },
 
-  // Upload: 2-step (get presigned URL, then PUT to R2)
+  // Confirm upload (flip status UPLOADING → ACTIVE)
+  confirmUpload(fileId: string) {
+    return apiFetch<{ file: DriveFile }>(`/api/drive/files/${fileId}`, { method: 'POST' });
+  },
+
+  // Upload: 3-step (get presigned URL, PUT to R2, confirm)
   initUpload(name: string, mimeType: string, size: number, folderId?: string | null) {
     return apiFetch<UploadInitResponse>('/api/drive/upload', {
       method: 'POST',
