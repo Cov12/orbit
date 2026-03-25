@@ -40,3 +40,44 @@
 @utility gradient-primary {
   background-image: linear-gradient(to right, #2B2FFF, #6961ff);
 }
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 0%; }
+  25% { background-position: 100% 0%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes float-slower {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-40px, 30px) scale(1.1); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(20px, -30px); }
+  50% { transform: translate(-10px, 15px); }
+  75% { transform: translate(15px, 10px); }
+}
+
+@utility animate-gradient-shift {
+  animation: gradient-shift 20s ease infinite;
+}
+
+@utility animate-float-slow {
+  animation: float-slow 15s ease-in-out infinite;
+}
+
+@utility animate-float-slower {
+  animation: float-slower 20s ease-in-out infinite;
+}
+
+@utility animate-float-medium {
+  animation: float-medium 12s ease-in-out infinite;
+}

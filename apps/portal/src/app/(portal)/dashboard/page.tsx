@@ -28,16 +28,17 @@ export default async function DashboardPage() {
         </div>
         <div className="glass p-5">
           <p className="text-sm text-gray-400">Active Apps</p>
-          <p className="text-xl font-semibold mt-1">1</p>
+          <p className="text-xl font-semibold mt-1">2</p>
         </div>
       </div>
 
       {/* Apps */}
       <div>
         <h2 className="text-lg font-semibold mb-4">Your Apps</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AppCard
             name="WorkPipe CRM"
+            slug="workpipe"
             description="Pipelines, contacts, invoices, and automations. Everything you need to run your business."
             icon={
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -46,10 +47,10 @@ export default async function DashboardPage() {
             }
             color="#2B2FFF"
             status="active"
-            url={process.env.NEXT_PUBLIC_WORKPIPE_URL}
           />
           <AppCard
             name="Orbit Drive"
+            slug="drive"
             description="Banking-grade encrypted file storage for your organization. Upload, share, and manage files securely."
             icon={
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -58,10 +59,10 @@ export default async function DashboardPage() {
             }
             color="#6961ff"
             status="active"
-            url={process.env.NEXT_PUBLIC_DRIVE_URL}
           />
           <AppCard
             name="Atrium"
+            slug="atrium"
             description="AI department heads for sales, support, and operations. Fortune 500 leverage for small teams."
             icon={
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

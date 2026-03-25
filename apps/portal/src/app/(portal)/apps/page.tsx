@@ -13,6 +13,7 @@ export default function AppsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AppCard
           name="WorkPipe CRM"
+          slug="workpipe"
           description="Full-featured CRM with pipelines, contacts, invoices, and automations for small businesses."
           icon={
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -21,11 +22,11 @@ export default function AppsPage() {
           }
           color="#2B2FFF"
           status="active"
-          url={process.env.NEXT_PUBLIC_WORKPIPE_URL}
         />
 
         <AppCard
           name="Orbit Drive"
+          slug="drive"
           description="Banking-grade encrypted file storage for your workspace. Upload, share, and manage files securely."
           icon={
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -34,11 +35,11 @@ export default function AppsPage() {
           }
           color="#6961ff"
           status="active"
-          url={process.env.NEXT_PUBLIC_DRIVE_URL}
         />
 
         <AppCard
           name="Atrium"
+          slug="atrium"
           description="AI-powered department heads that handle sales, support, and operations on autopilot."
           icon={
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -51,6 +52,7 @@ export default function AppsPage() {
 
         <AppCard
           name="More Coming Soon"
+          slug=""
           description="We're building more tools to help your business grow. Stay tuned."
           icon={
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

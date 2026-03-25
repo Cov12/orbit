@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
+
 interface AppCardProps {
   name: string;
+  slug: string;
   description: string;
   icon: React.ReactNode;
   color: string;
@@ -15,44 +18,40 @@ const statusBadge = {
   coming_soon: { label: "Coming Soon", class: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
 };
 
-export function AppCard({ name, description, icon, color, status, url }: AppCardProps) {
+export function AppCard({ name, slug, description, icon, color, status }: AppCardProps) {
   const badge = statusBadge[status];
+  const Wrapper = slug ? Link : "div";
+  const wrapperProps = slug ? { href: `/apps/${slug}`, className: "block" } : { className: "block" };
 
   return (
-    <div className="glass-hover p-6 space-y-4">
-      <div className="flex items-start justify-between">
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center"
-          style={{ backgroundColor: `${color}20` }}
-        >
-          <div style={{ color }}>{icon}</div>
+    <Wrapper {...(wrapperProps as any)}>
+      <div className={`glass-hover p-6 space-y-4 ${slug ? "cursor-pointer" : ""}`}>
+        <div className="flex items-start justify-between">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: `${color}20` }}
+          >
+            <div style={{ color }}>{icon}</div>
+          </div>
+          <span className={`text-xs px-2.5 py-1 rounded-full border ${badge.class}`}>
+            {badge.label}
+          </span>
         </div>
-        <span className={`text-xs px-2.5 py-1 rounded-full border ${badge.class}`}>
-          {badge.label}
-        </span>
-      </div>
 
-      <div>
-        <h3 className="font-semibold text-lg">{name}</h3>
-        <p className="text-sm text-gray-400 mt-1">{description}</p>
-      </div>
+        <div>
+          <h3 className="font-semibold text-lg">{name}</h3>
+          <p className="text-sm text-gray-400 mt-1">{description}</p>
+        </div>
 
-      {status === "active" && url ? (
-        <a
-          href={url}
-          className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80"
-          style={{ color }}
-        >
-          Launch →
-        </a>
-      ) : status === "inactive" ? (
-        <a
-          href="/billing"
-          className="inline-flex items-center gap-2 text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors"
-        >
-          View Plans →
-        </a>
-      ) : null}
-    </div>
+        {slug && (
+          <span
+            className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
+            style={{ color }}
+          >
+            View Details →
+          </span>
+        )}
+      </div>
+    </Wrapper>
   );
 }
