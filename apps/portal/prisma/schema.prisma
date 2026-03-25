@@ -43,6 +43,7 @@ enum MemberRole {
 model Subscription {
   id               String       @id @default(cuid())
   orgId            String
+  app              AppType
   stripeCustomerId String?
   stripeSubId      String?      @unique
   plan             Plan         @default(FREE)
@@ -52,7 +53,7 @@ model Subscription {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  @@unique([orgId])
+  @@unique([orgId, app])
   @@index([orgId])
 }
 
@@ -60,6 +61,8 @@ enum Plan {
   FREE
   STARTER
   PRO
+  BUSINESS
+  GROWTH
   ENTERPRISE
 }
 

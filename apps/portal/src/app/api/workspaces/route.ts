@@ -41,7 +41,10 @@ export async function GET() {
             },
           },
           subscriptions: {
-            create: { plan: "FREE", status: "ACTIVE" },
+            create: [
+              { app: "WORKPIPE", plan: "FREE", status: "ACTIVE" },
+              { app: "DRIVE", plan: "FREE", status: "ACTIVE" },
+            ],
           },
           appAccess: {
             create: [

@@ -3,67 +3,109 @@
 import { useState } from "react";
 import { SubscriptionCard } from "@/components/portal/subscription-card";
 
-const plans = [
-  {
-    name: "Free",
-    description: "Get started with the essentials. Perfect for solo founders exploring Orbit.",
-    price: 0,
-    plan: "FREE",
-    features: [
-      "1 team member",
-      "WorkPipe CRM (basic)",
-      "Orbit Drive (1 GB)",
-      "100 contacts",
-      "Community support",
-    ],
-  },
+const workpipePlans = [
   {
     name: "Starter",
-    description: "For growing teams ready to unlock the full power of WorkPipe.",
+    description: "For solo operators getting started with CRM.",
     price: 0,
+    app: "WORKPIPE",
     plan: "STARTER",
     features: [
-      "5 team members",
-      "WorkPipe CRM",
-      "Orbit Drive (10 GB)",
-      "1,000 contacts",
-      "Email support",
+      "1 user",
+      "500 contacts",
+      "Pipelines & deals",
       "Basic automations",
+      "Invoicing",
+      "Orbit Drive (1 GB)",
     ],
   },
   {
     name: "Pro",
-    description: "AI-powered operations. Your team gets a Fortune 500 org structure on autopilot.",
+    description: "For growing teams that need the full CRM toolkit.",
     price: 0,
+    app: "WORKPIPE",
     plan: "PRO",
     features: [
-      "25 team members",
-      "WorkPipe CRM",
-      "Orbit Drive (100 GB)",
-      "Atrium (AI departments)",
+      "5 users",
+      "5,000 contacts",
+      "Full automations",
+      "Reporting & analytics",
+      "API access",
+      "Orbit Drive (10 GB)",
+    ],
+    highlighted: true,
+  },
+  {
+    name: "Business",
+    description: "For companies that need scale and customization.",
+    price: 0,
+    app: "WORKPIPE",
+    plan: "BUSINESS",
+    features: [
+      "25 users",
       "Unlimited contacts",
+      "Advanced reporting",
+      "Custom fields",
       "Priority support",
-      "Advanced automations",
-      "Voice mode",
+      "Orbit Drive (50 GB)",
+    ],
+  },
+];
+
+const atriumPlans = [
+  {
+    name: "Starter",
+    description: "Try AI-powered departments for your business.",
+    price: 0,
+    app: "ATRIUM",
+    plan: "STARTER",
+    features: [
+      "1 user",
+      "3 AI department heads",
+      "— AI interactions/mo",
+      "Voice mode (limited)",
+      "WorkPipe CRM included",
+      "Delegated mode",
+      "Knowledge base",
+      "Orbit Drive (5 GB)",
+    ],
+  },
+  {
+    name: "Growth",
+    description: "Full AI organization for teams ready to scale.",
+    price: 0,
+    app: "ATRIUM",
+    plan: "GROWTH",
+    features: [
+      "5 users",
+      "All 8 AI department heads",
+      "— AI interactions/mo",
+      "Full voice mode",
+      "WorkPipe CRM included",
+      "Priority model routing",
+      "Cross-dept reasoning",
+      "Advanced RAG",
+      "Orbit Drive (50 GB)",
     ],
     highlighted: true,
   },
   {
     name: "Enterprise",
-    description: "Full platform with white-label, custom integrations, and dedicated support.",
+    description: "Dedicated AI infrastructure with white-label options.",
     price: 0,
+    app: "ATRIUM",
     plan: "ENTERPRISE",
     features: [
-      "Unlimited team members",
-      "WorkPipe CRM",
-      "Orbit Drive (unlimited)",
-      "Atrium (AI departments)",
-      "Unlimited contacts",
-      "Dedicated support",
-      "Custom integrations",
-      "Voice mode",
+      "Unlimited users",
+      "All dept heads + custom",
+      "Unlimited AI interactions",
+      "Full voice mode",
+      "WorkPipe CRM included",
+      "Dedicated infrastructure",
+      "SSO & SLA guarantee",
       "White-label option",
-      "SLA guarantee",
+      "Custom integrations",
+      "Orbit Drive (unlimited)",
     ],
   },
 ];
@@ -71,14 +113,14 @@ const plans = [
 export default function BillingPage() {
   const [loading, setLoading] = useState<string | null>(null);
 
-  async function handleSelect(plan: string) {
-    if (plan === "FREE") return;
-    setLoading(plan);
+  async function handleSelect(app: string, plan: string) {
+    const key = `${app}-${plan}`;
+    setLoading(key);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ app, plan }),
       });
       const data = await res.json();
       if (data.url) {
@@ -92,46 +134,92 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-12">
       <div>
         <h1 className="text-2xl font-bold">Billing</h1>
         <p className="text-gray-400 mt-1">
-          Manage your subscription and payment methods.
+          Subscribe to the products you need. Orbit Drive is included free with any plan.
         </p>
       </div>
 
-      {/* Current Plan */}
-      <div className="glass p-6 flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-400">Current Plan</p>
-          <p className="text-xl font-semibold mt-1">Free</p>
-          <p className="text-sm text-gray-500 mt-0.5">1 team member · 100 contacts</p>
+      {/* WorkPipe CRM */}
+      <section>
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-[#2B2FFF]/20 flex items-center justify-center">
+              <svg className="w-5 h-5 text-[#2B2FFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">WorkPipe CRM</h2>
+              <p className="text-sm text-gray-400">Full-featured CRM built for small businesses.</p>
+            </div>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-400">Next billing date</p>
-          <p className="text-sm font-medium mt-1">—</p>
-        </div>
-      </div>
-
-      {/* Plan Comparison */}
-      <div>
-        <h2 className="text-lg font-semibold mb-6">Choose a Plan</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {plans.map((p) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {workpipePlans.map((p) => (
             <SubscriptionCard
-              key={p.name}
+              key={`wp-${p.plan}`}
               name={p.name}
               description={p.description}
               price={p.price}
               features={p.features}
               highlighted={p.highlighted}
-              current={p.plan === "FREE"}
-              loading={loading === p.plan}
-              onSelect={() => handleSelect(p.plan)}
+              loading={loading === `${p.app}-${p.plan}`}
+              onSelect={() => handleSelect(p.app, p.plan)}
             />
           ))}
         </div>
-      </div>
+      </section>
+
+      {/* Atrium */}
+      <section>
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-[#20B2AA]/20 flex items-center justify-center">
+              <svg className="w-5 h-5 text-[#20B2AA]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Atrium</h2>
+              <p className="text-sm text-gray-400">AI-powered department heads. Fortune 500 leverage for small teams.</p>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {atriumPlans.map((p) => (
+            <SubscriptionCard
+              key={`aos-${p.plan}`}
+              name={p.name}
+              description={p.description}
+              price={p.price}
+              features={p.features}
+              highlighted={p.highlighted}
+              loading={loading === `${p.app}-${p.plan}`}
+              onSelect={() => handleSelect(p.app, p.plan)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Orbit Drive — Free */}
+      <section>
+        <div className="glass p-6 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-[#6961ff]/20 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-[#6961ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.338-2.338 4.502 4.502 0 013.516 5.855A4.5 4.5 0 0117.25 19.5H6.75z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="font-semibold text-lg">Orbit Drive</h3>
+            <p className="text-sm text-gray-400">
+              Secure encrypted file storage — <span className="text-[#20B2AA] font-medium">free</span> with any subscription. Storage scales with your plan.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

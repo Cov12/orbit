@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
-import type { Plan, SubStatus } from "@prisma/client";
+import type { AppType, Plan, SubStatus } from "@prisma/client";
 import Stripe from "stripe";
 
 export async function POST(req: Request) {
@@ -31,15 +31,17 @@ export async function POST(req: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const orgId = session.metadata?.orgId;
+        const app = (session.metadata?.app as AppType) || "WORKPIPE";
         const plan = (session.metadata?.plan as Plan) || "STARTER";
 
         if (orgId && session.subscription) {
           const sub = await getStripe().subscriptions.retrieve(session.subscription as string);
 
           await db.subscription.upsert({
-            where: { orgId },
+            where: { orgId_app: { orgId, app } },
             create: {
               orgId,
+              app,
               stripeCustomerId: session.customer as string,
               stripeSubId: sub.id,
               plan,
@@ -55,11 +57,18 @@ export async function POST(req: Request) {
             },
           });
 
-          // Enable app access based on plan
-          if (plan === "PRO" || plan === "ENTERPRISE") {
+          // Enable app access
+          await db.appAccess.upsert({
+            where: { orgId_app: { orgId, app } },
+            create: { orgId, app, enabled: true },
+            update: { enabled: true },
+          });
+
+          // Atrium includes WorkPipe — enable it too
+          if (app === "ATRIUM") {
             await db.appAccess.upsert({
-              where: { orgId_app: { orgId, app: "ATRIUM" } },
-              create: { orgId, app: "ATRIUM", enabled: true },
+              where: { orgId_app: { orgId, app: "WORKPIPE" } },
+              create: { orgId, app: "WORKPIPE", enabled: true },
               update: { enabled: true },
             });
           }
@@ -96,19 +105,17 @@ export async function POST(req: Request) {
         const sub = event.data.object as Stripe.Subscription;
         const existing = await db.subscription.findUnique({
           where: { stripeSubId: sub.id },
-          include: { org: true },
         });
 
         if (existing) {
-          // Downgrade to free
           await db.subscription.update({
             where: { stripeSubId: sub.id },
             data: { status: "CANCELED", plan: "FREE" },
           });
 
-          // Disable Atrium access
+          // Disable app access
           await db.appAccess.updateMany({
-            where: { orgId: existing.orgId, app: "ATRIUM" },
+            where: { orgId: existing.orgId, app: existing.app },
             data: { enabled: false },
           });
         }
