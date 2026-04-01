@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { SubscriptionCard } from "@/components/portal/subscription-card";
 
+type Interval = "monthly" | "annual";
+
 const workpipePlans = [
   {
     name: "Starter",
     description: "For solo operators getting started with CRM.",
     price: 0,
+    annualPrice: 0,
     app: "WORKPIPE",
     plan: "STARTER",
     features: [
@@ -23,6 +26,7 @@ const workpipePlans = [
     name: "Pro",
     description: "For growing teams that need the full CRM toolkit.",
     price: 0,
+    annualPrice: 0,
     app: "WORKPIPE",
     plan: "PRO",
     features: [
@@ -39,6 +43,7 @@ const workpipePlans = [
     name: "Business",
     description: "For companies that need scale and customization.",
     price: 0,
+    annualPrice: 0,
     app: "WORKPIPE",
     plan: "BUSINESS",
     features: [
@@ -57,6 +62,7 @@ const atriumPlans = [
     name: "Starter",
     description: "Try AI-powered departments for your business.",
     price: 0,
+    annualPrice: 0,
     app: "ATRIUM",
     plan: "STARTER",
     features: [
@@ -74,6 +80,7 @@ const atriumPlans = [
     name: "Growth",
     description: "Full AI organization for teams ready to scale.",
     price: 0,
+    annualPrice: 0,
     app: "ATRIUM",
     plan: "GROWTH",
     features: [
@@ -93,6 +100,7 @@ const atriumPlans = [
     name: "Enterprise",
     description: "Dedicated AI infrastructure with white-label options.",
     price: 0,
+    annualPrice: 0,
     app: "ATRIUM",
     plan: "ENTERPRISE",
     features: [
@@ -112,6 +120,7 @@ const atriumPlans = [
 
 export default function BillingPage() {
   const [loading, setLoading] = useState<string | null>(null);
+  const [interval, setInterval] = useState<Interval>("monthly");
 
   async function handleSelect(app: string, plan: string) {
     const key = `${app}-${plan}`;
@@ -120,7 +129,7 @@ export default function BillingPage() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ app, plan }),
+        body: JSON.stringify({ app, plan, interval }),
       });
       const data = await res.json();
       if (data.url) {
@@ -140,6 +149,28 @@ export default function BillingPage() {
         <p className="text-gray-400 mt-1">
           Subscribe to the products you need. Orbit Drive is included free with any plan.
         </p>
+      </div>
+
+      {/* Monthly / Annual Toggle */}
+      <div className="flex items-center justify-center gap-3">
+        <span className={`text-sm font-medium ${interval === "monthly" ? "text-white" : "text-gray-500"}`}>Monthly</span>
+        <button
+          onClick={() => setInterval(interval === "monthly" ? "annual" : "monthly")}
+          className={`relative w-14 h-7 rounded-full transition-colors ${
+            interval === "annual" ? "bg-[#20B2AA]" : "bg-white/20"
+          }`}
+          aria-label="Toggle billing interval"
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${
+              interval === "annual" ? "translate-x-7" : ""
+            }`}
+          />
+        </button>
+        <span className={`text-sm font-medium ${interval === "annual" ? "text-white" : "text-gray-500"}`}>
+          Annual
+          <span className="ml-1.5 text-xs text-[#20B2AA] font-semibold">Save 15%</span>
+        </span>
       </div>
 
       {/* WorkPipe CRM */}
@@ -166,6 +197,8 @@ export default function BillingPage() {
               price={p.price}
               features={p.features}
               highlighted={p.highlighted}
+              annualPrice={p.annualPrice}
+              interval={interval}
               loading={loading === `${p.app}-${p.plan}`}
               onSelect={() => handleSelect(p.app, p.plan)}
             />
@@ -197,6 +230,8 @@ export default function BillingPage() {
               price={p.price}
               features={p.features}
               highlighted={p.highlighted}
+              annualPrice={p.annualPrice}
+              interval={interval}
               loading={loading === `${p.app}-${p.plan}`}
               onSelect={() => handleSelect(p.app, p.plan)}
             />

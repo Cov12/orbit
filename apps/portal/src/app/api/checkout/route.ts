@@ -4,17 +4,17 @@ import { cookies } from "next/headers";
 import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 
-// Per-product pricing
-const PRICE_MAP: Record<string, Record<string, string>> = {
+// Per-product pricing: monthly and annual
+const PRICE_MAP: Record<string, Record<string, Record<string, string>>> = {
   WORKPIPE: {
-    STARTER: "price_REDACTED",   // $—/mo
-    PRO: "price_REDACTED",        // $—/mo
-    BUSINESS: "price_REDACTED",    // $—/mo
+    STARTER:  { monthly: "price_REDACTED", annual: "price_REDACTED" },
+    PRO:      { monthly: "price_REDACTED", annual: "price_REDACTED" },
+    BUSINESS: { monthly: "price_REDACTED", annual: "price_REDACTED" },
   },
   ATRIUM: {
-    STARTER: "price_REDACTED",     // $—/mo
-    GROWTH: "price_REDACTED",      // $—/mo
-    ENTERPRISE: "price_REDACTED",  // $—/mo
+    STARTER:    { monthly: "price_REDACTED", annual: "price_REDACTED" },
+    GROWTH:     { monthly: "price_REDACTED", annual: "price_REDACTED" },
+    ENTERPRISE: { monthly: "price_REDACTED", annual: "price_REDACTED" },
   },
 };
 
@@ -30,13 +30,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { app, plan } = await req.json();
+    const { app, plan, interval = "monthly" } = await req.json();
 
     if (!app || !PRICE_MAP[app]) {
       return NextResponse.json({ error: "Invalid app" }, { status: 400 });
     }
     if (!plan || !PRICE_MAP[app][plan]) {
       return NextResponse.json({ error: "Invalid plan for this app" }, { status: 400 });
+    }
+    if (interval !== "monthly" && interval !== "annual") {
+      return NextResponse.json({ error: "Invalid interval" }, { status: 400 });
     }
 
     // Find user's workspace
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
     const session = await getStripe().checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
-      line_items: [{ price: PRICE_MAP[app][plan], quantity: 1 }],
+      line_items: [{ price: PRICE_MAP[app][plan][interval], quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://portal.orbit.example"}/billing?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://portal.orbit.example"}/billing?canceled=true`,
       metadata: {

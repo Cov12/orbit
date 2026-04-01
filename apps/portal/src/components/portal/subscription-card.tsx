@@ -4,6 +4,8 @@ interface SubscriptionCardProps {
   name: string;
   description: string;
   price: number;
+  annualPrice?: number;
+  interval?: "monthly" | "annual";
   features: string[];
   highlighted?: boolean;
   current?: boolean;
@@ -15,12 +17,15 @@ export function SubscriptionCard({
   name,
   description,
   price,
+  annualPrice,
+  interval = "monthly",
   features,
   highlighted,
   current,
   loading,
   onSelect,
 }: SubscriptionCardProps) {
+  const displayPrice = interval === "annual" && annualPrice ? annualPrice : price;
   return (
     <div
       className={`relative p-6 rounded-2xl border transition-all ${
@@ -42,9 +47,14 @@ export function SubscriptionCard({
         </div>
 
         <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-bold">${price}</span>
-          <span className="text-sm text-gray-400">/month</span>
+          <span className="text-4xl font-bold">${displayPrice}</span>
+          <span className="text-sm text-gray-400">/{interval === "annual" ? "mo, billed yearly" : "month"}</span>
         </div>
+        {interval === "annual" && annualPrice && (
+          <p className="text-xs text-[#20B2AA]">
+            ${annualPrice * 12}/year — save ${(price * 12) - (annualPrice * 12)}/year
+          </p>
+        )}
 
         <ul className="space-y-2.5 pt-2">
           {features.map((feature) => (
