@@ -4,6 +4,8 @@ export type { Plan, SubStatus, MemberRole, AppType };
 
 export interface OrbitJwtPayload {
   sub: string;
+  email: string;
+  name: string;
   org_id: string;
   org_slug: string;
   role: MemberRole;

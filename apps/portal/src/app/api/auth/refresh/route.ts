@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
@@ -87,8 +87,18 @@ export async function GET(req: Request) {
 
     const member = org.members[0];
 
+    const clerkUser = (!member.email || !member.name) ? await currentUser() : null;
+    const email = member.email || clerkUser?.emailAddresses.find((entry) => entry.id === clerkUser.primaryEmailAddressId)?.emailAddress;
+    const name = member.name || [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ");
+
+    if (!email || !name) {
+      return NextResponse.json({ error: "Unable to resolve user profile" }, { status: 500 });
+    }
+
     const token = signOrbitToken({
       sub: userId,
+      email,
+      name,
       org_id: org.id,
       org_slug: org.slug,
       role: member.role,
