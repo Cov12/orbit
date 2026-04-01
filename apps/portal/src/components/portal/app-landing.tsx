@@ -147,7 +147,7 @@ export function AppLanding({
           <div className="flex gap-4 flex-wrap justify-center">
             {status === "active" && launchUrl ? (
               <a
-                href={launchUrl}
+                href={`/api/auth/refresh?redirect_uri=${encodeURIComponent(launchUrl + "/auth/callback")}`}
                 className="px-8 py-3 rounded-xl font-semibold text-white transition-all hover:scale-105 hover:shadow-lg hover:shadow-current/20"
                 style={{ backgroundColor: color }}
               >
