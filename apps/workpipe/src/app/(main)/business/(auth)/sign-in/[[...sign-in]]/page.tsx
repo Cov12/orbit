@@ -11,15 +11,18 @@ import { useEffect } from 'react'
  */
 const Page = () => {
   useEffect(() => {
-    const portalUrl = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'
-    const returnUrl = encodeURIComponent(window.location.origin + '/business')
-    window.location.href = `${portalUrl}/sign-in?redirect_url=${returnUrl}`
+    const portalUrl =
+      process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'
+    const callbackUrl = encodeURIComponent(
+      window.location.origin + '/auth/callback'
+    )
+    window.location.href = `${portalUrl}/api/auth/refresh?redirect_uri=${callbackUrl}`
   }, [])
 
   return (
     <div className="flex flex-col items-center justify-center gap-4">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary" />
-      <p className="text-muted-foreground text-sm">Redirecting to login...</p>
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-primary" />
+      <p className="text-sm text-muted-foreground">Redirecting to login...</p>
     </div>
   )
 }
