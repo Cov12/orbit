@@ -12,6 +12,8 @@ import jwt from 'jsonwebtoken'
 
 export interface PortalJwtPayload {
   sub: string // Clerk user ID (or whatever provider Portal uses)
+  email: string
+  name: string
   org_id: string // Workspace ID
   org_slug: string // Workspace slug
   role: string // OWNER | ADMIN | MEMBER

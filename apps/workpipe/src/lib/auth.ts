@@ -50,8 +50,8 @@ const getPortalUser = async (): Promise<{
     return {
       user: {
         id: payload.sub,
-        email: '', // Portal JWT doesn't include email currently — can be added
-        name: '', // Same — extend Portal JWT payload if needed
+        email: payload.email || '',
+        name: payload.name || '',
         avatar: '',
       },
       payload,
