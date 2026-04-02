@@ -1,6 +1,5 @@
 'use server'
 
-import { auth, clerkClient, currentUser } from '@clerk/nextjs/server'
 import { cookies } from 'next/headers'
 import { verifyPortalToken, PORTAL_TOKEN_COOKIE } from '@/lib/portal-jwt'
 import type { PortalJwtPayload } from '@/lib/portal-jwt'
@@ -8,15 +7,10 @@ import type { PortalJwtPayload } from '@/lib/portal-jwt'
 /**
  * WorkPipe Auth Wrapper
  *
- * Abstracts the auth source so the rest of the app doesn't care
- * whether the user came from Portal JWT or Clerk session.
+ * All authentication goes through Orbit Portal JWTs.
+ * WorkPipe has zero knowledge of what auth provider Portal uses.
  *
- * Priority:
- * 1. Portal JWT (orbit_token cookie) — primary, provider-agnostic
- * 2. Clerk session — legacy fallback
- *
- * When Clerk is fully decoupled, remove the Clerk fallback paths.
- * The AuthUser interface stays the same either way.
+ * To swap auth providers: change Portal only. This file stays the same.
  */
 
 export type AuthUser = {
@@ -24,16 +18,17 @@ export type AuthUser = {
   email: string
   name: string
   avatar: string
+  role: string
 }
 
 export type AuthContext = {
   userId: string | null
   orgId: string | null
-  source: 'portal' | 'clerk' | null
+  role: string | null
 }
 
 /**
- * Try to get user from Portal JWT cookie.
+ * Get user from Portal JWT cookie.
  */
 const getPortalUser = async (): Promise<{
   user: AuthUser
@@ -53,6 +48,7 @@ const getPortalUser = async (): Promise<{
         email: payload.email || '',
         name: payload.name || '',
         avatar: '',
+        role: payload.role || 'MEMBER',
       },
       payload,
     }
@@ -62,40 +58,11 @@ const getPortalUser = async (): Promise<{
 }
 
 /**
- * Try to get user from Clerk session (legacy fallback).
- */
-const getClerkUser = async (): Promise<AuthUser | null> => {
-  try {
-    const user = await currentUser()
-    if (!user) return null
-
-    const email = user.emailAddresses[0]?.emailAddress ?? ''
-    const name =
-      `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() ||
-      user.username ||
-      email
-
-    return {
-      id: user.id,
-      email,
-      name,
-      avatar: user.imageUrl ?? '',
-    }
-  } catch {
-    return null
-  }
-}
-
-/**
- * Get current user from any auth source.
+ * Get current user. Returns null if not authenticated.
  */
 export const getCurrentUser = async (): Promise<AuthUser | null> => {
-  // Priority 1: Portal JWT
   const portal = await getPortalUser()
-  if (portal) return portal.user
-
-  // Priority 2: Clerk (legacy)
-  return getClerkUser()
+  return portal?.user ?? null
 }
 
 /**
@@ -108,47 +75,52 @@ export const requireAuth = async (): Promise<AuthUser> => {
 }
 
 /**
- * Get auth context (userId + orgId) from any source.
+ * Get auth context (userId + orgId + role).
  */
 export const getAuthContext = async (): Promise<AuthContext> => {
-  // Priority 1: Portal JWT
   const portal = await getPortalUser()
   if (portal) {
     return {
       userId: portal.payload.sub,
       orgId: portal.payload.org_id,
-      source: 'portal',
+      role: portal.payload.role || 'MEMBER',
     }
   }
+  return { userId: null, orgId: null, role: null }
+}
 
-  // Priority 2: Clerk (legacy)
-  try {
-    const { userId, orgId } = await auth()
-    return {
-      userId,
-      orgId: orgId ?? null,
-      source: userId ? 'clerk' : null,
-    }
-  } catch {
-    return { userId: null, orgId: null, source: null }
+/**
+ * Stub for Clerk admin client.
+ * Used by queries.ts for user metadata and invitations.
+ * These operations are no-ops now — roles come from Portal JWT,
+ * invitations will move to Portal API in the CLIENT role implementation.
+ *
+ * @deprecated Remove once queries.ts is refactored to use Portal API
+ */
+export const getAuthAdmin = async () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const noOp = (..._args: any[]) => {
+    console.warn('[Auth] Clerk admin call skipped — using Portal JWT auth')
+    return Promise.resolve({ data: [] } as any)
   }
+  return {
+    users: {
+      updateUserMetadata: noOp,
+      getUser: noOp,
+      deleteUser: noOp,
+    },
+    invitations: {
+      getInvitationList: noOp,
+      createInvitation: noOp,
+      revokeInvitation: noOp,
+    },
+  } as any
 }
 
 /**
  * Get the raw Portal JWT payload (for subscription/access checks).
- * Returns null if user didn't come through Portal.
  */
 export const getPortalContext = async (): Promise<PortalJwtPayload | null> => {
   const portal = await getPortalUser()
   return portal?.payload ?? null
-}
-
-/**
- * Get Clerk admin client (for user management).
- * This is the ONLY export that's Clerk-specific.
- * Mark for removal when Clerk is fully decoupled.
- * @deprecated Will be removed when auth provider is swapped.
- */
-export const getAuthAdmin = async () => {
-  return clerkClient()
 }
