@@ -95,6 +95,7 @@ export default function WorkPipePage() {
         </svg>
       }
       videoUrl="/videos/workpipe-bg.mp4"
+      previewImage="/images/workpipe-preview.png"
       launchUrl={process.env.NEXT_PUBLIC_WORKPIPE_URL}
       status="active"
       features={features}

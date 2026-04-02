@@ -26,6 +26,7 @@ interface AppLandingProps {
   color: string;
   icon: React.ReactNode;
   videoUrl?: string;
+  previewImage?: string;
   launchUrl?: string;
   status: "active" | "inactive" | "coming_soon";
   features: Feature[];
@@ -40,6 +41,7 @@ export function AppLanding({
   color,
   icon,
   videoUrl,
+  previewImage,
   launchUrl,
   status,
   features,
@@ -175,6 +177,20 @@ export function AppLanding({
           </div>
         </div>
       </section>
+
+      {/* Preview Image */}
+      {previewImage && (
+        <section className="mb-12">
+          <div className="relative mx-auto max-w-5xl rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/40">
+            <img
+              src={previewImage}
+              alt={`${name} dashboard preview`}
+              className="w-full h-auto"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f13] via-transparent to-transparent opacity-60 pointer-events-none" />
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section>
