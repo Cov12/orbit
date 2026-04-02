@@ -1,51 +1,46 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 /**
- * WorkPipe Middleware — Dual Auth Strategy
+ * WorkPipe Middleware — Portal JWT Auth
  *
- * Auth priority:
- * 1. Portal JWT (orbit_token cookie) — primary path, provider-agnostic
- * 2. Clerk session — legacy fallback (will be removed when Clerk is fully decoupled)
+ * Auth flow:
+ * 1. Check for Portal JWT (orbit_token cookie)
+ * 2. On failure → redirect to Portal /api/auth/refresh
+ * 3. Portal handles authentication and redirects back with fresh JWT
  *
- * On auth failure for protected routes:
- * → Redirect to Portal /api/auth/refresh (NOT to Clerk sign-in)
- * → Portal handles re-authentication with whatever provider it uses
- * → Portal redirects back to /auth/callback with fresh JWT
+ * WorkPipe has ZERO knowledge of what auth provider Portal uses.
+ * To swap providers: change Portal only.
  */
 
 const PORTAL_TOKEN_COOKIE = 'orbit_token'
 
-// Public routes — no auth required
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/site',
-  '/site/(.*)',
+/** Routes that don't require authentication */
+const PUBLIC_PATHS = new Set([
   '/api/uploadthing',
-  '/api/internal/(.*)',
   '/auth/callback',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/business/sign-in(.*)',
-  '/business/sign-up(.*)',
+  '/api/health',
 ])
+
+const PUBLIC_PREFIXES = ['/api/internal/', '/site', '/_next']
+
+function isPublicRoute(pathname: string): boolean {
+  if (PUBLIC_PATHS.has(pathname)) return true
+  return PUBLIC_PREFIXES.some(p => pathname.startsWith(p))
+}
 
 /**
  * Check if a Portal JWT cookie exists and hasn't expired.
- * Note: Full signature verification happens server-side in route handlers.
- * Middleware only does a quick expiry check (JWT is base64, we can peek at exp).
+ * Only decodes the base64 payload — no crypto in edge middleware.
  */
 function hasValidPortalToken(req: NextRequest): boolean {
   const token = req.cookies.get(PORTAL_TOKEN_COOKIE)?.value
   if (!token) return false
 
   try {
-    // Decode JWT payload without verification (middleware can't do crypto)
     const parts = token.split('.')
     if (parts.length !== 3) return false
     const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString())
-    // Check expiry with 30s buffer
     return payload.exp && payload.exp > Date.now() / 1000 - 30
   } catch {
     return false
@@ -66,17 +61,17 @@ function redirectToPortal(req: NextRequest): NextResponse {
   )
 }
 
-export default clerkMiddleware(async (auth, req) => {
+export default function middleware(req: NextRequest) {
   const url = req.nextUrl
   const searchParams = url.searchParams.toString()
-  const hostname = req.headers
   const pathWithSearchParams = `${url.pathname}${searchParams.length > 0 ? `?${searchParams}` : ''}`
 
   // --- Subdomain rewriting (agency sites, etc.) ---
-  const customSubDomain = hostname
-    .get('host')
-    ?.split(`${process.env.NEXT_PUBLIC_DOMAIN}`)
-    .filter(Boolean)[0]
+  const hostname = req.headers.get('host') || ''
+  const domain = process.env.NEXT_PUBLIC_DOMAIN || ''
+  const customSubDomain = domain
+    ? hostname.split(domain).filter(Boolean)[0]
+    : null
 
   if (customSubDomain) {
     return NextResponse.rewrite(
@@ -84,85 +79,37 @@ export default clerkMiddleware(async (auth, req) => {
     )
   }
 
-  // --- Auth routes → redirect to Portal (single entry point) ---
+  // --- Sign-in/sign-up → redirect to Portal ---
   if (
     url.pathname === '/sign-in' ||
-    url.pathname.startsWith('/business/sign-in')
-  ) {
-    return redirectToPortal(req)
-  }
-
-  if (
+    url.pathname.startsWith('/business/sign-in') ||
     url.pathname === '/sign-up' ||
     url.pathname.startsWith('/business/sign-up')
   ) {
     return redirectToPortal(req)
   }
 
-  // --- Public routes → no auth needed ---
-  if (isPublicRoute(req)) {
-    // Root URL: authenticated users → dashboard, others → Portal
-    if (url.pathname === '/') {
-      if (hasValidPortalToken(req)) {
-        return NextResponse.redirect(new URL('/business', req.url))
-      }
-      // Check Clerk session as fallback
-      try {
-        const { userId } = await auth()
-        if (userId) {
-          return NextResponse.redirect(new URL('/business', req.url))
-        }
-      } catch {
-        // No auth — redirect to Portal
-      }
-      return redirectToPortal(req)
-    }
-
-    // /site route — still accessible directly for now (legacy)
-    if (
-      url.pathname === '/site' &&
-      url.host === process.env.NEXT_PUBLIC_DOMAIN
-    ) {
-      return NextResponse.rewrite(new URL('/site', req.url))
-    }
-
+  // --- Public routes → pass through ---
+  if (isPublicRoute(url.pathname)) {
     return NextResponse.next()
   }
 
-  // --- Protected routes: check auth ---
+  // --- Root → smart route ---
+  if (url.pathname === '/') {
+    if (hasValidPortalToken(req)) {
+      return NextResponse.redirect(new URL('/business', req.url))
+    }
+    return redirectToPortal(req)
+  }
 
-  // Priority 1: Portal JWT
+  // --- Protected routes: check Portal JWT ---
   if (hasValidPortalToken(req)) {
-    // User has a valid Portal token — allow through
-    if (
-      url.pathname.startsWith('/business') ||
-      url.pathname.startsWith('/subaccount')
-    ) {
-      return NextResponse.rewrite(new URL(`${pathWithSearchParams}`, req.url))
-    }
     return NextResponse.next()
   }
 
-  // Priority 2: Clerk session (legacy fallback)
-  try {
-    const { userId } = await auth()
-    if (userId) {
-      // Clerk session is valid — allow through
-      if (
-        url.pathname.startsWith('/business') ||
-        url.pathname.startsWith('/subaccount')
-      ) {
-        return NextResponse.rewrite(new URL(`${pathWithSearchParams}`, req.url))
-      }
-      return NextResponse.next()
-    }
-  } catch {
-    // Clerk auth failed — fall through to redirect
-  }
-
-  // Neither auth method worked → redirect to Portal
+  // No valid token → Portal
   return redirectToPortal(req)
-})
+}
 
 export const config = {
   matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)'],
