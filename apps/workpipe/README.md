@@ -1,53 +1,89 @@
-# WorkPipe PRD (Repository Overview)
+# WorkPipe
 
-This repository contains the **Product Requirements Document (PRD)** for **WorkPipe**, a multi-tenant SaaS platform for business management.
----
+Multi-tenant SaaS platform for business management — pipelines, contacts, invoices, funnels, and automations.
 
-## Vision
-WorkPipe is the **all-in-one operating system** for businesses. It unifies:
-- Marketing sites & funnels
-- CRM pipelines & contacts
-- Stripe-based payments & billing
-- Automation & analytics
-
----
+**Part of the Orbit product suite.** Auth and billing managed by [Orbit Portal](https://portal.orbit.example).
 
 ## Tech Stack
-- **Framework**: Next.js 14 (App Router)
-- **Auth**: Clerk
-- **Database**: PostgreSQL + Prisma
+
+- **Framework**: Next.js (App Router + Pages hybrid)
+- **Auth**: Portal JWT (`orbit_token` cookie) — zero Clerk dependency
+- **Database**: PostgreSQL + Prisma 6.19.2
 - **Styling/UI**: Tailwind CSS + shadcn/ui
 - **Payments**: Stripe Billing + Connect
 - **File Uploads**: UploadThing
-- **Charts**: Tremor React
+- **Hosting**: Render (`workpipe.orbit.example`)
 
----
+## Authentication
 
-## Core Features (MVP)
+WorkPipe has **no knowledge of what auth provider Portal uses**. All auth flows go through Orbit Portal JWTs.
+
+### How it works
+
+1. User signs in on `portal.orbit.example`
+2. Portal redirects to `/auth/callback?token=<jwt>`
+3. WorkPipe validates the JWT and sets an HTTP-only cookie (`orbit_token`)
+4. Middleware checks the cookie on every request
+5. On expiry → redirect to Portal `/api/auth/refresh` for seamless re-auth
+
+### Key auth files
+
+- `src/lib/portal-jwt.ts` — JWT verification (the ONLY auth interface with Portal)
+- `src/lib/auth.ts` — Auth wrapper (`getCurrentUser()`, `requireAuth()`, `getAuthContext()`)
+- `src/lib/auth-client.tsx` — Client components (AuthProvider, UserAvatar with sign-out)
+- `src/app/auth/callback/route.ts` — Token handoff endpoint
+- `src/middleware.ts` — Portal JWT check on every request
+
+### To swap auth providers
+
+Change Portal only. WorkPipe stays the same. The JWT contract is the boundary.
+
+## Core Features
+
 - Multi-tenant structure (Business → Subaccounts)
-- Business Billing Dashboard with subscriptions, invoices, add-ons
-- Funnel & website builder (drag-and-drop, Stripe Checkout integration)
-- CRM with pipelines, tickets, contacts
+- CRM with pipelines, tickets, contacts (kanban)
+- Funnel & website builder (drag-and-drop, Stripe checkout)
+- Business billing dashboard with subscriptions
 - Media asset management
-- Notifications & theming
-- Automation triggers & actions
+- Notifications & theming (light/dark)
+- Subdomain routing for white-label agency sites
 
----
+## Pricing
 
-## Rollout Milestones
-- **M0** – Foundation (RBAC, schema, router, marketing site)
-- **M1** – Business Billing (Stripe subscriptions, invoices, add-ons, upgrade flow)
-- **M2** – Subaccounts & Stripe Connect
-- **M3** – Media & Contacts
-- **M4** – Funnel Builder
-- **M5** – CRM Pipelines
-- **M6** – Automation (V1)
-- **M7** – Analytics
+Managed via Portal. Per-app subscriptions:
 
----
+| Tier     | Monthly | Annual |
+| -------- | ------- | ---------------- |
+| Starter  | $—/mo  | $—/mo        |
+| Pro      | $—/mo  | $—/mo        |
+| Business | $—/mo  | $—/mo        |
 
-## Repo Layout
-- `WorkPipe_PRD.md` → Full detailed PRD (requirements, models, user stories)
-- `migrations/` → SQL migrations for Postgres (e.g., billing models)
-- `app/api/stripe/webhook/route.ts` → Stripe webhook handler
-- `README.md` → (this file)
+## Environment Variables
+
+```
+DATABASE_URL=postgresql://...
+JWT_SECRET=<shared with Portal and Drive>
+NEXT_PUBLIC_PORTAL_URL=https://portal.orbit.example
+NEXT_PUBLIC_DOMAIN=workpipe.orbit.example
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+UPLOADTHING_SECRET=...
+```
+
+## Getting Started
+
+```bash
+npm install
+cp .env.example .env
+npx prisma generate
+npx prisma db push
+npm run dev
+```
+
+## Deployment
+
+Render Web Service. Auto-deploys from `master` branch.
+
+## License
+
+Proprietary — © Orbit

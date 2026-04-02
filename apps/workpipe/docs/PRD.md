@@ -1,14 +1,16 @@
 # WorkPipe — Product Requirements Document (PRD)
 
 **Version:** v0.1  
-**Owner:** WorkPipe maintainer  
+**Owner:** WorkPipe maintainer
 
 ---
 
 ## 1) Product vision & positioning
+
 **Vision.** WorkPipe is the all-in-one, multi-tenant operating system for businesses and service organizations. It unifies marketing sites, lead capture, CRM pipelines, payments, and automation into a single, white-label platform that businesses can extend to their clients (subaccounts) and monetize.
 
 **Differentiation.**
+
 - Deep multi-tenant model (Business → Subaccounts) with role-scoped permissions and billing.
 - Built-in funnel/page builder with drag-and-drop, responsive previews, and payment components.
 - Stripe Connect at the core: businesses and subaccounts can take payments; WorkPipe captures platform fees and supports add-ons.
@@ -16,6 +18,7 @@
 - Extensible automation layer with triggers/actions from first release; n8n/agentic integrations in Phase 2.
 
 **Primary users.**
+
 - **Business Owner:** sets up the Business workspace, billing, teams, and client subaccounts.
 - **Business Staff:** day-to-day operations—pipelines, tickets, media, funnel editing.
 - **Client/Subaccount User:** limited access to their own workspace and funnels.
@@ -24,61 +27,74 @@
 ---
 
 ## 2) Goals & non-goals
+
 **MVP Goals (V1):**
-1) Stand up the multi-tenant skeleton (Business, Subaccount, Users/Roles, Domain routing).  
-2) Business onboarding + subscription billing (Stripe) with add-on product support.  
-3) Subaccount onboarding including Stripe Connect (account linking) and product sync.  
-4) Funnel builder (drag-and-drop), responsive preview, form/contact capture, Stripe checkout component, and live hosting on custom subdomains/domains.  
-5) CRM: Contacts + Pipelines (kanban lanes & tickets), assignment, tags, and estimated value.  
-6) Media bucket with asset browser and link-copy for builder use.  
-7) Notifications and theming (light/dark).  
-8) Audit trails and role-based access controls (RBAC).
+
+1. Stand up the multi-tenant skeleton (Business, Subaccount, Users/Roles, Domain routing).
+2. Business onboarding + subscription billing (Stripe) with add-on product support.
+3. Subaccount onboarding including Stripe Connect (account linking) and product sync.
+4. Funnel builder (drag-and-drop), responsive preview, form/contact capture, Stripe checkout component, and live hosting on custom subdomains/domains.
+5. CRM: Contacts + Pipelines (kanban lanes & tickets), assignment, tags, and estimated value.
+6. Media bucket with asset browser and link-copy for builder use.
+7. Notifications and theming (light/dark).
+8. Audit trails and role-based access controls (RBAC).
 
 **Non-goals (MVP):**
-- Advanced A/B testing, versioned publishing, or template marketplace (Phase 2).  
-- Native telephony, AI dialers, or conversational agents (Phase 2; integrate via n8n/Vapi/Bland).  
-- Complex invoicing/billing beyond Stripe subscriptions and simple add-ons (Phase 2).  
+
+- Advanced A/B testing, versioned publishing, or template marketplace (Phase 2).
+- Native telephony, AI dialers, or conversational agents (Phase 2; integrate via n8n/Vapi/Bland).
+- Complex invoicing/billing beyond Stripe subscriptions and simple add-ons (Phase 2).
 - HIPAA/PCI scope: we’ll rely on Stripe for card data and avoid storing sensitive health/payment data directly.
 
 ---
 
 ## 3) Scope & feature set (V1)
+
 ### 3.1 Multi-tenant foundation
+
 - **Entities:** Business (top-level organization), Subaccount (client/project), User, Role/Permission, Domain, Funnel, FunnelStep, Pipeline, Lane, Ticket, Contact, MediaAsset, Notification, Product (synced from Stripe), Subscription, AddOn, AuditLog.
 - **Tenant boundaries:** Every entity belongs to a Business; Subaccount entities are scoped to Subaccount ID. Enforce via DB constraints + application checks.
 - **Domain routing:** Map `subdomain.workpipe.orbit.example` and custom apex/subdomains to specific Subaccounts. Dynamic router resolves `[domain]/[path]` to funnel steps.
 - **RBAC:** Roles include BusinessOwner, BusinessAdmin, Staff, SubUser, BillingOnly. Fine-grain permissions at Business vs Subaccount level (view/edit pipelines, funnels, contacts, billing, team, media).
 
 ### 3.2 Authentication & onboarding
-- **Auth:** Clerk (email, OAuth) with themeable UI.  
-- **Business onboarding:** Create Business → Stripe subscription (plan + optional add-ons) → Launchpad checklist.  
-- **Team invites:** Invite staff to Business; granular access to Subaccounts (on/off per subaccount).
+
+- **Auth:** Orbit Portal JWT-based authentication. WorkPipe has zero knowledge of the auth provider (currently Clerk on Portal). All sign-in/sign-up flows redirect to Portal. Portal issues JWTs containing user ID, email, name, org_id, role, and app access list. WorkPipe validates JWTs via `src/lib/portal-jwt.ts` and sets an HTTP-only cookie (`orbit_token`).
+- **Roles:** OWNER, ADMIN, MEMBER (team), CLIENT (sub-account end-users). Role comes from Portal JWT.
+- **Business onboarding:** Create workspace on Portal → subscription managed via Portal billing → WorkPipe reads plan from JWT.
+- **Team invites:** Managed via Portal member system; invited users get Portal accounts with MEMBER role.
+- **Sub-account client access:** CLIENT role users authenticate through Portal but see only their designated sub-account (destination field in JWT).
 - **Subaccount onboarding:** Create Subaccount → connect Stripe (Connect Onboarding) → choose products to expose in funnels.
 
 ### 3.3 Business Billing & monetization
+
 - **Stripe:**
   - Business pays WorkPipe monthly for platform plans (e.g., Starter/Pro) plus add-ons (e.g., extra subaccounts, higher limits).
-  - Subaccounts connect their own Stripe accounts for taking payments in funnels.  
+  - Subaccounts connect their own Stripe accounts for taking payments in funnels.
   - Platform application_fee on subaccount transactions (percentage + flat $), configurable per product type; revenues settle to business/subaccount via Connect.
 - **Add-on catalog:** Admin-configurable; Businesses enable/disable for their Business.
 - **Invoices & transactions UI:** Transaction table and plan management, one-click plan upgrade at renewal.
 
 #### 3.3.1 Invoices & Payments
+
 - Businesses receive monthly invoices via Stripe; invoices list base plan, add-ons, taxes, and credits.
 - UI: Invoice history with PDF download, status (paid/unpaid), and retry payment button.
 - Notifications: Failed payment emails and in-app alerts to Business Owner.
 
 #### 3.3.2 Add-ons & Upgrades
+
 - Add-ons available as recurring (e.g., additional subaccounts) or usage-based (future).
 - Business Owner can enable/disable add-ons from billing UI; changes prorate into next invoice cycle.
 - Plan upgrade: Immediate access to higher-tier entitlements, cost adjustment at next billing date.
 
 #### 3.3.3 Subaccount Billing Integration
+
 - Each Subaccount may optionally pass payment fees to their connected Stripe account via Stripe Connect.
 - Businesses configure platform fees in settings; WorkPipe captures percentage and flat fees per transaction.
 - Dashboard: Subaccount billing overview with gross revenue, net payouts, and WorkPipe fee summary.
 
 #### 3.3.4 UI & Controls
+
 - Dedicated **Business Billing Dashboard** showing:
   - Current plan, renewal date, and limits.
   - Invoice history with filtering.
@@ -87,61 +103,71 @@
   - Alerts for failed payments, expiring cards, or exceeded limits.
 
 ### 3.4 Funnel & website builder
+
 - **Editor:** Drag & drop, element selection badges, properties panel (CSS props + custom props), components library (Layouts, Text/Media, Contact Form, Video, Stripe Checkout), responsive breakpoints, preview mode, undo/redo history, layers tree, duplicate page, autosave with last-updated timestamp.
 - **Funnel model:** Multi-step flows with per-step path, ordering (reorderable), auto-redirect to next step after form submit, SEO meta per step.
 - **Assets:** Media browser directly embedded; paste URLs to set background images.
-- **Publishing:** Serve under assigned domain/subdomain; 404 for unknown paths; basic cache headers.  
+- **Publishing:** Serve under assigned domain/subdomain; 404 for unknown paths; basic cache headers.
 
 ### 3.5 CRM & contacts
+
 - **Contacts:** Leads captured from forms; fields include status (Active/Inactive), est. value, source, last activity.
 - **Pipelines:** Kanban boards per Subaccount; lanes are reorderable; tickets have title, description, service request details, tags/labels, assignees (team), linked contact, due dates.
 - **Drag & drop:** Move tickets across lanes; recalc stage timestamps; simple WIP limits (Phase 2).
 
 ### 3.6 Media management
+
 - **UploadThing integration:** Images/docs/mp4; per-tenant quotas; CDN URLs; file preview; folders/tags (Phase 2).
 
 ### 3.7 Notifications & themes
-- **Notifications:** Filterable by current Subaccount; system events (invites, failed payments, form submissions, ticket assignments).  
+
+- **Notifications:** Filterable by current Subaccount; system events (invites, failed payments, form submissions, ticket assignments).
 - **Theming:** Light/Dark toggle; extendable theme tokens.
 
 ### 3.8 Automation (V1)
+
 - **Trigger catalog:** Form submitted, payment succeeded/failed (Stripe webhooks), ticket created/moved, contact status changed.
-- **Actions:** Email notification, create/update contact/ticket, add tag, send webhook.  
-- **Event bus:** Persisted events table; idempotent processors; retry & DLQ.  
+- **Actions:** Email notification, create/update contact/ticket, add tag, send webhook.
+- **Event bus:** Persisted events table; idempotent processors; retry & DLQ.
 - **Phase 2:** Visual workflow builder; n8n bridge; AI steps (lead scoring, auto-summaries, copy suggestions) powered by LLMs.
 
 ---
 
 ## 4) User stories & acceptance criteria (selected)
+
 **Business Owner**
-1. *As a Business Owner, I can subscribe to a WorkPipe plan and optional add-ons so that my Business unlocks features.*  
+
+1. _As a Business Owner, I can subscribe to a WorkPipe plan and optional add-ons so that my Business unlocks features._
    - AC: Successful payment creates active subscription; plan entitlements propagate; transaction visible; upgrading defers to end of current period.
-2. *As a Business Owner, I can create Subaccounts for clients and invite sub-users; each gets only their Subaccount’s data.*  
+2. _As a Business Owner, I can create Subaccounts for clients and invite sub-users; each gets only their Subaccount’s data._
    - AC: Invited users land on an “awaiting access” screen until toggled on; RBAC tests pass.
-3. *As a Business Owner, I can connect my client’s Stripe account (Connect) to collect payments on their site and share platform fees with WorkPipe.*  
+3. _As a Business Owner, I can connect my client’s Stripe account (Connect) to collect payments on their site and share platform fees with WorkPipe._
    - AC: Connect onboarding redirect works; products sync; products can be toggled live in a funnel.
 
-**Business Staff**
-4. *As Business Staff, I can build a funnel with multiple steps, drag in components, preview responsive states, and publish.*  
-   - AC: Undo/redo works; preview URL is live; forms route to contacts; checkout renders Stripe Payment Element and completes a test charge.
-5. *As Business Staff, I can manage a pipeline (lanes, tickets), tag tickets, assign to teammates, and link to contacts.*  
+**Business Staff** 4. _As Business Staff, I can build a funnel with multiple steps, drag in components, preview responsive states, and publish._
+
+- AC: Undo/redo works; preview URL is live; forms route to contacts; checkout renders Stripe Payment Element and completes a test charge.
+
+5. _As Business Staff, I can manage a pipeline (lanes, tickets), tag tickets, assign to teammates, and link to contacts._
    - AC: Drag-drop persists; linked contact shows est. value on contacts list; audit log captures changes.
 
-**Subaccount User**
-6. *As a Subaccount User, I can upload media and reuse it in the builder via a media browser.*  
-   - AC: Uploaded asset yields a CDN URL; inserting URL updates background image in editor and live page.
+**Subaccount User** 6. _As a Subaccount User, I can upload media and reuse it in the builder via a media browser._
 
-**Business Billing**
-7. *As a Business Owner, I can view invoices and payment history so that I can track charges and resolve billing issues.*  
-   - AC: Invoices display line items (plan, add-ons, taxes), payment status, and PDF download; unpaid invoices show retry option.
-8. *As a Business Owner, I can manage add-ons and upgrade/downgrade my plan so that my Business can adjust features as needed.*  
+- AC: Uploaded asset yields a CDN URL; inserting URL updates background image in editor and live page.
+
+**Business Billing** 7. _As a Business Owner, I can view invoices and payment history so that I can track charges and resolve billing issues._
+
+- AC: Invoices display line items (plan, add-ons, taxes), payment status, and PDF download; unpaid invoices show retry option.
+
+8. _As a Business Owner, I can manage add-ons and upgrade/downgrade my plan so that my Business can adjust features as needed._
    - AC: Enabling/disabling add-ons updates entitlements immediately; plan upgrade grants features instantly with proration applied to next invoice.
-9. *As a Business Owner, I receive alerts for failed payments or expiring cards so that I can avoid service disruption.*  
+9. _As a Business Owner, I receive alerts for failed payments or expiring cards so that I can avoid service disruption._
    - AC: Failed payments trigger in-app and email notifications; Business Billing Dashboard highlights issues until resolved.
 
 ---
 
 ## 5) System architecture & tech decisions
+
 - **Frontend:** Next.js 14 (App Router), React Server Components where possible; shadcn/ui for primitives; Tailwind CSS; Tremor for charts.
 - **UI Components:** **MANDATORY** - Use shadcn MCP (Model Context Protocol) for all UI component additions, modifications, and selections. This ensures consistent component usage and proper integration with the shadcn/ui system.
 - **Auth:** Clerk.
@@ -155,7 +181,7 @@
 
 ---
 
-6) Data model (initial)
+6. Data model (initial)
 
 High-level tables (non-exhaustive):
 
@@ -227,60 +253,54 @@ Consider masking display fields (e.g., last4).
 
 6.2 Prisma models (initial)
 model Invoice {
-  id               String   @id @default(cuid())
-  businessId       String
-  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  stripeInvoiceId  String   @unique
-  amountDue        Int      // in cents
-  amountPaid       Int      // in cents
-  currency         String   @default("usd")
-  status           String
-  pdfUrl           String?
-  periodStart      DateTime
-  periodEnd        DateTime
-  createdAt        DateTime @default(now())
+id String @id @default(cuid())
+businessId String
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+stripeInvoiceId String @unique
+amountDue Int // in cents
+amountPaid Int // in cents
+currency String @default("usd")
+status String
+pdfUrl String?
+periodStart DateTime
+periodEnd DateTime
+createdAt DateTime @default(now())
 
-
-  @@index([businessId, createdAt])
+@@index([businessId, createdAt])
 }
-
 
 model AddOn {
-  id              String         @id @default(cuid())
-  businessId      String
-  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  name            String
-  description     String?
-  price           Int            // in cents
-  billingInterval BillingInterval
-  active          Boolean        @default(true)
-  createdAt       DateTime       @default(now())
+id String @id @default(cuid())
+businessId String
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+name String
+description String?
+price Int // in cents
+billingInterval BillingInterval
+active Boolean @default(true)
+createdAt DateTime @default(now())
 
-
-  @@index([businessId, active])
+@@index([businessId, active])
 }
-
 
 enum BillingInterval {
-  MONTHLY
-  YEARLY
+MONTHLY
+YEARLY
 }
 
-
 model BusinessPaymentMethod {
-  id                   String   @id @default(cuid())
-  businessId           String
-  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  stripePaymentMethodId String  @unique
-  type                 String
-  last4                String?
-  expMonth             Int?
-  expYear              Int?
-  isDefault            Boolean  @default(false)
-  createdAt            DateTime @default(now())
+id String @id @default(cuid())
+businessId String
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+stripePaymentMethodId String @unique
+type String
+last4 String?
+expMonth Int?
+expYear Int?
+isDefault Boolean @default(false)
+createdAt DateTime @default(now())
 
-
-  @@index([businessId, isDefault])
+@@index([businessId, isDefault])
 }
 6.3 Migration considerations
 
@@ -296,7 +316,7 @@ Add composite indexes on (business_id, created_at) for time-series billing queri
 
 If adopting Postgres RLS later, apply USING (business_id = current_setting('app.current_business_id')::uuid) policies on billing tables.
 
-7) Domain & routing requirements
+7. Domain & routing requirements
 
 Public routes: marketing site, Connect webhooks, upload endpoints, and domain-served funnel pages.
 
@@ -304,7 +324,7 @@ Rewrite rules: root → marketing site; /site → marketing site; subdomain/cust
 
 Unknown domain/path → 404; friendly dev 404 in preview.
 
-8) Security, privacy, compliance
+8. Security, privacy, compliance
 
 Rely on Clerk for auth flows, sessions, MFA options.
 
@@ -316,7 +336,7 @@ Encrypt secrets at rest; rotate keys; principle of least privilege for API keys.
 
 PII minimization: collect only what’s necessary for lead/contact management.
 
-9) Analytics & reporting
+9. Analytics & reporting
 
 Dashboards:
 
@@ -328,7 +348,7 @@ Instrumentation: GA4 (marketing), first-party events for funnels, Stripe events 
 
 Charts: Tremor components with standard KPIs + time selection.
 
-10) Non-functional requirements (NFRs)
+10. Non-functional requirements (NFRs)
 
 Availability: 99.9% target for app & CDN content once GA.
 
@@ -342,7 +362,7 @@ Observability: Centralized logs, traces, error alerts; webhook DLQ monitoring.
 
 Accessibility: WCAG 2.1 AA for editor surfaces and public pages where feasible.
 
-11) Rollout plan (sequenced milestones)
+11. Rollout plan (sequenced milestones)
 
 M0 – Foundation: App shell, Clerk, RBAC model, Postgres schema, domain router, marketing site.
 
