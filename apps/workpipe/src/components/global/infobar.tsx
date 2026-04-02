@@ -56,7 +56,7 @@ const InfoBar = ({ notifications, subAccountId, className, role }: Props) => {
         )}
       >
         <div className="ml-auto flex items-center gap-2">
-          <UserAvatar afterSignOutUrl="/" />
+          <UserAvatar />
           <Sheet>
             <SheetTrigger>
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white">
