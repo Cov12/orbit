@@ -101,13 +101,31 @@ export default clerkMiddleware(async (auth, req) => {
 
   // --- Public routes → no auth needed ---
   if (isPublicRoute(req)) {
-    // Site root / landing
+    // Root URL: authenticated users → dashboard, others → Portal
+    if (url.pathname === '/') {
+      if (hasValidPortalToken(req)) {
+        return NextResponse.redirect(new URL('/business', req.url))
+      }
+      // Check Clerk session as fallback
+      try {
+        const { userId } = await auth()
+        if (userId) {
+          return NextResponse.redirect(new URL('/business', req.url))
+        }
+      } catch {
+        // No auth — redirect to Portal
+      }
+      return redirectToPortal(req)
+    }
+
+    // /site route — still accessible directly for now (legacy)
     if (
-      url.pathname === '/' ||
-      (url.pathname === '/site' && url.host === process.env.NEXT_PUBLIC_DOMAIN)
+      url.pathname === '/site' &&
+      url.host === process.env.NEXT_PUBLIC_DOMAIN
     ) {
       return NextResponse.rewrite(new URL('/site', req.url))
     }
+
     return NextResponse.next()
   }
 
