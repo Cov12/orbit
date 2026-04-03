@@ -48,12 +48,27 @@ function hasValidPortalToken(req: NextRequest): boolean {
 }
 
 /**
+ * Get the public-facing origin.
+ * Render resolves req.url to localhost:PORT internally.
+ * Use x-forwarded-host header (set by Render's reverse proxy) for the real hostname.
+ */
+function getPublicOrigin(req: NextRequest): string {
+  const proto = req.headers.get('x-forwarded-proto') || 'https'
+  const host =
+    req.headers.get('x-forwarded-host') ||
+    req.headers.get('host') ||
+    'workpipe.orbit.example'
+  return `${proto}://${host}`
+}
+
+/**
  * Redirect to Portal for authentication.
  */
 function redirectToPortal(req: NextRequest): NextResponse {
   const portalUrl =
     process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'
-  const callbackUrl = `${req.nextUrl.origin}/auth/callback`
+  const publicOrigin = getPublicOrigin(req)
+  const callbackUrl = `${publicOrigin}/auth/callback`
   return NextResponse.redirect(
     new URL(
       `${portalUrl}/api/auth/refresh?redirect_uri=${encodeURIComponent(callbackUrl)}`
@@ -97,7 +112,8 @@ export default function middleware(req: NextRequest) {
   // --- Root → smart route ---
   if (url.pathname === '/') {
     if (hasValidPortalToken(req)) {
-      return NextResponse.redirect(new URL('/business', req.url))
+      const publicOrigin = getPublicOrigin(req)
+      return NextResponse.redirect(new URL('/business', publicOrigin))
     }
     return redirectToPortal(req)
   }
