@@ -10,12 +10,25 @@ const isProtectedRoute = createRouteMatcher([
   '/api/workspaces(.*)',
 ]);
 
+/**
+ * Get the public-facing URL base.
+ * Render sets x-forwarded-host to the real hostname,
+ * but req.url resolves to localhost:PORT internally.
+ */
+function getPublicUrl(req: Request): string {
+  const proto = (req.headers as any).get?.('x-forwarded-proto') || 'https';
+  const host = (req.headers as any).get?.('x-forwarded-host') || (req.headers as any).get?.('host') || 'portal.orbit.example';
+  return `${proto}://${host}`;
+}
+
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
     const { userId } = await auth();
     if (!userId) {
-      const signInUrl = new URL('/sign-in', req.url);
-      signInUrl.searchParams.set('redirect_url', req.url);
+      const publicBase = getPublicUrl(req);
+      const pathname = new URL(req.url).pathname + new URL(req.url).search;
+      const signInUrl = new URL('/sign-in', publicBase);
+      signInUrl.searchParams.set('redirect_url', `${publicBase}${pathname}`);
       return NextResponse.redirect(signInUrl);
     }
   }
