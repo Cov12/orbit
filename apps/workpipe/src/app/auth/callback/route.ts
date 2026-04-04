@@ -5,32 +5,33 @@ import { verifyPortalToken, PORTAL_TOKEN_COOKIE } from '@/lib/portal-jwt'
 export const runtime = 'nodejs'
 
 /**
+ * Get the public-facing origin.
+ * Render resolves req.url to localhost:PORT internally.
+ */
+function getPublicOrigin(req: Request): string {
+  const proto = req.headers.get('x-forwarded-proto') || 'https'
+  const host =
+    req.headers.get('x-forwarded-host') ||
+    req.headers.get('host') ||
+    'workpipe.orbit.example'
+  return `${proto}://${host}`
+}
+
+/**
  * GET /auth/callback?token=<jwt>
  *
  * Token handoff endpoint. Portal redirects users here after authentication.
- *
- * Flow:
- * 1. Portal authenticates user (via Clerk or whatever provider)
- * 2. Portal generates JWT and redirects: /auth/callback?token=<jwt>
- * 3. This endpoint validates the JWT
- * 4. Sets an HTTP-only cookie with the token
- * 5. Redirects to /business (the main app)
- *
- * Security:
- * - Token is validated before setting cookie
- * - Cookie is HTTP-only (no JS access)
- * - Cookie is Secure (HTTPS only)
- * - SameSite=Lax (allows redirect-based flow)
  */
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url)
     const token = url.searchParams.get('token')
+    const publicOrigin = getPublicOrigin(req)
 
     if (!token) {
       const portalUrl =
         process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'
-      const callbackUrl = `${url.origin}/auth/callback`
+      const callbackUrl = `${publicOrigin}/auth/callback`
       return NextResponse.redirect(
         `${portalUrl}/api/auth/refresh?redirect_uri=${encodeURIComponent(callbackUrl)}`
       )
@@ -46,18 +47,18 @@ export async function GET(req: Request) {
       )
       const portalUrl =
         process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'
-      const callbackUrl = `${url.origin}/auth/callback`
+      const callbackUrl = `${publicOrigin}/auth/callback`
       return NextResponse.redirect(
         `${portalUrl}/api/auth/refresh?redirect_uri=${encodeURIComponent(callbackUrl)}`
       )
     }
 
-    // Set the JWT as an HTTP-only cookie
-    const response = NextResponse.redirect(new URL('/business', req.url))
+    // Set the JWT as an HTTP-only cookie and redirect to dashboard
+    const response = NextResponse.redirect(new URL('/business', publicOrigin))
 
     response.cookies.set(PORTAL_TOKEN_COOKIE, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'lax',
       path: '/',
       maxAge: payload.exp - Math.floor(Date.now() / 1000),
