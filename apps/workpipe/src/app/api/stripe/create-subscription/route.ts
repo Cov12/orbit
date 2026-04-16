@@ -21,37 +21,52 @@ export async function POST(req: Request) {
       subscriptionExists.Subscription.subscritiptionId &&
       subscriptionExists.Subscription.active
     ) {
-      //update the subscription instead of creating one.
-      if (!subscriptionExists.Subscription.subscritiptionId) {
-        throw new Error(
-          'Could not find the subscription Id to update the subscription.'
-        )
-      }
-      //cleanup
+      // Try to update the existing subscription.
       console.log('Updating the subscription')
-      const currentSubscriptionDetails = await stripe.subscriptions.retrieve(
-        subscriptionExists.Subscription.subscritiptionId
-      )
+      try {
+        const currentSubscriptionDetails = await stripe.subscriptions.retrieve(
+          subscriptionExists.Subscription.subscritiptionId
+        )
 
-      const subscription = await stripe.subscriptions.update(
-        subscriptionExists.Subscription.subscritiptionId,
-        {
-          items: [
-            {
-              id: currentSubscriptionDetails.items.data[0].id,
-              deleted: true,
-            },
-            { price: priceId },
-          ],
-          expand: ['latest_invoice.payment_intent'],
+        const subscription = await stripe.subscriptions.update(
+          subscriptionExists.Subscription.subscritiptionId,
+          {
+            items: [
+              {
+                id: currentSubscriptionDetails.items.data[0].id,
+                deleted: true,
+              },
+              { price: priceId },
+            ],
+            expand: ['latest_invoice.payment_intent'],
+          }
+        )
+        return NextResponse.json({
+          subscriptionId: subscription.id,
+          //@ts-ignore
+          clientSecret:
+            subscription.latest_invoice.payment_intent.client_secret,
+        })
+      } catch (err: any) {
+        // Stale subscription (e.g. Stripe account switched) — clean up and fall through to create new.
+        if (err?.code === 'resource_missing') {
+          console.log(
+            '⚠️  Stale subscription detected, clearing DB record:',
+            subscriptionExists.Subscription.subscritiptionId
+          )
+          await db.subscription
+            .delete({
+              where: { businessId: subscriptionExists.id },
+            })
+            .catch(e => console.log('Subscription cleanup failed:', e))
+          // fall through to create-new path below
+        } else {
+          throw err
         }
-      )
-      return NextResponse.json({
-        subscriptionId: subscription.id,
-        //@ts-ignore
-        clientSecret: subscription.latest_invoice.payment_intent.client_secret,
-      })
-    } else {
+      }
+    }
+    // Create a new subscription (either no existing sub, or stale one was cleared)
+    {
       console.log('Createing a sub')
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
