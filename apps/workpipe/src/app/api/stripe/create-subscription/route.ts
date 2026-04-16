@@ -41,11 +41,18 @@ export async function POST(req: Request) {
             expand: ['latest_invoice.payment_intent'],
           }
         )
+        const updInvoice = subscription.latest_invoice as any
+        let updSecret: string | null =
+          updInvoice?.payment_intent?.client_secret || null
+        if (!updSecret && typeof updInvoice?.payment_intent === 'string') {
+          const pi = await stripe.paymentIntents.retrieve(
+            updInvoice.payment_intent
+          )
+          updSecret = pi.client_secret
+        }
         return NextResponse.json({
           subscriptionId: subscription.id,
-          //@ts-ignore
-          clientSecret:
-            subscription.latest_invoice.payment_intent.client_secret,
+          clientSecret: updSecret,
         })
       } catch (err: any) {
         // Stale subscription (e.g. Stripe account switched) — clean up and fall through to create new.
@@ -67,22 +74,45 @@ export async function POST(req: Request) {
     }
     // Create a new subscription (either no existing sub, or stale one was cleared)
     {
-      console.log('Createing a sub')
+      console.log('Creating a sub')
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
-        items: [
-          {
-            price: priceId,
-          },
-        ],
+        items: [{ price: priceId }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
         expand: ['latest_invoice.payment_intent'],
       })
+
+      // Safely extract client_secret — handle both expanded object and string ID cases
+      const invoice = subscription.latest_invoice as any
+      let clientSecret: string | null = null
+
+      if (invoice?.payment_intent?.client_secret) {
+        clientSecret = invoice.payment_intent.client_secret
+      } else if (typeof invoice?.payment_intent === 'string') {
+        // Expand didn't work — fetch payment intent directly
+        const pi = await stripe.paymentIntents.retrieve(invoice.payment_intent)
+        clientSecret = pi.client_secret
+      } else if (typeof invoice === 'string') {
+        // Invoice wasn't expanded either — fetch it
+        const inv = await stripe.invoices.retrieve(invoice)
+        if (typeof inv.payment_intent === 'string') {
+          const pi = await stripe.paymentIntents.retrieve(inv.payment_intent)
+          clientSecret = pi.client_secret
+        }
+      }
+
+      if (!clientSecret) {
+        console.error(
+          'Could not resolve client_secret. Subscription:',
+          subscription.id
+        )
+        return new NextResponse('Could not initialize payment', { status: 500 })
+      }
+
       return NextResponse.json({
         subscriptionId: subscription.id,
-        //@ts-ignore
-        clientSecret: subscription.latest_invoice.payment_intent.client_secret,
+        clientSecret,
       })
     }
   } catch (error) {
