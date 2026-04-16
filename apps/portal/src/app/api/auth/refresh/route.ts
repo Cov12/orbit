@@ -87,12 +87,22 @@ export async function GET(req: Request) {
 
     const member = org.members[0];
 
-    const clerkUser = (!member.email || !member.name) ? await currentUser() : null;
-    const email = member.email || clerkUser?.emailAddresses.find((entry) => entry.id === clerkUser.primaryEmailAddressId)?.emailAddress;
-    const name = member.name || [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ");
+    // Always fetch from Clerk — Clerk is source of truth for email/name.
+    // Member.email can drift (stale seeds, manual edits). Fall back to member only if Clerk lookup fails.
+    const clerkUser = await currentUser();
+    const email = clerkUser?.emailAddresses.find((entry) => entry.id === clerkUser.primaryEmailAddressId)?.emailAddress || member.email;
+    const name = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ") || member.name;
 
     if (!email || !name) {
       return NextResponse.json({ error: "Unable to resolve user profile" }, { status: 500 });
+    }
+
+    // Sync Member record if Clerk email/name has drifted from stored value.
+    if (member.email !== email || member.name !== name) {
+      await db.member.update({
+        where: { id: member.id },
+        data: { email, name },
+      }).catch((err: unknown) => console.error("[Portal] Member sync failed:", err));
     }
 
     const token = signOrbitToken({
