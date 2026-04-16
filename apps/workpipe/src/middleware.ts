@@ -22,7 +22,7 @@ const PUBLIC_PATHS = new Set([
   '/api/health',
 ])
 
-const PUBLIC_PREFIXES = ['/api/internal/', '/site', '/_next']
+const PUBLIC_PREFIXES = ['/api/internal/', '/api/stripe/', '/site', '/_next']
 
 function isPublicRoute(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true
