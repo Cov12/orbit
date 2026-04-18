@@ -3,18 +3,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
 import { stripe } from '@/lib/stripe'
-import { subscriptionCreated } from '@/lib/stripe/stripe-actions'
 
-const stripeWebhookEvents = new Set([
-  'product.created',
-  'product.updated',
-  'price.created',
-  'price.updated',
-  'checkout.session.completed',
-  'customer.subscription.created',
-  'customer.subscription.updated',
-  'customer.subscription.deleted',
-])
+/**
+ * Stripe Webhook — WorkPipe
+ *
+ * Platform subscriptions (WorkPipe/Atrium plan billing) are now
+ * handled by Orbit Portal. This webhook only processes events from
+ * Stripe Connect (subaccount rebilling).
+ */
+
+const connectEvents = new Set(['checkout.session.completed', 'account.updated'])
 
 export async function POST(req: NextRequest) {
   let stripeEvent: Stripe.Event
@@ -23,12 +21,13 @@ export async function POST(req: NextRequest) {
   const sig = headersList.get('Stripe-Signature')
   const webhookSecret =
     process.env.STRIPE_WEBHOOK_SECRET_LIVE ?? process.env.STRIPE_WEBHOOK_SECRET
+
   try {
     if (!sig || !webhookSecret) {
       console.log(
         '🔴 Error Stripe webhook secret or the signature does not exist.'
       )
-      return
+      return new NextResponse('Missing signature or secret', { status: 400 })
     }
     stripeEvent = stripe.webhooks.constructEvent(body, sig, webhookSecret)
   } catch (error: any) {
@@ -36,51 +35,23 @@ export async function POST(req: NextRequest) {
     return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 })
   }
 
-  //
   try {
-    if (stripeWebhookEvents.has(stripeEvent.type)) {
-      const subscription = stripeEvent.data.object as Stripe.Subscription
+    if (connectEvents.has(stripeEvent.type)) {
+      const obj = stripeEvent.data.object as any
+
+      // Only process Connect events (has connectAccount metadata)
       if (
-        !subscription.metadata.connectAccountPayments &&
-        !subscription.metadata.connectAccountSubscriptions
+        obj.metadata?.connectAccountPayments ||
+        obj.metadata?.connectAccountSubscriptions
       ) {
-        switch (stripeEvent.type) {
-          case 'customer.subscription.created':
-          case 'customer.subscription.updated': {
-            if (subscription.status === 'active') {
-              await subscriptionCreated(
-                subscription,
-                subscription.customer as string
-              )
-              console.log('CREATED FROM WEBHOOK 💳', subscription)
-            } else {
-              console.log(
-                'SKIPPED AT CREATED FROM WEBHOOK 💳 because subscription status is not active',
-                subscription
-              )
-              break
-            }
-          }
-          default:
-            console.log('👉🏻 Unhandled relevant event!', stripeEvent.type)
-        }
-      } else {
-        console.log(
-          'SKIPPED FROM WEBHOOK 💳 because subscription was from a connected account not for the application',
-          subscription
-        )
+        console.log(`[Stripe Connect Webhook] ${stripeEvent.type}`, obj.id)
+        // TODO: Handle Connect checkout completion, account updates, etc.
       }
     }
   } catch (error) {
-    console.log(error)
-    return new NextResponse('🔴 Webhook Error', { status: 400 })
+    console.log('🔴 Webhook processing error:', error)
+    return new NextResponse('Webhook Error', { status: 400 })
   }
-  return NextResponse.json(
-    {
-      webhookActionReceived: true,
-    },
-    {
-      status: 200,
-    }
-  )
+
+  return NextResponse.json({ webhookActionReceived: true }, { status: 200 })
 }

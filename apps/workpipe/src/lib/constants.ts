@@ -1,74 +1,37 @@
-import BarChart from "@/components/icons/bar_chart"
-import Calendar from "@/components/icons/calendar"
-import CheckCircle from "@/components/icons/check_circled"
-import Chip from "@/components/icons/chip"
-import ClipboardIcon from "@/components/icons/clipboardIcon"
-import Compass from "@/components/icons/compass"
-import Database from "@/components/icons/database"
-import Flag from "@/components/icons/flag"
-import Headphone from "@/components/icons/headphone"
-import Home from "@/components/icons/home"
-import Info from "@/components/icons/info"
-import LinkIcon from "@/components/icons/link"
-import Lock from "@/components/icons/lock"
-import Message from "@/components/icons/messages"
-import Notification from "@/components/icons/notification"
-import Payment from "@/components/icons/payment"
-import Person from "@/components/icons/person"
-import Pipelines from "@/components/icons/pipelines"
-import PluraCategory from "@/components/icons/plura-category"
-import Power from "@/components/icons/power"
-import Receipt from "@/components/icons/receipt"
-import Send from "@/components/icons/send"
-import Settings from "@/components/icons/settings"
-import Shield from "@/components/icons/shield"
-import Star from "@/components/icons/star"
-import Tune from "@/components/icons/tune"
-import Video from "@/components/icons/video_recorder"
-import Wallet from "@/components/icons/wallet"
-import Warning from "@/components/icons/warning"
-export const pricingCards = [
-  {
-    title: 'Starter',
-    description: 'Perfect for trying out WorkPipe',
-    price: 'Free',
-    duration: '',
-    highlight: 'Key features',
-    features: ['1 Sub account', '2 Team members', '1 active pipeline'],
-    priceId: '',
-  },
-  {
-    title: 'Platinum - Unlimited Saas',
-    description: 'The ultimate business kit',
-    price: '$—',
-    duration: 'month',
-    highlight: 'Everything!!',
-    features: ['Unlimited Sub accounts', 'Unlimited Team members', 'Unlimited active pipelines','Rebilling', '24/7 Support team'],
-    priceId: 'price_REDACTED',
-  },
-  {
-    title: 'Premium',
-    description: 'For serious business owners',
-    price: '$—',
-    duration: 'month',
-    highlight: 'Everything in Basic, plus',
-    features: ['Unlimited Sub accounts', 'Unlimited Team members'],
-    priceId: 'price_REDACTED',
-  },
-  {
-    title: 'Basic',
-    description: 'For serious business owners',
-    price: '$—',
-    duration: 'month',
-    highlight: 'Everything in Starter, plus',
-    features: ['Up to 5 Sub accounts', '10 Team members', 'Up to 20 active pipelines'],
-    priceId: 'price_REDACTED+',
-  },
-]
-
-export const addOnProducts = [
-  { title: 'Priority Support', id: 'prod_REDACTED' },
-]
+import BarChart from '@/components/icons/bar_chart'
+import Calendar from '@/components/icons/calendar'
+import CheckCircle from '@/components/icons/check_circled'
+import Chip from '@/components/icons/chip'
+import ClipboardIcon from '@/components/icons/clipboardIcon'
+import Compass from '@/components/icons/compass'
+import Database from '@/components/icons/database'
+import Flag from '@/components/icons/flag'
+import Headphone from '@/components/icons/headphone'
+import Home from '@/components/icons/home'
+import Info from '@/components/icons/info'
+import LinkIcon from '@/components/icons/link'
+import Lock from '@/components/icons/lock'
+import Message from '@/components/icons/messages'
+import Notification from '@/components/icons/notification'
+import Payment from '@/components/icons/payment'
+import Person from '@/components/icons/person'
+import Pipelines from '@/components/icons/pipelines'
+import PluraCategory from '@/components/icons/plura-category'
+import Power from '@/components/icons/power'
+import Receipt from '@/components/icons/receipt'
+import Send from '@/components/icons/send'
+import Settings from '@/components/icons/settings'
+import Shield from '@/components/icons/shield'
+import Star from '@/components/icons/star'
+import Tune from '@/components/icons/tune'
+import Video from '@/components/icons/video_recorder'
+import Wallet from '@/components/icons/wallet'
+import Warning from '@/components/icons/warning'
+/**
+ * Billing is managed in Orbit Portal.
+ * Plan details, pricing, and Stripe price IDs live there.
+ * WorkPipe reads subscription status from Portal JWT.
+ */
 
 export const icons = [
   {
