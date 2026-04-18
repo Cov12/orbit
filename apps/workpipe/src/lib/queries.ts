@@ -303,7 +303,7 @@ export const upsertBusiness = async (business: Business, _price?: Plan) => {
             {
               name: 'Billing',
               icon: 'payment',
-              link: `/business/${business.id}/billing`,
+              link: `${process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'}/billing`,
             },
             {
               name: 'Settings',
