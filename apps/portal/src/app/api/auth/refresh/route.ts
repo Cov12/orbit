@@ -29,12 +29,13 @@ export async function GET(req: Request) {
   // Validate redirect_uri is a known app domain (security: prevent open redirect)
   const allowedOrigins = [
     process.env.NEXT_PUBLIC_WORKPIPE_URL,
-    process.env.NEXT_PUBLIC_DRIVE_URL?.replace("/drive", ""),
+    process.env.NEXT_PUBLIC_DRIVE_URL,
     process.env.NEXT_PUBLIC_ATRIUM_URL,
-  ].filter(Boolean);
+    process.env.NEXT_PUBLIC_APP_URL,
+  ].filter(Boolean).map((u) => new URL(u).origin);
 
   const redirectOrigin = new URL(redirectUri).origin;
-  const isAllowed = allowedOrigins.some((origin) => origin && redirectOrigin === new URL(origin).origin);
+  const isAllowed = allowedOrigins.includes(redirectOrigin);
 
   if (!isAllowed) {
     return NextResponse.json({ error: "Invalid redirect_uri" }, { status: 400 });
