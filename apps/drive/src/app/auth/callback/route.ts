@@ -7,13 +7,26 @@ import {
 
 const DEFAULT_PORTAL_URL = "https://portal.orbit.example";
 
+/**
+ * Get the public-facing origin.
+ * Render resolves req.url to localhost:PORT internally.
+ */
+function getPublicOrigin(req: NextRequest): string {
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const host =
+    req.headers.get("x-forwarded-host") ||
+    req.headers.get("host") ||
+    "drive.orbit.example";
+  return `${proto}://${host}`;
+}
+
 function getRefreshRedirect(request: NextRequest) {
   const portalUrl = process.env.NEXT_PUBLIC_PORTAL_URL ?? DEFAULT_PORTAL_URL;
-  const callbackUrl = new URL(request.url);
-  callbackUrl.search = "";
+  const publicOrigin = getPublicOrigin(request);
+  const callbackUrl = `${publicOrigin}/auth/callback`;
 
   const refreshUrl = new URL("/api/auth/refresh", portalUrl);
-  refreshUrl.searchParams.set("redirect_uri", callbackUrl.toString());
+  refreshUrl.searchParams.set("redirect_uri", callbackUrl);
 
   return NextResponse.redirect(refreshUrl);
 }
@@ -31,7 +44,8 @@ export async function GET(request: NextRequest) {
     return getRefreshRedirect(request);
   }
 
-  const response = NextResponse.redirect(new URL("/drive", request.url));
+  const publicOrigin = getPublicOrigin(request);
+  const response = NextResponse.redirect(new URL("/drive", publicOrigin));
   const maxAge = Math.max(payload.exp - Math.floor(Date.now() / 1000), 0);
 
   response.cookies.set({
@@ -39,7 +53,7 @@ export async function GET(request: NextRequest) {
     value: token,
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     path: "/",
     maxAge,
   });

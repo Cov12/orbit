@@ -1,8 +1,10 @@
-export {
-  ClerkProvider as AuthProvider,
-  UserButton as UserAvatar,
-  UserProfile as UserSettings,
-  useAuth as useAuthContext,
-  useUser as useCurrentUser,
-} from '@clerk/nextjs'
-export { dark } from '@clerk/themes'
+/**
+ * Auth Client — Orbit Drive
+ *
+ * Previously re-exported Clerk components. Now auth is handled by
+ * Portal JWT. Client-side auth state comes from server components
+ * passing user data as props.
+ *
+ * This file is kept for backwards compatibility — remove once all
+ * imports are cleaned up.
+ */

@@ -1,13 +1,19 @@
 "use client";
 
-import { UserAvatar } from "@/lib/auth-client";
-
 type Props = {
   onUpload: () => void;
   onNewFolder: () => void;
+  userName?: string;
 };
 
-export default function TopBar({ onUpload, onNewFolder }: Props) {
+export default function TopBar({ onUpload, onNewFolder, userName }: Props) {
+  const initials = (userName || "U")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <header className="h-14 border-b border-white/5 flex items-center justify-between px-4 md:px-6 bg-[#0f0f13]">
       {/* Mobile logo */}
@@ -40,15 +46,13 @@ export default function TopBar({ onUpload, onNewFolder }: Props) {
           <span className="material-symbols-outlined text-sm">upload</span>
           Upload
         </button>
-        <div className="ml-2">
-          <UserAvatar
-            appearance={{
-              elements: {
-                avatarBox: "w-8 h-8",
-              },
-            }}
-          />
-        </div>
+        <a
+          href={`${process.env.NEXT_PUBLIC_PORTAL_URL || "https://portal.orbit.example"}/settings`}
+          className="ml-2 w-8 h-8 rounded-full bg-[#6961ff]/20 flex items-center justify-center text-xs font-bold text-[#6961ff] hover:bg-[#6961ff]/30 transition cursor-pointer"
+          title={userName || "Account"}
+        >
+          {initials}
+        </a>
       </div>
     </header>
   );
