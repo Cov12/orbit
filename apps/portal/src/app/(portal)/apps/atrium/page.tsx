@@ -1,4 +1,39 @@
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
 import { AppLanding } from "@/components/portal/app-landing";
+
+async function getAtriumStatus(userId: string): Promise<{
+  status: "active" | "inactive" | "coming_soon";
+  launchUrl?: string;
+}> {
+  const member = await db.member.findFirst({
+    where: { clerkUserId: userId },
+    include: {
+      org: {
+        include: {
+          appAccess: { where: { app: "ATRIUM" } },
+          subscriptions: { where: { app: "ATRIUM" } },
+        },
+      },
+    },
+  });
+
+  if (!member?.org) return { status: "inactive" };
+
+  const hasAccess = member.org.appAccess.some((a) => a.enabled);
+  const hasSub = member.org.subscriptions.some(
+    (s) => s.status === "ACTIVE" || s.status === "TRIALING"
+  );
+
+  if (hasAccess && hasSub) {
+    return {
+      status: "active",
+      launchUrl: process.env.NEXT_PUBLIC_ATRIUM_URL || "https://atrium.orbit.example",
+    };
+  }
+
+  return { status: "inactive" };
+}
 
 const features = [
   {
@@ -91,7 +126,12 @@ const plans = [
   },
 ];
 
-export default function AtriumPage() {
+export default async function AtriumPage() {
+  const { userId } = await auth();
+  const { status, launchUrl } = userId
+    ? await getAtriumStatus(userId)
+    : { status: "inactive" as const, launchUrl: undefined };
+
   return (
     <AppLanding
       name="Atrium"
@@ -103,8 +143,8 @@ export default function AtriumPage() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       }
-      videoUrl="/videos/atrium-bg.mp4"
-      status="inactive"
+      status={status}
+      launchUrl={launchUrl}
       features={features}
       plans={plans}
     />

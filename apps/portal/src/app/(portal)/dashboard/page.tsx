@@ -1,8 +1,55 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
+
+async function getDashboardData(userId: string) {
+  const member = await db.member.findFirst({
+    where: { clerkUserId: userId },
+    include: {
+      org: {
+        include: {
+          members: true,
+          appAccess: true,
+          subscriptions: { where: { status: { in: ["ACTIVE", "TRIALING"] } } },
+        },
+      },
+    },
+  });
+
+  if (!member?.org) {
+    return { plan: "Free", teamCount: 1, activeApps: 0, appStatuses: {} as Record<string, boolean> };
+  }
+
+  const org = member.org;
+  const appStatuses: Record<string, boolean> = {};
+  for (const access of org.appAccess) {
+    const hasSub = org.subscriptions.some((s) => s.app === access.app);
+    const isFree = access.app === "DRIVE"; // Drive is always free
+    appStatuses[access.app] = access.enabled && (hasSub || isFree);
+  }
+
+  // Find the highest-tier plan name
+  const planNames: Record<string, number> = { FREE: 0, STARTER: 1, PRO: 2, BUSINESS: 3, GROWTH: 4, ENTERPRISE: 5 };
+  const bestSub = org.subscriptions.reduce(
+    (best, s) => ((planNames[s.plan] || 0) > (planNames[best?.plan || "FREE"] || 0) ? s : best),
+    org.subscriptions[0]
+  );
+
+  return {
+    plan: bestSub ? `${bestSub.app === "ATRIUM" ? "Atrium" : "WorkPipe"} ${bestSub.plan.charAt(0) + bestSub.plan.slice(1).toLowerCase()}` : "Free",
+    teamCount: org.members.length,
+    activeApps: Object.values(appStatuses).filter(Boolean).length,
+    appStatuses,
+  };
+}
 
 export default async function DashboardPage() {
   const user = await currentUser();
+  const { userId } = await auth();
+
+  const { plan, teamCount, activeApps, appStatuses } = userId
+    ? await getDashboardData(userId)
+    : { plan: "Free", teamCount: 1, activeApps: 0, appStatuses: {} };
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -20,15 +67,15 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="glass p-5">
           <p className="text-sm text-gray-400">Current Plan</p>
-          <p className="text-xl font-semibold mt-1">Free</p>
+          <p className="text-xl font-semibold mt-1">{plan}</p>
         </div>
         <div className="glass p-5">
           <p className="text-sm text-gray-400">Team Members</p>
-          <p className="text-xl font-semibold mt-1">1</p>
+          <p className="text-xl font-semibold mt-1">{teamCount}</p>
         </div>
         <div className="glass p-5">
           <p className="text-sm text-gray-400">Active Apps</p>
-          <p className="text-xl font-semibold mt-1">2</p>
+          <p className="text-xl font-semibold mt-1">{activeApps}</p>
         </div>
       </div>
 
@@ -46,7 +93,7 @@ export default async function DashboardPage() {
               </svg>
             }
             color="#2B2FFF"
-            status="active"
+            status={appStatuses["WORKPIPE"] ? "active" : "inactive"}
           />
           <AppCard
             name="Orbit Drive"
@@ -58,7 +105,7 @@ export default async function DashboardPage() {
               </svg>
             }
             color="#6961ff"
-            status="active"
+            status={appStatuses["DRIVE"] ? "active" : "inactive"}
           />
           <AppCard
             name="Atrium"
@@ -70,7 +117,7 @@ export default async function DashboardPage() {
               </svg>
             }
             color="#20B2AA"
-            status="inactive"
+            status={appStatuses["ATRIUM"] ? "active" : "inactive"}
           />
         </div>
       </div>
