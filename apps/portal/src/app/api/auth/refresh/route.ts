@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     process.env.NEXT_PUBLIC_DRIVE_URL,
     process.env.NEXT_PUBLIC_ATRIUM_URL,
     process.env.NEXT_PUBLIC_APP_URL,
-  ].filter(Boolean).map((u) => new URL(u).origin);
+  ].filter((u): u is string => Boolean(u)).map((u) => new URL(u).origin);
 
   const redirectOrigin = new URL(redirectUri).origin;
   const isAllowed = allowedOrigins.includes(redirectOrigin);
