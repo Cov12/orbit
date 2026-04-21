@@ -86,6 +86,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unable to resolve user profile" }, { status: 500 });
     }
 
+    // Platform admins (OWNER/ADMIN) get access to all apps regardless of subscription
+    const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
+    const appAccess = isPlatformAdmin
+      ? ["WORKPIPE", "ATRIUM", "DRIVE"]
+      : org.appAccess.map((a: any) => a.app);
+
+    const subscriptions = isPlatformAdmin && org.subscriptions.length === 0
+      ? [{ plan: "ENTERPRISE", status: "ACTIVE" }]
+      : org.subscriptions.map((s: any) => ({ plan: s.plan, status: s.status }));
+
     const token = signOrbitToken({
       sub: userId,
       email,
@@ -93,11 +103,8 @@ export async function POST(req: Request) {
       org_id: org.id,
       org_slug: org.slug,
       role: member.role,
-      subscriptions: org.subscriptions.map((s: any) => ({
-        plan: s.plan,
-        status: s.status,
-      })),
-      app_access: org.appAccess.map((a: any) => a.app),
+      subscriptions,
+      app_access: appAccess,
     });
 
     return NextResponse.json({ token });

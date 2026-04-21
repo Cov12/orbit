@@ -106,6 +106,16 @@ export async function GET(req: Request) {
       }).catch((err: unknown) => console.error("[Portal] Member sync failed:", err));
     }
 
+    // Platform admins (OWNER/ADMIN) get access to all apps regardless of subscription
+    const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
+    const appAccess = isPlatformAdmin
+      ? ["WORKPIPE", "ATRIUM", "DRIVE"]
+      : org.appAccess.map((a: any) => a.app);
+
+    const subscriptions = isPlatformAdmin && org.subscriptions.length === 0
+      ? [{ plan: "ENTERPRISE", status: "ACTIVE" }]
+      : org.subscriptions.map((s: any) => ({ plan: s.plan, status: s.status }));
+
     const token = signOrbitToken({
       sub: userId,
       email,
@@ -113,11 +123,8 @@ export async function GET(req: Request) {
       org_id: org.id,
       org_slug: org.slug,
       role: member.role,
-      subscriptions: org.subscriptions.map((s: any) => ({
-        plan: s.plan,
-        status: s.status,
-      })),
-      app_access: org.appAccess.map((a: any) => a.app),
+      subscriptions,
+      app_access: appAccess,
     });
 
     // Redirect back to the app's callback with the fresh token
