@@ -10,6 +10,7 @@ import { WorkspaceSwitcher } from "@/components/portal/workspace-switcher";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "◆" },
   { href: "/apps", label: "Apps", icon: "⊞" },
+  { href: "/settings/team", label: "Team", icon: "◎" },
   { href: "/billing", label: "Billing", icon: "◈" },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];

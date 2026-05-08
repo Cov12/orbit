@@ -17,6 +17,24 @@ model Organization {
   members       Member[]
   subscriptions Subscription[]
   appAccess     AppAccess[]
+  invites       Invite[]
+}
+
+model Invite {
+  id         String      @id @default(cuid())
+  email      String
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  role       MemberRole  @default(MEMBER)
+  token      String      @unique @default(cuid())
+  invitedBy  String      // clerkUserId of inviter
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime    @default(now())
+
+  @@unique([email, orgId])
+  @@index([token])
+  @@index([orgId])
 }
 
 model Member {
