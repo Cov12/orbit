@@ -46,13 +46,24 @@ export default function AcceptInvitePage() {
       });
   }, [token]);
 
+  const getReturnUrl = () => encodeURIComponent(window.location.href);
+
+  const handleSignUp = () => {
+    router.push(`/sign-up?redirect_url=${getReturnUrl()}`);
+  };
+
+  const handleSignIn = () => {
+    router.push(`/sign-in?redirect_url=${getReturnUrl()}`);
+  };
+
   const handleAccept = async () => {
     if (!isSignedIn) {
-      // Preserve the full URL including any Clerk ticket params
-      const returnUrl = encodeURIComponent(window.location.href);
-      // Redirect to sign-up for new users, sign-in for existing
-      const authPath = isNewUser ? "/sign-up" : "/sign-in";
-      router.push(`${authPath}?redirect_url=${returnUrl}`);
+      // Default to sign-up for new users from Clerk invitation flow
+      if (isNewUser) {
+        handleSignUp();
+      } else {
+        handleSignIn();
+      }
       return;
     }
 
@@ -182,42 +193,57 @@ export default function AcceptInvitePage() {
             </p>
           </div>
 
-          {!isSignedIn && (
-            <p className="text-sm text-gray-500 text-center mb-6">
-              {isNewUser
-                ? "Create an account to accept this invite."
-                : "Sign in to your account to accept this invite."}
-            </p>
-          )}
-
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
               {error}
             </div>
           )}
 
-          <button
-            onClick={handleAccept}
-            disabled={accepting}
-            className="w-full py-3 rounded-lg bg-[#2B2FFF] text-white font-medium hover:bg-[#2B2FFF]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {accepting ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Accepting...
-              </span>
-            ) : isSignedIn ? (
-              "Accept Invite"
-            ) : isNewUser ? (
-              "Create Account to Accept"
-            ) : (
-              "Sign in to Accept"
-            )}
-          </button>
-
-          <p className="mt-4 text-xs text-gray-500 text-center">
-            By accepting, you&apos;ll gain access to this workspace and its apps.
-          </p>
+          {isSignedIn ? (
+            <>
+              <button
+                onClick={handleAccept}
+                disabled={accepting}
+                className="w-full py-3 rounded-lg bg-[#2B2FFF] text-white font-medium hover:bg-[#2B2FFF]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {accepting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Accepting...
+                  </span>
+                ) : (
+                  "Accept Invite"
+                )}
+              </button>
+              <p className="mt-4 text-xs text-gray-500 text-center">
+                By accepting, you&apos;ll gain access to this workspace and its apps.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-400 text-center mb-4">
+                To accept this invite, please sign in or create an account.
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={handleSignUp}
+                  className="w-full py-3 rounded-lg bg-[#2B2FFF] text-white font-medium hover:bg-[#2B2FFF]/90 transition-colors"
+                >
+                  Create Account
+                </button>
+                <button
+                  onClick={handleSignIn}
+                  className="w-full py-3 rounded-lg bg-white/10 text-white font-medium hover:bg-white/20 transition-colors border border-white/10"
+                >
+                  Sign In
+                </button>
+              </div>
+              <p className="mt-4 text-xs text-gray-500 text-center">
+                New to Orbit? Click &quot;Create Account&quot; to get started.<br />
+                Already have an account? Click &quot;Sign In&quot; instead.
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
