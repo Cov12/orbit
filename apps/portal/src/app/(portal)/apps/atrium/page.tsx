@@ -20,12 +20,15 @@ async function getAtriumStatus(userId: string): Promise<{
 
   if (!member?.org) return { status: "inactive" };
 
+  // Platform admins (OWNER/ADMIN) get access to all apps regardless of subscription
+  const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
+
   const hasAccess = member.org.appAccess.some((a) => a.enabled);
   const hasSub = member.org.subscriptions.some(
     (s) => s.status === "ACTIVE" || s.status === "TRIALING"
   );
 
-  if (hasAccess && hasSub) {
+  if (isPlatformAdmin || (hasAccess && hasSub)) {
     return {
       status: "active",
       launchUrl: process.env.NEXT_PUBLIC_ATRIUM_URL || "https://atrium.orbit.example",
