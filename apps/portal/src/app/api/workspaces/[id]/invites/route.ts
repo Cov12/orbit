@@ -1,7 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sendInviteEmail } from "@/lib/email";
 
 /**
  * GET /api/workspaces/[id]/invites
@@ -42,12 +41,19 @@ export async function GET(
         id: true,
         email: true,
         role: true,
+        token: true,
         createdAt: true,
         expiresAt: true,
       },
     });
 
-    return NextResponse.json({ invites });
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://portal.orbit.example";
+    const invitesWithUrl = invites.map((inv) => ({
+      ...inv,
+      inviteUrl: `${appUrl}/invites/${inv.token}`,
+    }));
+
+    return NextResponse.json({ invites: invitesWithUrl });
   } catch (error) {
     console.error("[Invites GET]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -133,21 +139,29 @@ export async function POST(
       },
     });
 
-    // Send invite email
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://portal.orbit.example";
     const inviteUrl = `${appUrl}/invites/${invite.token}`;
 
+    // Send invite via Clerk
+    let emailSent = false;
     try {
-      await sendInviteEmail({
-        to: email,
-        orgName: member.org.name,
-        inviterName: member.name || "A team member",
-        inviteUrl,
-        role,
+      const clerk = await clerkClient();
+      await clerk.invitations.createInvitation({
+        emailAddress: email.toLowerCase(),
+        redirectUrl: inviteUrl,
+        publicMetadata: {
+          inviteToken: invite.token,
+          orgId,
+          orgName: member.org.name,
+          role,
+        },
       });
-    } catch (emailError) {
-      console.error("[Invite Email]", emailError);
-      // Don't fail the request if email fails - invite is still created
+      emailSent = true;
+    } catch (clerkError: unknown) {
+      // Clerk invitation may fail if user already exists in Clerk
+      // That's okay - they can still use the invite link
+      const errorMessage = clerkError instanceof Error ? clerkError.message : "Unknown error";
+      console.log("[Clerk Invite]", errorMessage);
     }
 
     return NextResponse.json({
@@ -155,7 +169,10 @@ export async function POST(
         id: invite.id,
         email: invite.email,
         role: invite.role,
+        token: invite.token,
         expiresAt: invite.expiresAt,
+        inviteUrl,
+        emailSent,
       },
     });
   } catch (error) {

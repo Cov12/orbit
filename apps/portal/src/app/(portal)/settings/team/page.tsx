@@ -16,6 +16,7 @@ interface Invite {
   role: "ADMIN" | "MEMBER";
   createdAt: string;
   expiresAt: string;
+  inviteUrl: string;
 }
 
 export default function TeamSettingsPage() {
@@ -32,7 +33,9 @@ export default function TeamSettingsPage() {
   const [inviteRole, setInviteRole] = useState<"MEMBER" | "ADMIN">("MEMBER");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
-  const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState<{ url: string; emailSent: boolean } | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   // Fetch current workspace first
   useEffect(() => {
@@ -94,7 +97,7 @@ export default function TeamSettingsPage() {
 
     setInviting(true);
     setInviteError(null);
-    setInviteSuccess(false);
+    setInviteSuccess(null);
 
     try {
       const res = await fetch(`/api/workspaces/${workspaceId}/invites`, {
@@ -111,7 +114,7 @@ export default function TeamSettingsPage() {
         return;
       }
 
-      setInviteSuccess(true);
+      setInviteSuccess({ url: data.invite.inviteUrl, emailSent: data.invite.emailSent });
       setInviteEmail("");
       setInviteRole("MEMBER");
       fetchData(); // Refresh invites list
@@ -119,6 +122,46 @@ export default function TeamSettingsPage() {
       setInviteError("Failed to send invite");
     }
     setInviting(false);
+  };
+
+  const handleResendInvite = async (inviteId: string) => {
+    if (!workspaceId) return;
+    setResendingId(inviteId);
+
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/invites/${inviteId}`, {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Update invite in list with new expiration
+        setInvites(invites.map((i) =>
+          i.id === inviteId ? { ...i, expiresAt: data.expiresAt } : i
+        ));
+      }
+    } catch {
+      // Silently fail
+    }
+    setResendingId(null);
+  };
+
+  const handleCopyUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedUrl(url);
+      setTimeout(() => setCopiedUrl(null), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopiedUrl(url);
+      setTimeout(() => setCopiedUrl(null), 2000);
+    }
   };
 
   const handleRevokeInvite = async (inviteId: string) => {
@@ -237,7 +280,28 @@ export default function TeamSettingsPage() {
               <p className="text-sm text-red-400">{inviteError}</p>
             )}
             {inviteSuccess && (
-              <p className="text-sm text-green-400">Invite sent successfully!</p>
+              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 space-y-2">
+                <p className="text-sm text-green-400">
+                  {inviteSuccess.emailSent
+                    ? "Invite sent successfully! An email has been sent to the invitee."
+                    : "Invite created! Share the link below with the invitee."}
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={inviteSuccess.url}
+                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCopyUrl(inviteSuccess.url)}
+                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white hover:bg-white/10 transition-colors"
+                  >
+                    {copiedUrl === inviteSuccess.url ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+              </div>
             )}
           </form>
         </div>
@@ -251,21 +315,46 @@ export default function TeamSettingsPage() {
             {invites.map((invite) => (
               <div
                 key={invite.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-white/5"
+                className="p-3 rounded-lg bg-white/5 space-y-2"
               >
-                <div>
-                  <p className="text-white">{invite.email}</p>
-                  <p className="text-sm text-gray-500">
-                    {invite.role} · Expires{" "}
-                    {new Date(invite.expiresAt).toLocaleDateString()}
-                  </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white">{invite.email}</p>
+                    <p className="text-sm text-gray-500">
+                      {invite.role} · Expires{" "}
+                      {new Date(invite.expiresAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleResendInvite(invite.id)}
+                      disabled={resendingId === invite.id}
+                      className="px-3 py-1.5 rounded-lg text-sm text-blue-400 hover:bg-blue-500/10 transition-colors disabled:opacity-50"
+                    >
+                      {resendingId === invite.id ? "Sending..." : "Resend"}
+                    </button>
+                    <button
+                      onClick={() => handleRevokeInvite(invite.id)}
+                      className="px-3 py-1.5 rounded-lg text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      Revoke
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => handleRevokeInvite(invite.id)}
-                  className="px-3 py-1.5 rounded-lg text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  Revoke
-                </button>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={invite.inviteUrl}
+                    className="flex-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-400 font-mono"
+                  />
+                  <button
+                    onClick={() => handleCopyUrl(invite.inviteUrl)}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white hover:bg-white/10 transition-colors"
+                  >
+                    {copiedUrl === invite.inviteUrl ? "Copied!" : "Copy"}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
