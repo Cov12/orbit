@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 
 interface InviteDetails {
@@ -15,7 +15,11 @@ interface InviteDetails {
 export default function AcceptInvitePage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isSignedIn, isLoaded } = useAuth();
+
+  // Detect if this is a new user from Clerk invitation
+  const isNewUser = searchParams.get("__clerk_status") === "sign_up";
 
   const [invite, setInvite] = useState<InviteDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,9 +48,11 @@ export default function AcceptInvitePage() {
 
   const handleAccept = async () => {
     if (!isSignedIn) {
-      // Redirect to sign-in with return URL
+      // Preserve the full URL including any Clerk ticket params
       const returnUrl = encodeURIComponent(window.location.href);
-      router.push(`/sign-in?redirect_url=${returnUrl}`);
+      // Redirect to sign-up for new users, sign-in for existing
+      const authPath = isNewUser ? "/sign-up" : "/sign-in";
+      router.push(`${authPath}?redirect_url=${returnUrl}`);
       return;
     }
 
@@ -178,7 +184,9 @@ export default function AcceptInvitePage() {
 
           {!isSignedIn && (
             <p className="text-sm text-gray-500 text-center mb-6">
-              You&apos;ll need to sign in or create an account to accept this invite.
+              {isNewUser
+                ? "Create an account to accept this invite."
+                : "Sign in to your account to accept this invite."}
             </p>
           )}
 
@@ -200,6 +208,8 @@ export default function AcceptInvitePage() {
               </span>
             ) : isSignedIn ? (
               "Accept Invite"
+            ) : isNewUser ? (
+              "Create Account to Accept"
             ) : (
               "Sign in to Accept"
             )}
