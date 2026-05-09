@@ -20,11 +20,14 @@ export default function AcceptInvitePage() {
 
   // Detect if this is a new user from Clerk invitation
   const isNewUser = searchParams.get("__clerk_status") === "sign_up";
+  // Check if we should skip auto-redirect (user came back from auth page)
+  const skipAutoRedirect = searchParams.get("manual") === "true";
 
   const [invite, setInvite] = useState<InviteDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
   // Fetch invite details
   useEffect(() => {
@@ -45,6 +48,40 @@ export default function AcceptInvitePage() {
         setLoading(false);
       });
   }, [token]);
+
+  // Auto-redirect: check if email exists in Clerk and redirect to appropriate auth page
+  useEffect(() => {
+    // Skip if: still loading, already signed in, no invite, or manual mode
+    if (!isLoaded || loading || isSignedIn || !invite || skipAutoRedirect) return;
+    // Skip if invite has issues
+    if (invite.expired || invite.alreadyAccepted) return;
+
+    const checkEmailAndRedirect = async () => {
+      setCheckingEmail(true);
+      try {
+        const res = await fetch(`/api/invites/${token}/check-email`);
+        if (!res.ok) {
+          setCheckingEmail(false);
+          return;
+        }
+        const data = await res.json();
+        const returnUrl = encodeURIComponent(window.location.href + "?manual=true");
+
+        if (data.exists) {
+          // User exists in Clerk - redirect to sign-in
+          router.push(`/sign-in?redirect_url=${returnUrl}`);
+        } else {
+          // New user - redirect to sign-up
+          router.push(`/sign-up?redirect_url=${returnUrl}`);
+        }
+      } catch {
+        // If check fails, show buttons instead
+        setCheckingEmail(false);
+      }
+    };
+
+    checkEmailAndRedirect();
+  }, [isLoaded, loading, isSignedIn, invite, token, router, skipAutoRedirect]);
 
   const getReturnUrl = () => encodeURIComponent(window.location.href);
 
@@ -93,12 +130,14 @@ export default function AcceptInvitePage() {
     }
   };
 
-  if (!isLoaded || loading) {
+  if (!isLoaded || loading || checkingEmail) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-[#2B2FFF] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="mt-4 text-gray-400">Loading invite...</p>
+          <p className="mt-4 text-gray-400">
+            {checkingEmail ? "Preparing your account..." : "Loading invite..."}
+          </p>
         </div>
       </div>
     );
