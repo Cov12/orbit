@@ -1,0 +1,132 @@
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { db } from "@/lib/db";
+
+/**
+ * POST /api/workspaces/create
+ *
+ * Creates a new workspace with a 7-day trial subscription.
+ * No credit card required upfront.
+ */
+export async function POST(req: Request) {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { name, industry, products } = body as {
+      name: string;
+      industry?: string;
+      products: Array<{
+        app: "WORKPIPE" | "ATRIUM";
+        plan: string;
+      }>;
+    };
+
+    if (!name?.trim()) {
+      return NextResponse.json({ error: "Workspace name is required" }, { status: 400 });
+    }
+
+    if (!products || products.length === 0) {
+      return NextResponse.json({ error: "At least one product must be selected" }, { status: 400 });
+    }
+
+    // Generate a unique slug from the name
+    const baseSlug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 30);
+
+    // Check for existing slug and make unique if needed
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await db.organization.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${suffix}`;
+      suffix++;
+    }
+
+    // Calculate trial end date (7 days from now)
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + 7);
+
+    // Create the organization with subscriptions
+    const org = await db.organization.create({
+      data: {
+        name: name.trim(),
+        slug,
+        members: {
+          create: {
+            clerkUserId: userId,
+            role: "OWNER",
+          },
+        },
+        subscriptions: {
+          create: products.map((p) => ({
+            app: p.app,
+            plan: p.plan as "STARTER" | "PRO" | "BUSINESS" | "GROWTH" | "ENTERPRISE",
+            status: "TRIALING",
+            currentPeriodEnd: trialEndDate,
+          })),
+        },
+        appAccess: {
+          create: products.map((p) => ({
+            app: p.app,
+            enabled: true,
+          })),
+        },
+      },
+      include: {
+        subscriptions: true,
+        members: { where: { clerkUserId: userId } },
+      },
+    });
+
+    // Also give Orbit Drive access (free with any subscription)
+    const hasDrive = products.some((p) => p.app === "DRIVE");
+    if (!hasDrive) {
+      await db.subscription.create({
+        data: {
+          orgId: org.id,
+          app: "DRIVE",
+          plan: "FREE",
+          status: "ACTIVE",
+        },
+      });
+      await db.appAccess.create({
+        data: {
+          orgId: org.id,
+          app: "DRIVE",
+          enabled: true,
+        },
+      });
+    }
+
+    // Set this as the current workspace
+    const cookieStore = await cookies();
+    cookieStore.set("orbit_workspace", org.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 365,
+      path: "/",
+    });
+
+    return NextResponse.json({
+      success: true,
+      workspace: {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        trialEndsAt: trialEndDate.toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("[Workspace Create]", error);
+    return NextResponse.json({ error: "Failed to create workspace" }, { status: 500 });
+  }
+}
