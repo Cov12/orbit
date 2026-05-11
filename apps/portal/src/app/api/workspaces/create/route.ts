@@ -87,24 +87,21 @@ export async function POST(req: Request) {
     });
 
     // Also give Orbit Drive access (free with any subscription)
-    const hasDrive = products.some((p) => p.app === "DRIVE");
-    if (!hasDrive) {
-      await db.subscription.create({
-        data: {
-          orgId: org.id,
-          app: "DRIVE",
-          plan: "FREE",
-          status: "ACTIVE",
-        },
-      });
-      await db.appAccess.create({
-        data: {
-          orgId: org.id,
-          app: "DRIVE",
-          enabled: true,
-        },
-      });
-    }
+    await db.subscription.create({
+      data: {
+        orgId: org.id,
+        app: "DRIVE",
+        plan: "FREE",
+        status: "ACTIVE",
+      },
+    });
+    await db.appAccess.create({
+      data: {
+        orgId: org.id,
+        app: "DRIVE",
+        enabled: true,
+      },
+    });
 
     // Set this as the current workspace
     const cookieStore = await cookies();
