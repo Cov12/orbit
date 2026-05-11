@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 
 /**
@@ -7,6 +8,7 @@ import { db } from "@/lib/db";
  *
  * Returns all workspaces the current user belongs to.
  * Auto-creates a personal workspace on first visit if none exist.
+ * Respects the orbit_workspace cookie for current workspace selection.
  */
 export async function GET() {
   try {
@@ -15,6 +17,10 @@ export async function GET() {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Get the selected workspace from cookie
+    const cookieStore = await cookies();
+    const selectedWorkspaceId = cookieStore.get("orbit_workspace")?.value;
 
     // Find all workspaces this user is a member of
     let memberships = await db.member.findMany({
@@ -70,9 +76,18 @@ export async function GET() {
       plan: m.org.subscriptions[0]?.plan || "FREE",
     }));
 
+    // Find the selected workspace, or default to first
+    let current = workspaces[0];
+    if (selectedWorkspaceId) {
+      const selected = workspaces.find((ws) => ws.id === selectedWorkspaceId);
+      if (selected) {
+        current = selected;
+      }
+    }
+
     return NextResponse.json({
       workspaces,
-      current: workspaces[0], // TODO: persist user's last-selected workspace
+      current,
     });
   } catch (error) {
     console.error("[Workspaces]", error);

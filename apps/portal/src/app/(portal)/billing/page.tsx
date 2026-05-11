@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SubscriptionCard } from "@/components/portal/subscription-card";
 
 type Interval = "monthly" | "annual";
+
+interface CurrentWorkspace {
+  id: string;
+  name: string;
+  role: string;
+}
 
 const workpipePlans = [
   {
@@ -121,6 +127,22 @@ const atriumPlans = [
 export default function BillingPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [interval, setInterval] = useState<Interval>("monthly");
+  const [workspace, setWorkspace] = useState<CurrentWorkspace | null>(null);
+  const [loadingWorkspace, setLoadingWorkspace] = useState(true);
+
+  // Fetch current workspace to check role
+  useEffect(() => {
+    fetch("/api/workspaces")
+      .then((r) => r.json())
+      .then((data) => {
+        setWorkspace(data.current || null);
+        setLoadingWorkspace(false);
+      })
+      .catch(() => setLoadingWorkspace(false));
+  }, []);
+
+  // Only OWNER and ADMIN can access billing
+  const canAccessBilling = workspace?.role === "OWNER" || workspace?.role === "ADMIN";
 
   async function handleSelect(app: string, plan: string) {
     const key = `${app}-${plan}`;
@@ -142,12 +164,47 @@ export default function BillingPage() {
     }
   }
 
+  if (loadingWorkspace) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-[#2B2FFF] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!canAccessBilling) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-[#1a1a1f] rounded-xl border border-white/10 p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-[#2B2FFF]/10 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-[#2B2FFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-white mb-2">Billing Access Restricted</h1>
+          <p className="text-gray-400 mb-2">
+            Only workspace owners and admins can manage billing and subscriptions.
+          </p>
+          <p className="text-gray-500 text-sm">
+            You&apos;re currently a <span className="text-white font-medium capitalize">{workspace?.role?.toLowerCase()}</span> in{" "}
+            <span className="text-white font-medium">{workspace?.name}</span>.
+          </p>
+          <p className="text-gray-500 text-sm mt-4">
+            Contact your workspace owner if you need to upgrade your plan.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-12">
       <div>
         <h1 className="text-2xl font-bold">Billing</h1>
         <p className="text-gray-400 mt-1">
-          Subscribe to the products you need. Orbit Drive is included free with any plan.
+          Manage billing for <span className="text-white font-medium">{workspace?.name}</span>. Orbit Drive is included free with any plan.
         </p>
       </div>
 

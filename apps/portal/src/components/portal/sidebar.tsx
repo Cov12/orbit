@@ -1,23 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { Logo } from "@/components/shared/logo";
 import { WorkspaceSwitcher } from "@/components/portal/workspace-switcher";
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  ownerOnly?: boolean;
+}
+
+const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "◆" },
   { href: "/apps", label: "Apps", icon: "⊞" },
   { href: "/settings/team", label: "Team", icon: "◎" },
-  { href: "/billing", label: "Billing", icon: "◈" },
+  { href: "/billing", label: "Billing", icon: "◈", ownerOnly: true },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [workspaceRole, setWorkspaceRole] = useState<string | null>(null);
+
+  // Fetch current workspace role
+  useEffect(() => {
+    fetch("/api/workspaces")
+      .then((r) => r.json())
+      .then((data) => {
+        setWorkspaceRole(data.current?.role || null);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Filter nav items based on role (OWNER/ADMIN see all, MEMBER sees filtered)
+  const isOwnerOrAdmin = workspaceRole === "OWNER" || workspaceRole === "ADMIN";
+  const filteredNavItems = navItems.filter((item) => !item.ownerOnly || isOwnerOrAdmin);
 
   return (
     <aside
@@ -40,7 +62,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
             <Link

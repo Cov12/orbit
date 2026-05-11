@@ -255,31 +255,35 @@ export default function AcceptInvitePage() {
                 )}
               </button>
               <p className="mt-4 text-xs text-gray-500 text-center">
-                By accepting, you&apos;ll gain access to this workspace and its apps.
+                This workspace will be added to your account. You can switch between
+                workspaces using the dropdown in the sidebar.
               </p>
             </>
           ) : (
             <>
-              <p className="text-sm text-gray-400 text-center mb-4">
-                To accept this invite, please sign in or create an account.
-              </p>
               <div className="space-y-3">
                 <button
-                  onClick={handleSignUp}
+                  onClick={handleSignIn}
                   className="w-full py-3 rounded-lg bg-[#2B2FFF] text-white font-medium hover:bg-[#2B2FFF]/90 transition-colors"
                 >
-                  Create Account
+                  Sign In to Accept
                 </button>
                 <button
-                  onClick={handleSignIn}
+                  onClick={handleSignUp}
                   className="w-full py-3 rounded-lg bg-white/10 text-white font-medium hover:bg-white/20 transition-colors border border-white/10"
                 >
-                  Sign In
+                  Create New Account
                 </button>
               </div>
-              <p className="mt-4 text-xs text-gray-500 text-center">
-                New to Orbit? Click &quot;Create Account&quot; to get started.<br />
-                Already have an account? Click &quot;Sign In&quot; instead.
+              <div className="mt-5 p-3 rounded-lg bg-[#2B2FFF]/5 border border-[#2B2FFF]/20">
+                <p className="text-xs text-gray-300 text-center">
+                  <span className="font-medium text-white">Already have a Orbit account?</span><br />
+                  Sign in to add this workspace to your existing account.
+                  You&apos;ll be able to switch between all your workspaces.
+                </p>
+              </div>
+              <p className="mt-3 text-xs text-gray-500 text-center">
+                New to Orbit? Click &quot;Create New Account&quot; to get started.
               </p>
             </>
           )}
