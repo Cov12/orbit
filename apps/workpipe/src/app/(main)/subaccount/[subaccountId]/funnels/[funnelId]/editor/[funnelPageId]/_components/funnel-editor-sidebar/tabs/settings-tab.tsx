@@ -21,6 +21,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { ColorPicker } from '@/components/ui/color-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -162,10 +163,15 @@ const SettingsTab = (props: Props) => {
           </div>
           <div className="flex flex-col gap-2">
             <p className="text-muted-foreground">Color</p>
-            <Input
+            <ColorPicker
               id="color"
-              onChange={handleOnChanges}
-              value={state.editor.selectedElement.styles.color}
+              onChange={value =>
+                handleOnChanges({
+                  target: { id: 'color', value },
+                })
+              }
+              value={state.editor.selectedElement.styles.color?.toString()}
+              placeholder="#000000"
             />
           </div>
           <div className="flex gap-4">
@@ -409,22 +415,16 @@ const SettingsTab = (props: Props) => {
           </div>
           <div className="flex flex-col gap-2">
             <Label className="text-muted-foreground">Background Color</Label>
-            <div className="flex overflow-clip rounded-md border-[1px]">
-              <div
-                className="w-12"
-                style={{
-                  backgroundColor:
-                    state.editor.selectedElement.styles.backgroundColor,
-                }}
-              />
-              <Input
-                placeholder="#HFI245"
-                className="mr-2 rounded-none !border-y-0 !border-r-0"
-                id="backgroundColor"
-                onChange={handleOnChanges}
-                value={state.editor.selectedElement.styles.backgroundColor}
-              />
-            </div>
+            <ColorPicker
+              id="backgroundColor"
+              onChange={value =>
+                handleOnChanges({
+                  target: { id: 'backgroundColor', value },
+                })
+              }
+              value={state.editor.selectedElement.styles.backgroundColor?.toString()}
+              placeholder="#ffffff"
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label className="text-muted-foreground">Background Image</Label>

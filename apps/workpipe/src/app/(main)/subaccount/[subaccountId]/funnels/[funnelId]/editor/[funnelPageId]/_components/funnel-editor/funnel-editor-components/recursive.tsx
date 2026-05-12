@@ -9,6 +9,8 @@ import {
   QRCodeComponent,
   ButtonComponent,
   ImageComponent,
+  TabsComponent,
+  AccordionComponent,
 } from '@/components/funnel-builder/content'
 import { EditorElement } from '@/providers/editor/editor-provider'
 
@@ -67,6 +69,10 @@ const Recursive = ({ element }: Props) => {
       return <ButtonComponent element={element} />
     case 'image':
       return <ImageComponent element={element} />
+    case 'tabs':
+      return <TabsComponent element={element} />
+    case 'accordion':
+      return <AccordionComponent element={element} />
 
     default:
       return null

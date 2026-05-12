@@ -393,6 +393,54 @@ const Container = ({ element }: Props) => {
           },
         })
         break
+      case 'tabs':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                tabs: [
+                  { id: v4(), label: 'Tab 1', content: 'Content for Tab 1' },
+                  { id: v4(), label: 'Tab 2', content: 'Content for Tab 2' },
+                  { id: v4(), label: 'Tab 3', content: 'Content for Tab 3' },
+                ],
+                variant: 'default',
+                tabPosition: 'top',
+                tabAlignment: 'start',
+              } as any,
+              id: v4(),
+              name: 'Tabs',
+              styles: { ...defaultStyles },
+              type: 'tabs',
+            },
+          },
+        })
+        break
+      case 'accordion':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                items: [
+                  { id: v4(), title: 'What is your return policy?', content: 'We offer a 30-day return policy for all unused items.' },
+                  { id: v4(), title: 'How long does shipping take?', content: 'Standard shipping takes 5-7 business days.' },
+                  { id: v4(), title: 'Do you offer international shipping?', content: 'Yes, we ship to over 50 countries worldwide.' },
+                ],
+                allowMultiple: false,
+                variant: 'default',
+                iconPosition: 'right',
+              } as any,
+              id: v4(),
+              name: 'Accordion',
+              styles: { ...defaultStyles },
+              type: 'accordion',
+            },
+          },
+        })
+        break
     }
   }
 
