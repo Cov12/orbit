@@ -16,6 +16,7 @@ import {
     upsertFunnelPage,
 } from '@/lib/queries'
 import { FunnelPageSchema } from '@/lib/types'
+import { useModal } from '@/providers/modal-provider'
 
 import Loading from '../global/loading'
 import { Button } from '../ui/button'
@@ -52,6 +53,7 @@ const CreateFunnelPage: React.FC<CreateFunnelPageProps> = ({
 }) => {
   const { toast } = useToast()
   const router = useRouter()
+  const { setClose } = useModal()
   //ch
   const form = useForm<z.infer<typeof FunnelPageSchema>>({
     resolver: zodResolver(FunnelPageSchema),
@@ -96,13 +98,14 @@ const CreateFunnelPage: React.FC<CreateFunnelPageProps> = ({
         title: 'Success',
         description: 'Saved funnel page details',
       })
+      setClose()
       router.refresh()
     } catch (error) {
-      console.log(error)
+      console.error('Failed to save funnel page:', error)
       toast({
         variant: 'destructive',
         title: 'Oops!',
-        description: 'Could not save funnel page details',
+        description: error instanceof Error ? error.message : 'Could not save funnel page details',
       })
     }
   }
