@@ -120,7 +120,7 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
     } catch (error) {
       toast({
         variant: 'destructive',
-        title: 'Oppse!',
+        title: 'Oops!',
         description: 'Could not save sub account details.',
       })
     }

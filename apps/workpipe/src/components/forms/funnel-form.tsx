@@ -86,7 +86,7 @@ const FunnelForm: React.FC<CreateFunnelProps> = ({
     else
       toast({
         variant: 'destructive',
-        title: 'Oppse!',
+        title: 'Oops!',
         description: 'Could not save funnel details',
       })
     setClose()

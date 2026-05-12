@@ -133,8 +133,8 @@ const BusinessDetails = ({ data }: Props) => {
       console.log(error)
       toast({
         variant: 'destructive',
-        title: 'Oppse!',
-        description: 'could not create your business',
+        title: 'Oops!',
+        description: 'Could not create your business',
       })
     }
   }
@@ -154,8 +154,8 @@ const BusinessDetails = ({ data }: Props) => {
       console.log(error)
       toast({
         variant: 'destructive',
-        title: 'Oppse!',
-        description: 'could not delete your business ',
+        title: 'Oops!',
+        description: 'Could not delete your business',
       })
     }
     setDeletingBusiness(false)

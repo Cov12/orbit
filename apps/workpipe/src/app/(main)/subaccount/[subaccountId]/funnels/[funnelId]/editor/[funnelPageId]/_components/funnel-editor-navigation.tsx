@@ -73,7 +73,7 @@ const FunnelEditorNavigation = ({
       })
       router.refresh()
     } else {
-      toast('Oppse!', {
+      toast('Oops!', {
         description: 'You need to have a title!',
       })
       event.target.value = funnelPageDetails.name
@@ -115,7 +115,7 @@ const FunnelEditorNavigation = ({
         description: 'Saved Editor',
       })
     } catch (error) {
-      toast('Oppse!', {
+      toast('Oops!', {
         description: 'Could not save editor',
       })
     } finally {

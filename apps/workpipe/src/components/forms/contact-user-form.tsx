@@ -79,8 +79,8 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({ subaccountId }) => {
     } catch (error) {
       toast({
         variant: 'destructive',
-        title: 'Oppse!',
-        description: 'Could not save funnel details',
+        title: 'Oops!',
+        description: 'Could not save contact details',
       })
     }
   }

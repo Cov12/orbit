@@ -86,7 +86,7 @@ const CreatePipelineForm: React.FC<CreatePipelineFormProps> = ({
     } catch (error) {
       toast({
         variant: 'destructive',
-        title: 'Oppse!',
+        title: 'Oops!',
         description: 'Could not save pipeline details',
       })
     }

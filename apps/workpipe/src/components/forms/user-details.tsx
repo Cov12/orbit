@@ -205,7 +205,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
       } else {
         toast({
           variant: 'destructive',
-          title: 'Oppse!',
+          title: 'Oops!',
           description: 'Could not update user information',
         })
       }

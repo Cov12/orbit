@@ -94,15 +94,15 @@ const CreateFunnelPage: React.FC<CreateFunnelPageProps> = ({
 
       toast({
         title: 'Success',
-        description: 'Saves Funnel Page Details',
+        description: 'Saved funnel page details',
       })
       router.refresh()
     } catch (error) {
       console.log(error)
       toast({
         variant: 'destructive',
-        title: 'Oppse!',
-        description: 'Could Save Funnel Page Details',
+        title: 'Oops!',
+        description: 'Could not save funnel page details',
       })
     }
   }
@@ -212,7 +212,7 @@ const CreateFunnelPage: React.FC<CreateFunnelPageProps> = ({
                     )
                     toast({
                       title: 'Success',
-                      description: 'Saves Funnel Page Details',
+                      description: 'Saved funnel page details',
                     })
                     router.refresh()
                   }}

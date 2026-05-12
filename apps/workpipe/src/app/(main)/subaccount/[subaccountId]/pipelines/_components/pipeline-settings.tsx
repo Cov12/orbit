@@ -59,8 +59,8 @@ const PipelineSettings = ({
                   } catch (error) {
                     toast({
                       variant: 'destructive',
-                      title: 'Oppse!',
-                      description: 'Could Delete Pipeline',
+                      title: 'Oops!',
+                      description: 'Could not delete pipeline',
                     })
                   }
                 }}
