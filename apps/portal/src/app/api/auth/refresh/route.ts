@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { signOrbitToken } from "@/lib/jwt";
+import { getEffectiveAppAccess } from "@/lib/entitlements";
 
 /**
  * GET /api/auth/refresh?redirect_uri=<url>
@@ -108,9 +109,7 @@ export async function GET(req: Request) {
 
     // Platform admins (OWNER/ADMIN) get access to all apps regardless of subscription
     const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
-    const appAccess = isPlatformAdmin
-      ? ["WORKPIPE", "ATRIUM", "DRIVE"]
-      : org.appAccess.map((a: any) => a.app);
+    const appAccess = getEffectiveAppAccess(org, isPlatformAdmin);
 
     const subscriptions = isPlatformAdmin && org.subscriptions.length === 0
       ? [{ plan: "ENTERPRISE", status: "ACTIVE" }]
