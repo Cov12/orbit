@@ -14,6 +14,7 @@ export interface OrbitJwtPayload {
     status: SubStatus;
   }[];
   app_access: AppType[];
+  aud?: string;
   iat: number;
   exp: number;
 }
