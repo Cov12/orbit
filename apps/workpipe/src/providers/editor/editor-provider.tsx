@@ -113,6 +113,59 @@ const updateAnElement = (
   })
 }
 
+// Helper function to generate UUID (simple version)
+const generateId = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
+
+// Deep clone an element with new IDs
+const cloneElementWithNewIds = (element: EditorElement): EditorElement => {
+  const clonedElement: EditorElement = {
+    ...element,
+    id: generateId(),
+    name: `${element.name} (copy)`,
+  }
+
+  if (Array.isArray(element.content)) {
+    clonedElement.content = element.content.map(child => cloneElementWithNewIds(child))
+  } else {
+    clonedElement.content = { ...element.content }
+  }
+
+  return clonedElement
+}
+
+// Insert an element after another element in the tree
+const insertElementAfter = (
+  editorArray: EditorElement[],
+  targetId: string,
+  newElement: EditorElement
+): EditorElement[] => {
+  const result: EditorElement[] = []
+
+  for (const item of editorArray) {
+    result.push(item)
+
+    if (item.id === targetId) {
+      result.push(newElement)
+    } else if (Array.isArray(item.content)) {
+      const updatedContent = insertElementAfter(item.content, targetId, newElement)
+      if (updatedContent !== item.content) {
+        result[result.length - 1] = {
+          ...item,
+          content: updatedContent,
+        }
+      }
+    }
+  }
+
+  return result
+}
+
 const deleteAnElement = (
   editorArray: EditorElement[],
   action: EditorAction
@@ -340,6 +393,35 @@ const editorReducer = (
         },
       }
       return funnelPageIdState
+
+    case 'DUPLICATE_ELEMENT':
+      const clonedElement = cloneElementWithNewIds(action.payload.elementDetails)
+      const elementsWithDuplicate = insertElementAfter(
+        state.editor.elements,
+        action.payload.elementDetails.id,
+        clonedElement
+      )
+
+      const duplicateEditorState = {
+        ...state.editor,
+        elements: elementsWithDuplicate,
+        selectedElement: clonedElement, // Select the new element
+      }
+
+      const duplicateHistory = [
+        ...state.history.history.slice(0, state.history.currentIndex + 1),
+        { ...duplicateEditorState },
+      ]
+
+      return {
+        ...state,
+        editor: duplicateEditorState,
+        history: {
+          ...state.history,
+          history: duplicateHistory,
+          currentIndex: duplicateHistory.length - 1,
+        },
+      }
 
     default:
       return state

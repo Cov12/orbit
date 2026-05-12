@@ -66,3 +66,10 @@ export type EditorAction =
         funnelPageId: string
       }
     }
+  | {
+      type: 'DUPLICATE_ELEMENT'
+      payload: {
+        elementDetails: EditorElement
+        containerId: string
+      }
+    }

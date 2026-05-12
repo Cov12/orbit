@@ -7,6 +7,8 @@ import {
   SpacerComponent,
   CodeBlockComponent,
   QRCodeComponent,
+  ButtonComponent,
+  ImageComponent,
 } from '@/components/funnel-builder/content'
 import { EditorElement } from '@/providers/editor/editor-provider'
 
@@ -37,6 +39,8 @@ const Recursive = ({ element }: Props) => {
       return <Checkout element={element} />
     case '2Col':
       return <Container element={element} />
+    case '3Col':
+      return <Container element={element} />
     case '__body':
       return <Container element={element} />
     case 'link':
@@ -59,6 +63,10 @@ const Recursive = ({ element }: Props) => {
       return <CodeBlockComponent element={element} />
     case 'qr-code':
       return <QRCodeComponent element={element} />
+    case 'button':
+      return <ButtonComponent element={element} />
+    case 'image':
+      return <ImageComponent element={element} />
 
     default:
       return null

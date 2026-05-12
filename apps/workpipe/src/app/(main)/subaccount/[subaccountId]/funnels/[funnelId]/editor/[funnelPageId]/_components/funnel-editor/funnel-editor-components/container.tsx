@@ -2,7 +2,7 @@
 import React from 'react'
 
 import clsx from 'clsx'
-import { Trash } from 'lucide-react'
+import { Copy, Trash } from 'lucide-react'
 import { v4 } from 'uuid'
 
 import { Badge } from '@/components/ui/badge'
@@ -149,6 +149,92 @@ const Container = ({ element }: Props) => {
               name: 'Two Columns',
               styles: { ...defaultStyles, display: 'flex' },
               type: '2Col',
+            },
+          },
+        })
+        break
+      case '3Col':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: [
+                {
+                  content: [],
+                  id: v4(),
+                  name: 'Container',
+                  styles: { ...defaultStyles, width: '100%' },
+                  type: 'container',
+                },
+                {
+                  content: [],
+                  id: v4(),
+                  name: 'Container',
+                  styles: { ...defaultStyles, width: '100%' },
+                  type: 'container',
+                },
+                {
+                  content: [],
+                  id: v4(),
+                  name: 'Container',
+                  styles: { ...defaultStyles, width: '100%' },
+                  type: 'container',
+                },
+              ],
+              id: v4(),
+              name: 'Three Columns',
+              styles: { ...defaultStyles, display: 'flex' },
+              type: '3Col',
+            },
+          },
+        })
+        break
+      case 'button':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                text: 'Click Me',
+                href: '#',
+                target: '_self',
+                variant: 'primary',
+                size: 'md',
+                fullWidth: false,
+                borderRadius: '8px',
+                backgroundColor: '#6366f1',
+                textColor: '#ffffff',
+              } as any,
+              id: v4(),
+              name: 'Button',
+              styles: { ...defaultStyles },
+              type: 'button',
+            },
+          },
+        })
+        break
+      case 'image':
+        dispatch({
+          type: 'ADD_ELEMENT',
+          payload: {
+            containerId: id,
+            elementDetails: {
+              content: {
+                src: '',
+                alt: 'Image',
+                href: '',
+                target: '_self',
+                objectFit: 'cover',
+                borderRadius: '0px',
+                width: '100%',
+                height: 'auto',
+              } as any,
+              id: v4(),
+              name: 'Image',
+              styles: { ...defaultStyles },
+              type: 'image',
             },
           },
         })
@@ -338,15 +424,41 @@ const Container = ({ element }: Props) => {
     })
   }
 
+  const handleDuplicateElement = () => {
+    // Find the parent container ID
+    const findParentId = (elements: any[], targetId: string, parentId: string = '__body'): string => {
+      for (const el of elements) {
+        if (el.id === targetId) return parentId
+        if (Array.isArray(el.content)) {
+          const found = findParentId(el.content, targetId, el.id)
+          if (found !== '__body' || el.content.some((c: any) => c.id === targetId)) {
+            return found !== '__body' ? found : el.id
+          }
+        }
+      }
+      return parentId
+    }
+
+    const containerId = findParentId(state.editor.elements, element.id)
+
+    dispatch({
+      type: 'DUPLICATE_ELEMENT',
+      payload: {
+        elementDetails: element,
+        containerId,
+      },
+    })
+  }
+
   return (
     <div
       style={styles}
       className={clsx('group relative p-4 transition-all', {
-        'w-full max-w-full': type === 'container' || type === '2Col',
+        'w-full max-w-full': type === 'container' || type === '2Col' || type === '3Col',
         'h-fit': type === 'container',
         'h-full': type === '__body',
         'overflow-scroll': type === '__body',
-        'flex flex-col md:!flex-row': type === '2Col',
+        'flex flex-col md:!flex-row': type === '2Col' || type === '3Col',
         '!border-blue-500':
           state.editor.selectedElement.id === id &&
           !state.editor.liveMode &&
@@ -386,8 +498,19 @@ const Container = ({ element }: Props) => {
       {state.editor.selectedElement.id === element.id &&
         !state.editor.liveMode &&
         state.editor.selectedElement.type !== '__body' && (
-          <div className="absolute -right-[1px] -top-[25px] rounded-none rounded-t-lg bg-primary px-2.5 py-1 text-xs font-bold">
-            <Trash size={16} onClick={handleDeleteElement} />
+          <div className="absolute -right-[1px] -top-[25px] rounded-none rounded-t-lg bg-primary px-2 py-1 text-xs font-bold flex gap-1">
+            <Copy
+              size={16}
+              className="cursor-pointer hover:text-blue-300"
+              onClick={handleDuplicateElement}
+              title="Duplicate"
+            />
+            <Trash
+              size={16}
+              className="cursor-pointer hover:text-red-300"
+              onClick={handleDeleteElement}
+              title="Delete"
+            />
           </div>
         )}
     </div>

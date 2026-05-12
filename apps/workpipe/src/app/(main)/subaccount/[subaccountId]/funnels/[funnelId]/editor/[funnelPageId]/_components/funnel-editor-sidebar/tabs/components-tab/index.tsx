@@ -9,6 +9,7 @@ import {
 import { EditorBtns } from '@/lib/constants'
 
 import AnimatedTextPlaceholder from './animated-text-placeholder'
+import ButtonPlaceholder from './button-placeholder'
 import CheckoutPlaceholder from './checkout-placeholder'
 import CodeBlockPlaceholder from './code-block-placeholder'
 import ContactFormComponentPlaceholder from './contact-form-placeholder'
@@ -16,14 +17,15 @@ import ContainerPlaceholder from './container-placeholder'
 import DividerPlaceholder from './divider-placeholder'
 import HeadingPlaceholder from './heading-placeholder'
 import IconPlaceholder from './icon-placeholder'
+import ImagePlaceholder from './image-placeholder'
 import LinkPlaceholder from './link-placeholder'
 import QRCodePlaceholder from './qr-code-placeholder'
 import RichTextPlaceholder from './rich-text-placeholder'
 import SpacerPlaceholder from './spacer-placeholder'
 import TextPlaceholder from './text-placeholder'
+import ThreeColumnsPlaceholder from './three-columns-placeholder'
 import TwoColumnsPlaceholder from './two-columns-placeholder'
 import VideoPlaceholder from './video-placeholder'
-// New Content Components
 
 type Props = Record<string, never>
 
@@ -54,9 +56,27 @@ const ComponentsTab = (props: Props) => {
       group: 'layout',
     },
     {
+      Component: <ThreeColumnsPlaceholder />,
+      label: '3 Columns',
+      id: '3Col',
+      group: 'layout',
+    },
+    {
       Component: <VideoPlaceholder />,
       label: 'Video',
       id: 'video',
+      group: 'elements',
+    },
+    {
+      Component: <ImagePlaceholder />,
+      label: 'Image',
+      id: 'image',
+      group: 'elements',
+    },
+    {
+      Component: <ButtonPlaceholder />,
+      label: 'Button',
+      id: 'button',
       group: 'elements',
     },
     {

@@ -3,7 +3,7 @@
 import React from 'react'
 
 import clsx from 'clsx'
-import { Trash } from 'lucide-react'
+import { Copy, Trash } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { EditorBtns } from '@/lib/constants'
@@ -63,6 +63,33 @@ const BaseFunnelComponent: React.FC<BaseFunnelComponentProps> = ({
     })
   }
 
+  const handleDuplicateElement = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    // Find the parent container ID
+    const findParentId = (elements: any[], targetId: string, parentId: string = '__body'): string => {
+      for (const el of elements) {
+        if (el.id === targetId) return parentId
+        if (Array.isArray(el.content)) {
+          const found = findParentId(el.content, targetId, el.id)
+          if (found !== '__body' || el.content.some((c: any) => c.id === targetId)) {
+            return found !== '__body' ? found : el.id
+          }
+        }
+      }
+      return parentId
+    }
+
+    const containerId = findParentId(state.editor.elements, element.id)
+
+    dispatch({
+      type: 'DUPLICATE_ELEMENT',
+      payload: {
+        elementDetails: element,
+        containerId,
+      },
+    })
+  }
+
   const isSelected = state.editor.selectedElement.id === element.id
   const isLiveMode = state.editor.liveMode
   const styles = element.styles
@@ -93,13 +120,20 @@ const BaseFunnelComponent: React.FC<BaseFunnelComponentProps> = ({
       {/* Component content */}
       {children}
 
-      {/* Delete button */}
+      {/* Action buttons */}
       {isSelected && !isLiveMode && (
-        <div className="absolute bg-primary px-2.5 py-1 text-xs font-bold -top-[25px] -right-[1px] rounded-none rounded-t-lg !text-white z-10">
+        <div className="absolute flex gap-1 bg-primary px-2 py-1 text-xs font-bold -top-[25px] -right-[1px] rounded-none rounded-t-lg !text-white z-10">
+          <Copy
+            className="cursor-pointer hover:text-blue-300"
+            size={16}
+            onClick={handleDuplicateElement}
+            title="Duplicate element"
+          />
           <Trash
             className="cursor-pointer hover:text-red-300"
             size={16}
             onClick={handleDeleteElement}
+            title="Delete element"
           />
         </div>
       )}
