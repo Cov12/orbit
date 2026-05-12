@@ -2,6 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
+import { conductorActive } from "@/lib/entitlements";
 
 interface DashboardData {
   workspaceName: string;
@@ -66,8 +67,13 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
   }
 
   const org = member.org;
+  const conductorOn = conductorActive(org);
   const appStatuses: Record<string, boolean> = {};
   for (const access of org.appAccess) {
+    if (access.app === "CONDUCTOR") {
+      appStatuses[access.app] = conductorOn;
+      continue;
+    }
     const hasSub = org.subscriptions.some((s) => s.app === access.app);
     const isFree = access.app === "DRIVE"; // Drive is always free
     appStatuses[access.app] = access.enabled && (hasSub || isFree);
