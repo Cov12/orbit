@@ -106,6 +106,7 @@ enum AppType {
   WORKPIPE
   ATRIUM
   DRIVE
+  CONDUCTOR
 }
 
 model DriveFolder {
