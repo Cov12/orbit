@@ -13,7 +13,10 @@ import {
   AlignVerticalJustifyStart,
   ChevronsLeftRightIcon,
   LucideImageDown,
+  ExternalLink,
 } from 'lucide-react'
+
+import { Checkbox } from '@/components/ui/checkbox'
 
 import {
   Accordion,
@@ -88,23 +91,380 @@ const SettingsTab = (props: Props) => {
     <Accordion
       type="multiple"
       className="w-full"
-      defaultValue={['Typography', 'Dimensions', 'Decorations', 'Flexbox']}
+      defaultValue={['Custom', 'Typography', 'Dimensions', 'Decorations', 'Flexbox']}
     >
       <AccordionItem value="Custom" className="px-6 py-0">
-        <AccordionTrigger className="!no-underline">Custom</AccordionTrigger>
-        <AccordionContent>
+        <AccordionTrigger className="!no-underline">
+          {state.editor.selectedElement.name || 'Element'} Settings
+        </AccordionTrigger>
+        <AccordionContent className="flex flex-col gap-4">
+          {/* Link Settings */}
           {state.editor.selectedElement.type === 'link' &&
             !Array.isArray(state.editor.selectedElement.content) && (
               <div className="flex flex-col gap-2">
-                <p className="text-muted-foreground">Link Path</p>
+                <Label className="text-muted-foreground">Link URL</Label>
                 <Input
                   id="href"
-                  placeholder="https:domain.example.com/pathname"
+                  placeholder="https://example.com"
                   onChange={handleChangeCustomValues}
-                  value={state.editor.selectedElement.content.href}
+                  value={(state.editor.selectedElement.content as any)?.href || ''}
                 />
               </div>
             )}
+
+          {/* Button Settings */}
+          {state.editor.selectedElement.type === 'button' &&
+            !Array.isArray(state.editor.selectedElement.content) && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Button Text</Label>
+                  <Input
+                    id="text"
+                    placeholder="Click Me"
+                    onChange={handleChangeCustomValues}
+                    value={(state.editor.selectedElement.content as any)?.text || ''}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Link URL</Label>
+                  <Input
+                    id="href"
+                    placeholder="https://example.com"
+                    onChange={handleChangeCustomValues}
+                    value={(state.editor.selectedElement.content as any)?.href || ''}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Variant</Label>
+                  <Select
+                    value={(state.editor.selectedElement.content as any)?.variant || 'primary'}
+                    onValueChange={value =>
+                      handleChangeCustomValues({ target: { id: 'variant', value } })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select variant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primary">Primary</SelectItem>
+                      <SelectItem value="secondary">Secondary</SelectItem>
+                      <SelectItem value="outline">Outline</SelectItem>
+                      <SelectItem value="ghost">Ghost</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Size</Label>
+                  <Select
+                    value={(state.editor.selectedElement.content as any)?.size || 'md'}
+                    onValueChange={value =>
+                      handleChangeCustomValues({ target: { id: 'size', value } })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sm">Small</SelectItem>
+                      <SelectItem value="md">Medium</SelectItem>
+                      <SelectItem value="lg">Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Label className="text-muted-foreground">Background</Label>
+                    <ColorPicker
+                      onChange={value =>
+                        handleChangeCustomValues({ target: { id: 'backgroundColor', value } })
+                      }
+                      value={(state.editor.selectedElement.content as any)?.backgroundColor || '#6366f1'}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-muted-foreground">Text Color</Label>
+                    <ColorPicker
+                      onChange={value =>
+                        handleChangeCustomValues({ target: { id: 'textColor', value } })
+                      }
+                      value={(state.editor.selectedElement.content as any)?.textColor || '#ffffff'}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="fullWidth"
+                    checked={(state.editor.selectedElement.content as any)?.fullWidth || false}
+                    onCheckedChange={checked =>
+                      handleChangeCustomValues({ target: { id: 'fullWidth', value: checked } })
+                    }
+                  />
+                  <Label htmlFor="fullWidth" className="text-muted-foreground">Full Width</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="newTab"
+                    checked={(state.editor.selectedElement.content as any)?.target === '_blank'}
+                    onCheckedChange={checked =>
+                      handleChangeCustomValues({ target: { id: 'target', value: checked ? '_blank' : '_self' } })
+                    }
+                  />
+                  <Label htmlFor="newTab" className="text-muted-foreground flex items-center gap-1">
+                    Open in new tab <ExternalLink size={12} />
+                  </Label>
+                </div>
+              </>
+            )}
+
+          {/* Image Settings */}
+          {state.editor.selectedElement.type === 'image' &&
+            !Array.isArray(state.editor.selectedElement.content) && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Image URL</Label>
+                  <Input
+                    id="src"
+                    placeholder="https://example.com/image.jpg"
+                    onChange={handleChangeCustomValues}
+                    value={(state.editor.selectedElement.content as any)?.src || ''}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Alt Text</Label>
+                  <Input
+                    id="alt"
+                    placeholder="Image description"
+                    onChange={handleChangeCustomValues}
+                    value={(state.editor.selectedElement.content as any)?.alt || ''}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Link URL (optional)</Label>
+                  <Input
+                    id="href"
+                    placeholder="https://example.com"
+                    onChange={handleChangeCustomValues}
+                    value={(state.editor.selectedElement.content as any)?.href || ''}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Object Fit</Label>
+                  <Select
+                    value={(state.editor.selectedElement.content as any)?.objectFit || 'cover'}
+                    onValueChange={value =>
+                      handleChangeCustomValues({ target: { id: 'objectFit', value } })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select fit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cover">Cover</SelectItem>
+                      <SelectItem value="contain">Contain</SelectItem>
+                      <SelectItem value="fill">Fill</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+          {/* Icon Settings */}
+          {state.editor.selectedElement.type === 'icon' &&
+            !Array.isArray(state.editor.selectedElement.content) && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Icon</Label>
+                  <Select
+                    value={(state.editor.selectedElement.content as any)?.iconName || 'star'}
+                    onValueChange={value =>
+                      handleChangeCustomValues({ target: { id: 'iconName', value } })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select icon" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="star">Star</SelectItem>
+                      <SelectItem value="heart">Heart</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="home">Home</SelectItem>
+                      <SelectItem value="mail">Mail</SelectItem>
+                      <SelectItem value="phone">Phone</SelectItem>
+                      <SelectItem value="settings">Settings</SelectItem>
+                      <SelectItem value="check">Check</SelectItem>
+                      <SelectItem value="x">X</SelectItem>
+                      <SelectItem value="arrow-right">Arrow Right</SelectItem>
+                      <SelectItem value="arrow-left">Arrow Left</SelectItem>
+                      <SelectItem value="search">Search</SelectItem>
+                      <SelectItem value="shopping-cart">Shopping Cart</SelectItem>
+                      <SelectItem value="download">Download</SelectItem>
+                      <SelectItem value="play">Play</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Size (px)</Label>
+                  <Slider
+                    value={[(state.editor.selectedElement.content as any)?.size || 24]}
+                    onValueChange={([value]) =>
+                      handleChangeCustomValues({ target: { id: 'size', value } })
+                    }
+                    min={12}
+                    max={96}
+                    step={4}
+                  />
+                  <small className="text-right text-muted-foreground">
+                    {(state.editor.selectedElement.content as any)?.size || 24}px
+                  </small>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Color</Label>
+                  <ColorPicker
+                    onChange={value =>
+                      handleChangeCustomValues({ target: { id: 'color', value } })
+                    }
+                    value={(state.editor.selectedElement.content as any)?.color || '#000000'}
+                  />
+                </div>
+              </>
+            )}
+
+          {/* Heading Settings */}
+          {state.editor.selectedElement.type === 'heading' &&
+            !Array.isArray(state.editor.selectedElement.content) && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Heading Level</Label>
+                  <Select
+                    value={(state.editor.selectedElement.content as any)?.level || 'h2'}
+                    onValueChange={value =>
+                      handleChangeCustomValues({ target: { id: 'level', value } })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="h1">H1 - Main Title</SelectItem>
+                      <SelectItem value="h2">H2 - Section</SelectItem>
+                      <SelectItem value="h3">H3 - Subsection</SelectItem>
+                      <SelectItem value="h4">H4 - Sub-subsection</SelectItem>
+                      <SelectItem value="h5">H5 - Minor</SelectItem>
+                      <SelectItem value="h6">H6 - Smallest</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Alignment</Label>
+                  <Tabs
+                    value={(state.editor.selectedElement.content as any)?.alignment || 'left'}
+                    onValueChange={value =>
+                      handleChangeCustomValues({ target: { id: 'alignment', value } })
+                    }
+                  >
+                    <TabsList className="flex h-fit flex-row items-center justify-between gap-4 rounded-md border-[1px] bg-transparent">
+                      <TabsTrigger value="left" className="h-10 w-10 p-0 data-[state=active]:bg-muted">
+                        <AlignLeft size={18} />
+                      </TabsTrigger>
+                      <TabsTrigger value="center" className="h-10 w-10 p-0 data-[state=active]:bg-muted">
+                        <AlignCenter size={18} />
+                      </TabsTrigger>
+                      <TabsTrigger value="right" className="h-10 w-10 p-0 data-[state=active]:bg-muted">
+                        <AlignRight size={18} />
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+              </>
+            )}
+
+          {/* Divider Settings */}
+          {state.editor.selectedElement.type === 'divider' &&
+            !Array.isArray(state.editor.selectedElement.content) && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Style</Label>
+                  <Select
+                    value={(state.editor.selectedElement.content as any)?.style || 'solid'}
+                    onValueChange={value =>
+                      handleChangeCustomValues({ target: { id: 'style', value } })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select style" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="solid">Solid</SelectItem>
+                      <SelectItem value="dashed">Dashed</SelectItem>
+                      <SelectItem value="dotted">Dotted</SelectItem>
+                      <SelectItem value="double">Double</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Thickness (px)</Label>
+                  <Slider
+                    value={[(state.editor.selectedElement.content as any)?.thickness || 1]}
+                    onValueChange={([value]) =>
+                      handleChangeCustomValues({ target: { id: 'thickness', value } })
+                    }
+                    min={1}
+                    max={10}
+                    step={1}
+                  />
+                  <small className="text-right text-muted-foreground">
+                    {(state.editor.selectedElement.content as any)?.thickness || 1}px
+                  </small>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Color</Label>
+                  <ColorPicker
+                    onChange={value =>
+                      handleChangeCustomValues({ target: { id: 'color', value } })
+                    }
+                    value={(state.editor.selectedElement.content as any)?.color || '#e5e5e5'}
+                  />
+                </div>
+              </>
+            )}
+
+          {/* Spacer Settings */}
+          {state.editor.selectedElement.type === 'spacer' &&
+            !Array.isArray(state.editor.selectedElement.content) && (
+              <div className="flex flex-col gap-2">
+                <Label className="text-muted-foreground">Height</Label>
+                <Input
+                  id="height"
+                  placeholder="50px"
+                  onChange={handleChangeCustomValues}
+                  value={(state.editor.selectedElement.content as any)?.height || '50px'}
+                />
+              </div>
+            )}
+
+          {/* Video Settings */}
+          {state.editor.selectedElement.type === 'video' &&
+            !Array.isArray(state.editor.selectedElement.content) && (
+              <div className="flex flex-col gap-2">
+                <Label className="text-muted-foreground">Video URL (YouTube Embed)</Label>
+                <Input
+                  id="src"
+                  placeholder="https://www.youtube.com/embed/..."
+                  onChange={handleChangeCustomValues}
+                  value={(state.editor.selectedElement.content as any)?.src || ''}
+                />
+              </div>
+            )}
+
+          {/* No custom settings message */}
+          {!['link', 'button', 'image', 'icon', 'heading', 'divider', 'spacer', 'video'].includes(
+            state.editor.selectedElement.type
+          ) && (
+            <p className="text-sm text-muted-foreground">
+              No custom settings for this element. Use the style panels below.
+            </p>
+          )}
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="Typography" className="border-y-[1px] px-6 py-0">
