@@ -1,4 +1,4 @@
-import { Database, Plus, SettingsIcon, SquareStackIcon } from 'lucide-react'
+import { Database, LayoutTemplate, Plus, SettingsIcon, SquareStackIcon } from 'lucide-react'
 
 import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 
@@ -25,6 +25,12 @@ const TabList = (props: Props) => {
         className="h-10 w-10 p-0 data-[state=active]:bg-muted"
       >
         <SquareStackIcon />
+      </TabsTrigger>
+      <TabsTrigger
+        value="Templates"
+        className="h-10 w-10 p-0 data-[state=active]:bg-muted"
+      >
+        <LayoutTemplate />
       </TabsTrigger>
       <TabsTrigger
         value="Media"

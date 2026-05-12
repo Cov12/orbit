@@ -16,6 +16,7 @@ import ComponentsTab from './tabs/components-tab'
 import LayersTab from './tabs/layers-tab'
 import MediaBucketTab from './tabs/media-bucket-tab'
 import SettingsTab from './tabs/settings-tab'
+import TemplatesTab from './tabs/templates-tab'
 
 type Props = {
   subaccountId: string
@@ -74,6 +75,15 @@ const FunnelEditorSidebar = ({ subaccountId }: Props) => {
                 </SheetDescription>
               </SheetHeader>
               <LayersTab />
+            </TabsContent>
+            <TabsContent value="Templates">
+              <SheetHeader className="p-6 text-left">
+                <SheetTitle>Templates</SheetTitle>
+                <SheetDescription>
+                  Click to add pre-built sections to your page
+                </SheetDescription>
+              </SheetHeader>
+              <TemplatesTab />
             </TabsContent>
           </div>
         </SheetContent>
