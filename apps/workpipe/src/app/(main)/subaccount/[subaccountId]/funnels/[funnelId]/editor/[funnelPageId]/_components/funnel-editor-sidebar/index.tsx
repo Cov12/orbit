@@ -13,6 +13,7 @@ import { useEditor } from '@/providers/editor/editor-provider'
 
 import TabList from './tabs'
 import ComponentsTab from './tabs/components-tab'
+import LayersTab from './tabs/layers-tab'
 import MediaBucketTab from './tabs/media-bucket-tab'
 import SettingsTab from './tabs/settings-tab'
 
@@ -64,6 +65,15 @@ const FunnelEditorSidebar = ({ subaccountId }: Props) => {
                 </SheetDescription>
               </SheetHeader>
               <ComponentsTab />
+            </TabsContent>
+            <TabsContent value="Layers">
+              <SheetHeader className="p-6 text-left">
+                <SheetTitle>Layers</SheetTitle>
+                <SheetDescription>
+                  View and navigate your page structure
+                </SheetDescription>
+              </SheetHeader>
+              <LayersTab />
             </TabsContent>
           </div>
         </SheetContent>
