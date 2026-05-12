@@ -91,7 +91,7 @@ const SettingsTab = (props: Props) => {
     <Accordion
       type="multiple"
       className="w-full"
-      defaultValue={['Custom', 'Typography', 'Dimensions', 'Decorations', 'Flexbox']}
+      defaultValue={['Custom', 'Typography', 'Dimensions', 'Decorations', 'Flexbox', 'Effects']}
     >
       <AccordionItem value="Custom" className="px-6 py-0">
         <AccordionTrigger className="!no-underline">
@@ -786,6 +786,101 @@ const SettingsTab = (props: Props) => {
               placeholder="#ffffff"
             />
           </div>
+
+          {/* Border Controls */}
+          <div className="flex flex-col gap-2">
+            <Label className="text-muted-foreground">Border Style</Label>
+            <Select
+              value={state.editor.selectedElement.styles.borderStyle?.toString() || 'none'}
+              onValueChange={value =>
+                handleOnChanges({
+                  target: { id: 'borderStyle', value },
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="solid">Solid</SelectItem>
+                <SelectItem value="dashed">Dashed</SelectItem>
+                <SelectItem value="dotted">Dotted</SelectItem>
+                <SelectItem value="double">Double</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <Label className="text-muted-foreground">Border Width</Label>
+              <Input
+                id="borderWidth"
+                placeholder="1px"
+                onChange={handleOnChanges}
+                value={state.editor.selectedElement.styles.borderWidth?.toString() || ''}
+              />
+            </div>
+            <div className="flex-1">
+              <Label className="text-muted-foreground">Border Color</Label>
+              <ColorPicker
+                onChange={value =>
+                  handleOnChanges({
+                    target: { id: 'borderColor', value },
+                  })
+                }
+                value={state.editor.selectedElement.styles.borderColor?.toString() || '#000000'}
+              />
+            </div>
+          </div>
+
+          {/* Box Shadow Controls */}
+          <div className="flex flex-col gap-2">
+            <Label className="text-muted-foreground">Box Shadow</Label>
+            <Select
+              value={
+                state.editor.selectedElement.styles.boxShadow
+                  ? 'custom'
+                  : 'none'
+              }
+              onValueChange={value => {
+                const shadowPresets: Record<string, string> = {
+                  none: 'none',
+                  sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                  md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                  lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                  xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+                  '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+                  inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
+                }
+                handleOnChanges({
+                  target: { id: 'boxShadow', value: shadowPresets[value] || 'none' },
+                })
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select shadow" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="sm">Small</SelectItem>
+                <SelectItem value="md">Medium</SelectItem>
+                <SelectItem value="lg">Large</SelectItem>
+                <SelectItem value="xl">Extra Large</SelectItem>
+                <SelectItem value="2xl">2X Large</SelectItem>
+                <SelectItem value="inner">Inner Shadow</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label className="text-muted-foreground">Custom Shadow</Label>
+            <Input
+              id="boxShadow"
+              placeholder="0 4px 6px rgba(0,0,0,0.1)"
+              onChange={handleOnChanges}
+              value={state.editor.selectedElement.styles.boxShadow?.toString() || ''}
+            />
+          </div>
+
           <div className="flex flex-col gap-2">
             <Label className="text-muted-foreground">Background Image</Label>
             <div className="flex overflow-clip rounded-md border-[1px]">
@@ -942,6 +1037,199 @@ const SettingsTab = (props: Props) => {
               onChange={handleOnChanges}
               value={state.editor.selectedElement.styles.flexDirection}
             />
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="Effects" className="px-6 py-0">
+        <AccordionTrigger className="!no-underline">Effects</AccordionTrigger>
+        <AccordionContent className="flex flex-col gap-4">
+          {/* Transform Controls */}
+          <div className="flex flex-col gap-2">
+            <Label className="text-muted-foreground">Scale</Label>
+            <Slider
+              value={[
+                parseFloat(
+                  state.editor.selectedElement.styles.transform
+                    ?.toString()
+                    .match(/scale\(([^)]+)\)/)?.[1] || '1'
+                ) * 100,
+              ]}
+              onValueChange={([value]) => {
+                const currentTransform =
+                  state.editor.selectedElement.styles.transform?.toString() || ''
+                const newScale = `scale(${value / 100})`
+                const newTransform = currentTransform.includes('scale')
+                  ? currentTransform.replace(/scale\([^)]+\)/, newScale)
+                  : `${currentTransform} ${newScale}`.trim()
+                handleOnChanges({
+                  target: { id: 'transform', value: newTransform },
+                })
+              }}
+              min={50}
+              max={200}
+              step={5}
+            />
+            <small className="text-right text-muted-foreground">
+              {parseFloat(
+                state.editor.selectedElement.styles.transform
+                  ?.toString()
+                  .match(/scale\(([^)]+)\)/)?.[1] || '1'
+              ) * 100}%
+            </small>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label className="text-muted-foreground">Rotate (deg)</Label>
+            <Slider
+              value={[
+                parseFloat(
+                  state.editor.selectedElement.styles.transform
+                    ?.toString()
+                    .match(/rotate\(([^)]+)deg\)/)?.[1] || '0'
+                ),
+              ]}
+              onValueChange={([value]) => {
+                const currentTransform =
+                  state.editor.selectedElement.styles.transform?.toString() || ''
+                const newRotate = `rotate(${value}deg)`
+                const newTransform = currentTransform.includes('rotate')
+                  ? currentTransform.replace(/rotate\([^)]+\)/, newRotate)
+                  : `${currentTransform} ${newRotate}`.trim()
+                handleOnChanges({
+                  target: { id: 'transform', value: newTransform },
+                })
+              }}
+              min={-180}
+              max={180}
+              step={5}
+            />
+            <small className="text-right text-muted-foreground">
+              {parseFloat(
+                state.editor.selectedElement.styles.transform
+                  ?.toString()
+                  .match(/rotate\(([^)]+)deg\)/)?.[1] || '0'
+              )}°
+            </small>
+          </div>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <Label className="text-muted-foreground">Translate X</Label>
+              <Input
+                placeholder="0px"
+                onChange={e => {
+                  const currentTransform =
+                    state.editor.selectedElement.styles.transform?.toString() || ''
+                  const currentY =
+                    currentTransform.match(/translateY\(([^)]+)\)/)?.[1] || '0px'
+                  const newTranslate = `translateX(${e.target.value}) translateY(${currentY})`
+                  const newTransform = currentTransform
+                    .replace(/translateX\([^)]+\)/, '')
+                    .replace(/translateY\([^)]+\)/, '')
+                  handleOnChanges({
+                    target: { id: 'transform', value: `${newTransform} ${newTranslate}`.trim() },
+                  })
+                }}
+                value={
+                  state.editor.selectedElement.styles.transform
+                    ?.toString()
+                    .match(/translateX\(([^)]+)\)/)?.[1] || ''
+                }
+              />
+            </div>
+            <div className="flex-1">
+              <Label className="text-muted-foreground">Translate Y</Label>
+              <Input
+                placeholder="0px"
+                onChange={e => {
+                  const currentTransform =
+                    state.editor.selectedElement.styles.transform?.toString() || ''
+                  const currentX =
+                    currentTransform.match(/translateX\(([^)]+)\)/)?.[1] || '0px'
+                  const newTranslate = `translateX(${currentX}) translateY(${e.target.value})`
+                  const newTransform = currentTransform
+                    .replace(/translateX\([^)]+\)/, '')
+                    .replace(/translateY\([^)]+\)/, '')
+                  handleOnChanges({
+                    target: { id: 'transform', value: `${newTransform} ${newTranslate}`.trim() },
+                  })
+                }}
+                value={
+                  state.editor.selectedElement.styles.transform
+                    ?.toString()
+                    .match(/translateY\(([^)]+)\)/)?.[1] || ''
+                }
+              />
+            </div>
+          </div>
+
+          {/* Transition Controls */}
+          <div className="flex flex-col gap-2 pt-4 border-t">
+            <Label className="text-muted-foreground">Transition</Label>
+            <Select
+              value={
+                state.editor.selectedElement.styles.transition
+                  ? 'custom'
+                  : 'none'
+              }
+              onValueChange={value => {
+                const transitionPresets: Record<string, string> = {
+                  none: 'none',
+                  fast: 'all 0.15s ease',
+                  normal: 'all 0.3s ease',
+                  slow: 'all 0.5s ease',
+                  bounce: 'all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+                }
+                handleOnChanges({
+                  target: { id: 'transition', value: transitionPresets[value] || 'none' },
+                })
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select transition" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="fast">Fast (0.15s)</SelectItem>
+                <SelectItem value="normal">Normal (0.3s)</SelectItem>
+                <SelectItem value="slow">Slow (0.5s)</SelectItem>
+                <SelectItem value="bounce">Bounce</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label className="text-muted-foreground">Custom Transition</Label>
+            <Input
+              id="transition"
+              placeholder="all 0.3s ease"
+              onChange={handleOnChanges}
+              value={state.editor.selectedElement.styles.transition?.toString() || ''}
+            />
+          </div>
+
+          {/* Cursor */}
+          <div className="flex flex-col gap-2">
+            <Label className="text-muted-foreground">Cursor</Label>
+            <Select
+              value={state.editor.selectedElement.styles.cursor?.toString() || 'auto'}
+              onValueChange={value =>
+                handleOnChanges({
+                  target: { id: 'cursor', value },
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select cursor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto</SelectItem>
+                <SelectItem value="pointer">Pointer</SelectItem>
+                <SelectItem value="default">Default</SelectItem>
+                <SelectItem value="move">Move</SelectItem>
+                <SelectItem value="text">Text</SelectItem>
+                <SelectItem value="not-allowed">Not Allowed</SelectItem>
+                <SelectItem value="grab">Grab</SelectItem>
+                <SelectItem value="crosshair">Crosshair</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </AccordionContent>
       </AccordionItem>
