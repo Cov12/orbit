@@ -4,17 +4,21 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { signOrbitToken } from "@/lib/jwt";
 import { getEffectiveAppAccess } from "@/lib/entitlements";
+import { logEntitlementDecision, logTokenExchange } from "@/lib/audit";
 
 /**
  * GET /api/auth/refresh?redirect_uri=<url>
  *
- * Silent token refresh for downstream apps (WorkPipe, Drive, Atrium).
+ * Silent token refresh for downstream apps (WorkPipe, Drive, Atrium, Conductor).
  *
  * Flow:
  * 1. App's JWT expires → redirects user here with redirect_uri
  * 2. Portal checks if user has an active Clerk session (or whatever provider)
  * 3. If authenticated → issues fresh JWT → redirects back to app's /auth/callback?token=<jwt>
  * 4. If not authenticated → redirects to Portal sign-in with return_url back to this endpoint
+ *
+ * When the redirect_uri origin matches NEXT_PUBLIC_CONDUCTOR_URL, the issued JWT
+ * carries `aud='conductor'` and the caller must hold the CONDUCTOR entitlement.
  *
  * This is the ONLY place that touches the auth provider (Clerk today).
  * Downstream apps never interact with Clerk directly.
@@ -32,6 +36,7 @@ export async function GET(req: Request) {
     process.env.NEXT_PUBLIC_WORKPIPE_URL,
     process.env.NEXT_PUBLIC_DRIVE_URL,
     process.env.NEXT_PUBLIC_ATRIUM_URL,
+    process.env.NEXT_PUBLIC_CONDUCTOR_URL,
     process.env.NEXT_PUBLIC_APP_URL,
   ].filter((u): u is string => Boolean(u)).map((u) => new URL(u).origin);
 
@@ -41,6 +46,12 @@ export async function GET(req: Request) {
   if (!isAllowed) {
     return NextResponse.json({ error: "Invalid redirect_uri" }, { status: 400 });
   }
+
+  const conductorOrigin = process.env.NEXT_PUBLIC_CONDUCTOR_URL
+    ? new URL(process.env.NEXT_PUBLIC_CONDUCTOR_URL).origin
+    : null;
+  const derivedAud: string | undefined =
+    conductorOrigin && redirectOrigin === conductorOrigin ? "conductor" : undefined;
 
   try {
     const { userId } = await auth();
@@ -111,19 +122,44 @@ export async function GET(req: Request) {
     const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
     const appAccess = getEffectiveAppAccess(org, isPlatformAdmin);
 
+    if (derivedAud === "conductor" && !appAccess.includes("CONDUCTOR")) {
+      logEntitlementDecision({
+        orgId: org.id,
+        userId,
+        app: "CONDUCTOR",
+        decision: "denied",
+        reason: "conductor_entitlement_missing",
+      });
+      return NextResponse.json(
+        { error: "Conductor entitlement required" },
+        { status: 403 }
+      );
+    }
+
     const subscriptions = isPlatformAdmin && org.subscriptions.length === 0
       ? [{ plan: "ENTERPRISE", status: "ACTIVE" }]
       : org.subscriptions.map((s: any) => ({ plan: s.plan, status: s.status }));
 
-    const token = signOrbitToken({
-      sub: userId,
-      email,
-      name,
-      org_id: org.id,
-      org_slug: org.slug,
-      role: member.role,
-      subscriptions,
-      app_access: appAccess,
+    const token = signOrbitToken(
+      {
+        sub: userId,
+        email,
+        name,
+        org_id: org.id,
+        org_slug: org.slug,
+        role: member.role,
+        subscriptions,
+        app_access: appAccess,
+      },
+      derivedAud ? { aud: derivedAud } : undefined
+    );
+
+    logTokenExchange({
+      orgId: org.id,
+      userId,
+      app: derivedAud === "conductor" ? "CONDUCTOR" : "PORTAL",
+      aud: derivedAud,
+      outcome: "success",
     });
 
     // Redirect back to the app's callback with the fresh token
