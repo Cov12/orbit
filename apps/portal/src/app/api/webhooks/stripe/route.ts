@@ -4,6 +4,7 @@ import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import type { AppType, Plan, SubStatus } from "@prisma/client";
 import Stripe from "stripe";
+import { isSubscriptionActive } from "@/lib/entitlements";
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -64,11 +65,16 @@ export async function POST(req: Request) {
             update: { enabled: true },
           });
 
-          // Atrium includes WorkPipe — enable it too
+          // Atrium includes WorkPipe + Conductor — enable them too
           if (app === "ATRIUM") {
             await db.appAccess.upsert({
               where: { orgId_app: { orgId, app: "WORKPIPE" } },
               create: { orgId, app: "WORKPIPE", enabled: true },
+              update: { enabled: true },
+            });
+            await db.appAccess.upsert({
+              where: { orgId_app: { orgId, app: "CONDUCTOR" } },
+              create: { orgId, app: "CONDUCTOR", enabled: true },
               update: { enabled: true },
             });
           }
@@ -90,13 +96,24 @@ export async function POST(req: Request) {
             trialing: "TRIALING",
           };
 
+          const nextStatus = statusMap[sub.status] || "ACTIVE";
+
           await db.subscription.update({
             where: { stripeSubId: sub.id },
             data: {
-              status: statusMap[sub.status] || "ACTIVE",
+              status: nextStatus,
               currentPeriodEnd: new Date((sub as any).current_period_end * 1000),
             },
           });
+
+          // Conductor rides on Atrium — flip CONDUCTOR AppAccess to mirror parent.
+          if (existing.app === "ATRIUM") {
+            await db.appAccess.upsert({
+              where: { orgId_app: { orgId: existing.orgId, app: "CONDUCTOR" } },
+              create: { orgId: existing.orgId, app: "CONDUCTOR", enabled: isSubscriptionActive(nextStatus) },
+              update: { enabled: isSubscriptionActive(nextStatus) },
+            });
+          }
         }
         break;
       }
@@ -118,6 +135,14 @@ export async function POST(req: Request) {
             where: { orgId: existing.orgId, app: existing.app },
             data: { enabled: false },
           });
+
+          // Conductor rides on Atrium — disable CONDUCTOR too when parent is deleted.
+          if (existing.app === "ATRIUM") {
+            await db.appAccess.updateMany({
+              where: { orgId: existing.orgId, app: "CONDUCTOR" },
+              data: { enabled: false },
+            });
+          }
         }
         break;
       }
