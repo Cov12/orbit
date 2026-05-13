@@ -4,17 +4,20 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { signOrbitToken } from "@/lib/jwt";
 import { getEffectiveAppAccess } from "@/lib/entitlements";
+import { logEntitlementDecision, logTokenExchange } from "@/lib/audit";
 
 /**
  * POST /api/auth/token
  *
  * Issues a Orbit JWT for cross-app authentication.
- * Called by WorkPipe, Drive, and Atrium to get a token for the current user.
+ * Called by WorkPipe, Drive, Atrium, and Conductor to get a token for the current user.
  *
  * Workspace resolution order:
  * 1. Request body `workspace_id`
  * 2. `orbit_workspace` cookie (set by workspace switcher)
  * 3. User's first workspace (fallback)
+ *
+ * Optional `aud` body param: when `aud === 'conductor'`, requires CONDUCTOR entitlement.
  *
  * Requires: Clerk session (user must be logged in to Portal)
  * Returns: { token: string } — signed JWT with org, role, subscriptions, app_access
@@ -29,6 +32,8 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({}));
     const requestedWorkspaceId = body.workspace_id;
+    const requestedAud: string | undefined =
+      typeof body.aud === "string" ? body.aud : undefined;
 
     // Resolve workspace
     let org;
@@ -91,19 +96,44 @@ export async function POST(req: Request) {
     const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
     const appAccess = getEffectiveAppAccess(org, isPlatformAdmin);
 
+    if (requestedAud === "conductor" && !appAccess.includes("CONDUCTOR")) {
+      logEntitlementDecision({
+        orgId: org.id,
+        userId,
+        app: "CONDUCTOR",
+        decision: "denied",
+        reason: "conductor_entitlement_missing",
+      });
+      return NextResponse.json(
+        { error: "Conductor entitlement required" },
+        { status: 403 }
+      );
+    }
+
     const subscriptions = isPlatformAdmin && org.subscriptions.length === 0
       ? [{ plan: "ENTERPRISE", status: "ACTIVE" }]
       : org.subscriptions.map((s: any) => ({ plan: s.plan, status: s.status }));
 
-    const token = signOrbitToken({
-      sub: userId,
-      email,
-      name,
-      org_id: org.id,
-      org_slug: org.slug,
-      role: member.role,
-      subscriptions,
-      app_access: appAccess,
+    const token = signOrbitToken(
+      {
+        sub: userId,
+        email,
+        name,
+        org_id: org.id,
+        org_slug: org.slug,
+        role: member.role,
+        subscriptions,
+        app_access: appAccess,
+      },
+      requestedAud ? { aud: requestedAud } : undefined
+    );
+
+    logTokenExchange({
+      orgId: org.id,
+      userId,
+      app: requestedAud === "conductor" ? "CONDUCTOR" : "PORTAL",
+      aud: requestedAud,
+      outcome: "success",
     });
 
     return NextResponse.json({ token });
