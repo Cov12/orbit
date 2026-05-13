@@ -1,6 +1,51 @@
+import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
+import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
+import { conductorActive } from "@/lib/entitlements";
+import { isFlagEnabled } from "@/lib/flags";
 
-export default function AppsPage() {
+async function getConductorCardState(): Promise<
+  | { visible: false }
+  | { visible: true; status: "bundled" | "coming_online" }
+> {
+  const { userId } = await auth();
+  if (!userId) return { visible: false };
+
+  const cookieStore = await cookies();
+  const selectedWorkspaceId = cookieStore.get("orbit_workspace")?.value;
+
+  const include = {
+    appAccess: true,
+    subscriptions: { where: { status: { in: ["ACTIVE" as const, "TRIALING" as const] } } },
+  };
+
+  let member;
+  if (selectedWorkspaceId) {
+    member = await db.member.findFirst({
+      where: { clerkUserId: userId, orgId: selectedWorkspaceId },
+      include: { org: { include } },
+    });
+  }
+  if (!member) {
+    member = await db.member.findFirst({
+      where: { clerkUserId: userId },
+      include: { org: { include } },
+    });
+  }
+  if (!member?.org) return { visible: false };
+
+  const org = member.org;
+  if (!isFlagEnabled("portal_conductor_visible", { id: org.id, slug: org.slug })) {
+    return { visible: false };
+  }
+
+  return { visible: true, status: conductorActive(org) ? "bundled" : "coming_online" };
+}
+
+export default async function AppsPage() {
+  const conductor = await getConductorCardState();
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div>
@@ -49,6 +94,21 @@ export default function AppsPage() {
           color="#20B2AA"
           status="inactive"
         />
+
+        {conductor.visible && (
+          <AppCard
+            name="Conductor"
+            slug="conductor"
+            description="AI back office that plans, delegates, and executes work across your business."
+            icon={
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2a3 3 0 00-3 3v1.17a3.001 3.001 0 00-1.83 1.83H6a3 3 0 000 6h.17a3.001 3.001 0 001.83 1.83V17a3 3 0 006 0v-1.17a3.001 3.001 0 001.83-1.83H18a3 3 0 000-6h-.17A3.001 3.001 0 0016 6.17V5a3 3 0 00-3-3z" />
+              </svg>
+            }
+            color="#A78BFA"
+            status={conductor.status}
+          />
+        )}
 
         <AppCard
           name="More Coming Soon"

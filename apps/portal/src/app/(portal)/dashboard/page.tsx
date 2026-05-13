@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
 import { conductorActive } from "@/lib/entitlements";
+import { isFlagEnabled } from "@/lib/flags";
 
 interface DashboardData {
   workspaceName: string;
@@ -13,6 +14,7 @@ interface DashboardData {
   teamCount: number;
   activeApps: number;
   appStatuses: Record<string, boolean>;
+  conductorVisible: boolean;
 }
 
 async function getDashboardData(userId: string): Promise<DashboardData> {
@@ -63,6 +65,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
       teamCount: 1,
       activeApps: 0,
       appStatuses: {},
+      conductorVisible: false,
     };
   }
 
@@ -89,6 +92,11 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
   // Check if any subscription is trialing
   const trialingSub = org.subscriptions.find((s) => s.status === "TRIALING");
 
+  const conductorVisible = isFlagEnabled("portal_conductor_visible", {
+    id: org.id,
+    slug: org.slug,
+  });
+
   return {
     workspaceName: org.name,
     workspaceRole: member.role,
@@ -100,6 +108,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
     teamCount: org.members.length,
     activeApps: Object.values(appStatuses).filter(Boolean).length,
     appStatuses,
+    conductorVisible,
   };
 }
 
@@ -118,9 +127,10 @@ export default async function DashboardPage() {
         teamCount: 1,
         activeApps: 0,
         appStatuses: {},
+        conductorVisible: false,
       };
 
-  const { workspaceName, workspaceRole, plan, planStatus, trialEndsAt, teamCount, activeApps, appStatuses } = data;
+  const { workspaceName, workspaceRole, plan, planStatus, trialEndsAt, teamCount, activeApps, appStatuses, conductorVisible } = data;
 
   // Calculate days remaining in trial
   const daysRemaining = trialEndsAt
@@ -238,6 +248,20 @@ export default async function DashboardPage() {
             color="#20B2AA"
             status={appStatuses["ATRIUM"] ? "active" : "inactive"}
           />
+          {conductorVisible && (
+            <AppCard
+              name="Conductor"
+              slug="conductor"
+              description="AI back office that plans, delegates, and executes work across your business."
+              icon={
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 2a3 3 0 00-3 3v1.17a3.001 3.001 0 00-1.83 1.83H6a3 3 0 000 6h.17a3.001 3.001 0 001.83 1.83V17a3 3 0 006 0v-1.17a3.001 3.001 0 001.83-1.83H18a3 3 0 000-6h-.17A3.001 3.001 0 0016 6.17V5a3 3 0 00-3-3z" />
+                </svg>
+              }
+              color="#A78BFA"
+              status={appStatuses["CONDUCTOR"] ? "bundled" : "coming_online"}
+            />
+          )}
         </div>
       </div>
     </div>
