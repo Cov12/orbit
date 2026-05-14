@@ -28,10 +28,13 @@ interface AppLandingProps {
   videoUrl?: string;
   previewImage?: string;
   launchUrl?: string;
-  status: "active" | "inactive" | "coming_soon";
+  status: "active" | "inactive" | "coming_soon" | "bundled" | "coming_online";
   features: Feature[];
   plans?: Plan[];
   freeNote?: string;
+  bundledNote?: string;
+  callbackPath?: string;
+  launchEnabled?: boolean;
 }
 
 export function AppLanding({
@@ -47,6 +50,9 @@ export function AppLanding({
   features,
   plans,
   freeNote,
+  bundledNote,
+  callbackPath = "/atrium/auth/callback",
+  launchEnabled = true,
 }: AppLandingProps) {
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -147,9 +153,9 @@ export function AppLanding({
           <p className="text-gray-400 max-w-xl mb-8 leading-relaxed">{description}</p>
 
           <div className="flex gap-4 flex-wrap justify-center">
-            {status === "active" && launchUrl ? (
+            {(status === "active" || status === "bundled") && launchUrl && launchEnabled ? (
               <a
-                href={`/api/auth/refresh?redirect_uri=${encodeURIComponent(launchUrl + "/atrium/auth/callback")}`}
+                href={`/api/auth/refresh?redirect_uri=${encodeURIComponent(launchUrl + callbackPath)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-8 py-3 rounded-xl font-semibold text-white transition-all hover:scale-105 hover:shadow-lg hover:shadow-current/20"
@@ -165,6 +171,10 @@ export function AppLanding({
               >
                 View Plans →
               </a>
+            ) : status === "coming_online" || ((status === "active" || status === "bundled") && !launchEnabled) ? (
+              <div className="px-8 py-3 rounded-xl font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 cursor-default">
+                Coming online
+              </div>
             ) : (
               <div className="px-8 py-3 rounded-xl font-semibold bg-white/10 text-gray-400 cursor-default">
                 Coming Soon
@@ -245,6 +255,18 @@ export function AppLanding({
               Free with any subscription
             </p>
             <p className="text-gray-400 text-sm leading-relaxed">{freeNote}</p>
+          </div>
+        </section>
+      )}
+
+      {/* Bundled note (Conductor, included with Atrium) */}
+      {bundledNote && (
+        <section className="text-center">
+          <div className="glass inline-block px-8 py-6 max-w-lg border border-emerald-500/20">
+            <p className="text-lg font-semibold mb-1 italic" style={{ color }}>
+              Included with Atrium
+            </p>
+            <p className="text-gray-400 text-sm leading-relaxed">{bundledNote}</p>
           </div>
         </section>
       )}
