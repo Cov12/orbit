@@ -68,29 +68,39 @@ const FunnelForm: React.FC<CreateFunnelProps> = ({
 
   const onSubmit = async (values: z.infer<typeof CreateFunnelFormSchema>) => {
     if (!subAccountId) return
-    const response = await upsertFunnel(
-      subAccountId,
-      { ...values, liveProducts: defaultData?.liveProducts || '[]' },
-      defaultData?.id || v4()
-    )
-    await saveActivityLogsNotification({
-      businessId: undefined,
-      description: `Update funnel | ${response.name}`,
-      subaccountId: subAccountId,
-    })
-    if (response)
-      toast({
-        title: 'Success',
-        description: 'Saved funnel details',
-      })
-    else
+    try {
+      const response = await upsertFunnel(
+        subAccountId,
+        { ...values, liveProducts: defaultData?.liveProducts || '[]' },
+        defaultData?.id || v4()
+      )
+      if (response) {
+        await saveActivityLogsNotification({
+          businessId: undefined,
+          description: `Update funnel | ${response.name}`,
+          subaccountId: subAccountId,
+        })
+        toast({
+          title: 'Success',
+          description: 'Saved funnel details',
+        })
+        setClose()
+        router.refresh()
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Oops!',
+          description: 'Could not save funnel details',
+        })
+      }
+    } catch (error) {
+      console.error('Error saving funnel:', error)
       toast({
         variant: 'destructive',
         title: 'Oops!',
-        description: 'Could not save funnel details',
+        description: 'Could not save funnel details. Please try again.',
       })
-    setClose()
-    router.refresh()
+    }
   }
   return (
     <Card className="flex-1">

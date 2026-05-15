@@ -866,17 +866,28 @@ export const upsertFunnel = async (
   funnel: z.infer<typeof CreateFunnelFormSchema> & { liveProducts: string },
   funnelId: string
 ) => {
-  const response = await db.funnel.upsert({
-    where: { id: funnelId },
-    update: funnel,
-    create: {
+  try {
+    // Convert empty subDomainName to null to avoid unique constraint issues
+    const processedFunnel = {
       ...funnel,
-      id: funnelId || v4(),
-      subAccountId: subaccountId,
-    },
-  })
+      subDomainName: funnel.subDomainName?.trim() || null,
+    }
 
-  return response
+    const response = await db.funnel.upsert({
+      where: { id: funnelId },
+      update: processedFunnel,
+      create: {
+        ...processedFunnel,
+        id: funnelId || v4(),
+        subAccountId: subaccountId,
+      },
+    })
+
+    return response
+  } catch (error) {
+    console.error('Error upserting funnel:', error)
+    throw error
+  }
 }
 
 export const deleteFunnelePage = async (funnelPageId: string) => {
