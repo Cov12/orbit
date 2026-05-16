@@ -33,11 +33,17 @@ const FunnelSettings: React.FC<FunnelSettingsProps> = async ({
     },
   })
 
-  if (!subaccountDetails) return
-  if (!subaccountDetails.connectAccountId) return
-  const products = await getConnectAccountProducts(
-    subaccountDetails.connectAccountId
-  )
+  if (!subaccountDetails) return null
+  if (!subaccountDetails.connectAccountId) return null
+
+  let products: Awaited<ReturnType<typeof getConnectAccountProducts>> = []
+  try {
+    products = await getConnectAccountProducts(
+      subaccountDetails.connectAccountId
+    )
+  } catch (error) {
+    console.error('Failed to fetch Stripe products:', error)
+  }
 
   return (
     <div className="flex gap-4 flex-col xl:!flex-row">
