@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import BlurPage from '@/components/global/blur-page'
+import Loading from '@/components/global/loading'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getFunnel } from '@/lib/queries'
 
@@ -16,7 +17,15 @@ type Props = {
 
 const FunnelPage = async ({ params }: Props) => {
   const { funnelId, subaccountId } = await params
-  const funnelPages = await getFunnel(funnelId)
+
+  let funnelPages
+  try {
+    funnelPages = await getFunnel(funnelId)
+  } catch (error) {
+    console.error('Error fetching funnel:', error)
+    return redirect(`/subaccount/${subaccountId}/funnels`)
+  }
+
   if (!funnelPages) return redirect(`/subaccount/${subaccountId}/funnels`)
 
   return (
@@ -42,10 +51,12 @@ const FunnelPage = async ({ params }: Props) => {
           />
         </TabsContent>
         <TabsContent value="settings">
-          <FunnelSettings
-            subaccountId={subaccountId}
-            defaultData={funnelPages}
-          />
+          <Suspense fallback={<Loading />}>
+            <FunnelSettings
+              subaccountId={subaccountId}
+              defaultData={funnelPages}
+            />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </BlurPage>

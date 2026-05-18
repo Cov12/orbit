@@ -31,7 +31,13 @@ const SubaccountLayout = async ({ children, params }: Props) => {
   }
 
   let notifications: any = []
-  const allPermissions = await getAuthUserDetails()
+  let allPermissions
+  try {
+    allPermissions = await getAuthUserDetails()
+  } catch (error) {
+    console.error('Error fetching auth details:', error)
+    return <Unauthorized />
+  }
 
   if (!allPermissions?.role) {
     return <Unauthorized />
@@ -44,18 +50,23 @@ const SubaccountLayout = async ({ children, params }: Props) => {
       return <Unauthorized />
     }
 
-    const allNotifications = await getNotificationAndUser(businessId)
+    try {
+      const allNotifications = await getNotificationAndUser(businessId)
 
-    if (
-      allPermissions.role === 'BUSINESS_ADMIN' ||
-      allPermissions.role === 'BUSINESS_OWNER'
-    ) {
-      notifications = allNotifications
-    } else {
-      const filteredNoti = allNotifications?.filter(
-        item => item.subAccountId === subaccountId
-      )
-      if (filteredNoti) notifications = filteredNoti
+      if (
+        allPermissions.role === 'BUSINESS_ADMIN' ||
+        allPermissions.role === 'BUSINESS_OWNER'
+      ) {
+        notifications = allNotifications
+      } else {
+        const filteredNoti = allNotifications?.filter(
+          item => item.subAccountId === subaccountId
+        )
+        if (filteredNoti) notifications = filteredNoti
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
+      // Continue with empty notifications
     }
   }
 
