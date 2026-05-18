@@ -927,29 +927,47 @@ export const upsertFunnelPage = async (
   funnelPage: UpsertFunnelPage,
   funnelId: string
 ) => {
-  if (!subaccountId || !funnelId) return
-  const response = await db.funnelPage.upsert({
-    where: { id: funnelPage.id || '' },
-    update: { ...funnelPage },
-    create: {
-      ...funnelPage,
-      content: funnelPage.content
-        ? funnelPage.content
-        : JSON.stringify([
-            {
-              content: [],
-              id: '__body',
-              name: 'Body',
-              styles: { backgroundColor: 'white' },
-              type: '__body',
-            },
-          ]),
-      funnelId,
-    },
-  })
+  if (!subaccountId || !funnelId) {
+    console.error('[upsertFunnelPage] Missing subaccountId or funnelId')
+    return null
+  }
 
-  revalidatePath(`/subaccount/${subaccountId}/funnels/${funnelId}`, 'page')
-  return response
+  try {
+    // Extract id separately to avoid passing it in update/create data
+    const { id, ...pageData } = funnelPage as UpsertFunnelPage & { id?: string }
+
+    const response = await db.funnelPage.upsert({
+      where: { id: id || '' },
+      update: {
+        name: pageData.name,
+        pathName: pageData.pathName,
+        order: pageData.order,
+        ...(pageData.content && { content: pageData.content }),
+        ...(pageData.previewImage && { previewImage: pageData.previewImage }),
+      },
+      create: {
+        ...pageData,
+        content: pageData.content
+          ? pageData.content
+          : JSON.stringify([
+              {
+                content: [],
+                id: '__body',
+                name: 'Body',
+                styles: { backgroundColor: 'white' },
+                type: '__body',
+              },
+            ]),
+        funnelId,
+      },
+    })
+
+    revalidatePath(`/subaccount/${subaccountId}/funnels/${funnelId}`, 'page')
+    return response
+  } catch (error) {
+    console.error('[upsertFunnelPage] Error:', error)
+    throw error
+  }
 }
 
 export const updateFunnelProducts = async (
