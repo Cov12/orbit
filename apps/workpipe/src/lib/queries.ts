@@ -933,31 +933,46 @@ export const upsertFunnelPage = async (
   }
 
   try {
-    // Extract id separately to avoid passing it in update/create data
-    const { id, ...pageData } = funnelPage as UpsertFunnelPage & { id?: string }
+    // Log incoming data for debugging
+    console.log('[upsertFunnelPage] Received:', JSON.stringify(funnelPage, null, 2))
+
+    // Extract fields explicitly
+    const pageId = (funnelPage as UpsertFunnelPage & { id?: string }).id || ''
+    const name = funnelPage.name
+    const pathName = funnelPage.pathName ?? ''
+    const order = funnelPage.order ?? 0
+    const content = funnelPage.content
+    const previewImage = funnelPage.previewImage
+
+    console.log('[upsertFunnelPage] Extracted - name:', name, 'pathName:', pathName, 'order:', order)
+
+    // Validate required fields
+    if (!name) {
+      throw new Error('Funnel page name is required')
+    }
 
     const response = await db.funnelPage.upsert({
-      where: { id: id || '' },
+      where: { id: pageId },
       update: {
-        name: pageData.name,
-        pathName: pageData.pathName,
-        order: pageData.order,
-        ...(pageData.content && { content: pageData.content }),
-        ...(pageData.previewImage && { previewImage: pageData.previewImage }),
+        name,
+        pathName,
+        order,
+        ...(content && { content }),
+        ...(previewImage && { previewImage }),
       },
       create: {
-        ...pageData,
-        content: pageData.content
-          ? pageData.content
-          : JSON.stringify([
-              {
-                content: [],
-                id: '__body',
-                name: 'Body',
-                styles: { backgroundColor: 'white' },
-                type: '__body',
-              },
-            ]),
+        name,
+        pathName,
+        order,
+        content: content || JSON.stringify([
+          {
+            content: [],
+            id: '__body',
+            name: 'Body',
+            styles: { backgroundColor: 'white' },
+            type: '__body',
+          },
+        ]),
         funnelId,
       },
     })
