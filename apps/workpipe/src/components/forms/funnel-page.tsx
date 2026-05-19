@@ -71,20 +71,25 @@ const CreateFunnelPage: React.FC<CreateFunnelPageProps> = ({
   }, [defaultData])
 
   const onSubmit = async (values: z.infer<typeof FunnelPageSchema>) => {
+    console.log('[FunnelPageForm] Form values:', values)
+
     if (order !== 0 && !values.pathName)
       return form.setError('pathName', {
         message:
           "Pages other than the first page in the funnel require a path name example 'secondstep'.",
       })
     try {
+      const dataToSend = {
+        name: values.name,
+        pathName: values.pathName || '',
+        id: defaultData?.id || v4(),
+        order: defaultData?.order || order,
+      }
+      console.log('[FunnelPageForm] Data to send:', dataToSend)
+
       const response = await upsertFunnelPage(
         subaccountId,
-        {
-          ...values,
-          id: defaultData?.id || v4(),
-          order: defaultData?.order || order,
-          pathName: values.pathName || '',
-        },
+        dataToSend,
         funnelId
       )
 
