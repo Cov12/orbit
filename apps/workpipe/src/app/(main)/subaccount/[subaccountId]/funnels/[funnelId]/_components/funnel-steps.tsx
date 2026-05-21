@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { FunnelPage } from '@prisma/client'
 import { Check, ExternalLink, LucideEdit } from 'lucide-react'
@@ -47,6 +47,16 @@ const FunnelSteps = ({ funnel, funnelId, pages, subaccountId }: Props) => {
   )
   const { setOpen } = useModal()
   const [pagesState, setPagesState] = useState(pages)
+
+  // Sync local state when pages prop changes (e.g., after router.refresh())
+  useEffect(() => {
+    setPagesState(pages)
+    // Update clicked page if it no longer exists or if pages changed
+    if (pages.length > 0 && (!clickedPage || !pages.find(p => p.id === clickedPage.id))) {
+      setClickedPage(pages[0])
+    }
+  }, [pages])
+
   const onDragStart = (event: DragStart) => {
     //current chosen page
     const { draggableId } = event
