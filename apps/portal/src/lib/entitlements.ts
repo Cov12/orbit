@@ -28,10 +28,10 @@ export function getEffectiveAppAccess(
   isPlatformAdmin: boolean
 ): AppType[] {
   if (isPlatformAdmin) {
-    // No CONDUCTOR shortcut for admin — must come from real entitlement.
-    return (['ATRIUM', 'DRIVE', 'WORKPIPE'] as AppType[]).sort((a, b) =>
-      a.localeCompare(b)
-    );
+    // Admins get the base apps free; CONDUCTOR still requires real entitlement.
+    const base: AppType[] = ['ATRIUM', 'DRIVE', 'WORKPIPE'];
+    if (conductorActive(org)) base.push('CONDUCTOR');
+    return Array.from(new Set(base)).sort((a, b) => a.localeCompare(b));
   }
   const apps = org.appAccess
     .filter((a) => a.enabled)
