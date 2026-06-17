@@ -37,6 +37,10 @@ export async function POST(req: Request) {
       path: "/",
     });
 
+    // Switching workspace resets the active sub-account: a sub-account is org-scoped,
+    // so a stale selection from the previous workspace must never carry over.
+    cookieStore.delete("orbit_subaccount");
+
     return NextResponse.json({ selected: workspaceId });
   } catch (error) {
     console.error("[Workspace Select]", error);
