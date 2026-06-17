@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { signOrbitToken } from "@/lib/jwt";
 import { getEffectiveAppAccess } from "@/lib/entitlements";
+import { resolveActiveSubAccountId } from "@/lib/subaccount";
 import { logEntitlementDecision, logTokenExchange } from "@/lib/audit";
 
 /**
@@ -140,6 +141,13 @@ export async function GET(req: Request) {
       ? [{ plan: "ENTERPRISE", status: "ACTIVE" }]
       : org.subscriptions.map((s: any) => ({ plan: s.plan, status: s.status }));
 
+    // Resolve the active sub-account from the cookie, scoped to this workspace
+    // (null = business scope; a stale cross-org cookie resolves to null).
+    const subAccountId = await resolveActiveSubAccountId(
+      org.id,
+      cookieStore.get("orbit_subaccount")?.value
+    );
+
     const token = signOrbitToken(
       {
         sub: userId,
@@ -147,6 +155,7 @@ export async function GET(req: Request) {
         name,
         org_id: org.id,
         org_slug: org.slug,
+        sub_account_id: subAccountId,
         role: member.role,
         subscriptions,
         app_access: appAccess,

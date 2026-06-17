@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { signOrbitToken } from "@/lib/jwt";
 import { getEffectiveAppAccess } from "@/lib/entitlements";
+import { resolveActiveSubAccountId } from "@/lib/subaccount";
 import { logEntitlementDecision, logTokenExchange } from "@/lib/audit";
 
 /**
@@ -83,6 +84,16 @@ export async function POST(req: Request) {
 
     const member = org.members[0];
 
+    // Resolve the active sub-account (scoped to this workspace; null = business scope).
+    // Order: explicit body `sub_account_id` → `orbit_subaccount` cookie → null.
+    const subAccountCookie = (await cookies()).get("orbit_subaccount")?.value;
+    const requestedSubAccount =
+      typeof body.sub_account_id === "string" ? body.sub_account_id : undefined;
+    const subAccountId = await resolveActiveSubAccountId(
+      org.id,
+      requestedSubAccount ?? subAccountCookie
+    );
+
     // Always fetch from Clerk — source of truth for email/name.
     const clerkUser = await currentUser();
     const email = clerkUser?.emailAddresses.find((entry) => entry.id === clerkUser.primaryEmailAddressId)?.emailAddress || member.email;
@@ -121,6 +132,7 @@ export async function POST(req: Request) {
         name,
         org_id: org.id,
         org_slug: org.slug,
+        sub_account_id: subAccountId,
         role: member.role,
         subscriptions,
         app_access: appAccess,

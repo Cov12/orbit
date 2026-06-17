@@ -8,6 +8,11 @@ export interface OrbitJwtPayload {
   name: string;
   org_id: string;
   org_slug: string;
+  /**
+   * Active sub-account (sub-workspace) id, scoped to org_id. `null`/absent = business
+   * scope (the org as a whole). The shared cross-app key apps use to scope data/memory.
+   */
+  sub_account_id?: string | null;
   role: MemberRole;
   subscriptions: {
     plan: Plan;

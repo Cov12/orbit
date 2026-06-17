@@ -18,6 +18,30 @@ model Organization {
   subscriptions Subscription[]
   appAccess     AppAccess[]
   invites       Invite[]
+  subAccounts   SubAccount[]
+}
+
+/// A sub-workspace within an Organization. Optional: an org with zero sub-accounts
+/// operates at "business scope". The `id` is the shared cross-app key every Orbit app
+/// references (WorkPipe SubAccount, Drive subAccountId, Conductor/Mem0 scope, Atrium
+/// workpipe_account_id). A null sub-account everywhere = business scope.
+model SubAccount {
+  id        String           @id @default(cuid())
+  orgId     String
+  org       Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  status    SubAccountStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([orgId, slug])
+  @@index([orgId])
+}
+
+enum SubAccountStatus {
+  ACTIVE
+  ARCHIVED
 }
 
 model Invite {
