@@ -23,7 +23,7 @@ export async function GET() {
     const selectedWorkspaceId = cookieStore.get("orbit_workspace")?.value;
 
     // Find all workspaces this user is a member of
-    let memberships = await db.member.findMany({
+    const memberships = await db.member.findMany({
       where: { clerkUserId: userId },
       include: {
         org: {
@@ -34,38 +34,11 @@ export async function GET() {
       },
     });
 
-    // Auto-create personal workspace if user has none
+    // No auto-create: a user with no workspace is routed to the mandatory
+    // onboarding wizard (enforced in the portal layout). Return an empty list so
+    // the client can detect the no-workspace state.
     if (memberships.length === 0) {
-      const org = await db.organization.create({
-        data: {
-          name: "My Workspace",
-          slug: `ws-${userId.slice(-8).toLowerCase()}`,
-          members: {
-            create: {
-              clerkUserId: userId,
-              role: "OWNER",
-            },
-          },
-          subscriptions: {
-            create: [
-              { app: "WORKPIPE", plan: "FREE", status: "ACTIVE" },
-              { app: "DRIVE", plan: "FREE", status: "ACTIVE" },
-            ],
-          },
-          appAccess: {
-            create: [
-              { app: "WORKPIPE", enabled: true },
-              { app: "DRIVE", enabled: true },
-            ],
-          },
-        },
-        include: {
-          members: { where: { clerkUserId: userId } },
-          subscriptions: { where: { status: { in: ["ACTIVE", "TRIALING"] } } },
-        },
-      });
-
-      memberships = [{ ...org.members[0], org }];
+      return NextResponse.json({ workspaces: [], current: null });
     }
 
     const workspaces = memberships.map((m: any) => ({

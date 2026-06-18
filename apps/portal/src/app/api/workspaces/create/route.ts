@@ -18,13 +18,14 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, industry, products } = body as {
+    const { name, industry, products, subAccounts } = body as {
       name: string;
       industry?: string;
       products: Array<{
         app: "WORKPIPE" | "ATRIUM";
         plan: string;
       }>;
+      subAccounts?: Array<{ name: string }>;
     };
 
     if (!name?.trim()) {
@@ -54,6 +55,25 @@ export async function POST(req: Request) {
     const trialEndDate = new Date();
     trialEndDate.setDate(trialEndDate.getDate() + 7);
 
+    // Optional initial sub-accounts: slugify + de-dupe within this batch (the org
+    // is brand new, so the only possible collisions are between the inputs).
+    const usedSubSlugs = new Set<string>();
+    const subAccountData = (Array.isArray(subAccounts) ? subAccounts : [])
+      .filter((s): s is { name: string } => Boolean(s) && typeof s.name === "string" && s.name.trim().length > 0)
+      .map((s) => {
+        const base =
+          s.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30) ||
+          "sub-account";
+        let subSlug = base;
+        let n = 1;
+        while (usedSubSlugs.has(subSlug)) {
+          subSlug = `${base}-${n}`;
+          n++;
+        }
+        usedSubSlugs.add(subSlug);
+        return { name: s.name.trim(), slug: subSlug };
+      });
+
     // Create the organization with subscriptions
     const org = await db.organization.create({
       data: {
@@ -79,6 +99,9 @@ export async function POST(req: Request) {
             enabled: true,
           })),
         },
+        ...(subAccountData.length > 0
+          ? { subAccounts: { create: subAccountData } }
+          : {}),
       },
       include: {
         subscriptions: true,
