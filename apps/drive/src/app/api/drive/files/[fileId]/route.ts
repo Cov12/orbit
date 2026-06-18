@@ -11,13 +11,14 @@ type RouteContext = {
 
 export async function GET(req: Request, context: RouteContext) {
   try {
-    const { userId, orgId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext();
     const { fileId } = await context.params;
 
     const file = await db.driveFile.findFirst({
       where: {
         id: fileId,
         orgId,
+        subAccountId,
       },
       select: {
         id: true,
@@ -40,6 +41,7 @@ export async function GET(req: Request, context: RouteContext) {
 
     await logDriveAudit({
       orgId,
+      subAccountId,
       userId,
       fileId,
       action: DriveAuditAction.FILE_METADATA,
@@ -54,11 +56,11 @@ export async function GET(req: Request, context: RouteContext) {
 
 export async function POST(req: Request, context: RouteContext) {
   try {
-    const { userId, orgId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext();
     const { fileId } = await context.params;
 
     const file = await db.driveFile.findFirst({
-      where: { id: fileId, orgId, deletedAt: null },
+      where: { id: fileId, orgId, subAccountId, deletedAt: null },
       select: {
         id: true,
         name: true,
@@ -95,6 +97,7 @@ export async function POST(req: Request, context: RouteContext) {
 
     await logDriveAudit({
       orgId,
+      subAccountId,
       userId,
       fileId,
       action: DriveAuditAction.FILE_METADATA,
@@ -110,13 +113,14 @@ export async function POST(req: Request, context: RouteContext) {
 
 export async function DELETE(req: Request, context: RouteContext) {
   try {
-    const { userId, orgId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext();
     const { fileId } = await context.params;
 
     const existing = await db.driveFile.findFirst({
       where: {
         id: fileId,
         orgId,
+        subAccountId,
         deletedAt: null,
         status: { not: DriveFileStatus.DELETED },
       },
@@ -150,6 +154,7 @@ export async function DELETE(req: Request, context: RouteContext) {
 
     await logDriveAudit({
       orgId,
+      subAccountId,
       userId,
       fileId,
       action: DriveAuditAction.FILE_DELETE,

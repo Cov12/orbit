@@ -6,10 +6,10 @@ import { driveErrorResponse, serializeBigInts } from "@/lib/drive-http";
 
 export async function GET() {
   try {
-    const { userId, orgId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext();
 
     const shares = await db.driveShare.findMany({
-      where: { orgId, createdBy: userId },
+      where: { orgId, subAccountId, createdBy: userId },
       orderBy: { createdAt: "desc" },
       include: {
         file: {
