@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 interface ProductSelection {
   app: "WORKPIPE" | "ATRIUM";
@@ -112,6 +112,30 @@ export default function NewWorkspaceWizard() {
     return selectedProducts.some((p) => p.app === app);
   };
 
+  // Step 3 — optional sub-accounts (sub-workspaces under this org)
+  const [subAccounts, setSubAccounts] = useState<string[]>([]);
+
+  const addSubAccount = () => setSubAccounts((prev) => [...prev, ""]);
+  const updateSubAccount = (index: number, value: string) =>
+    setSubAccounts((prev) => prev.map((s, i) => (i === index ? value : s)));
+  const removeSubAccount = (index: number) =>
+    setSubAccounts((prev) => prev.filter((_, i) => i !== index));
+
+  // Non-empty, de-duped sub-account names (case-insensitive) for submit + review.
+  const cleanedSubAccounts = (() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const raw of subAccounts) {
+      const name = raw.trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(name);
+    }
+    return out;
+  })();
+
   const handleNext = () => {
     if (step === 1) {
       if (!workspaceName.trim()) {
@@ -127,6 +151,10 @@ export default function NewWorkspaceWizard() {
       }
       setError(null);
       setStep(3);
+    } else if (step === 3) {
+      // Sub-accounts are optional — no validation, just advance to review.
+      setError(null);
+      setStep(4);
     }
   };
 
@@ -148,6 +176,7 @@ export default function NewWorkspaceWizard() {
           name: workspaceName.trim(),
           industry: industry || undefined,
           products: selectedProducts,
+          subAccounts: cleanedSubAccounts.map((name) => ({ name })),
         }),
       });
 
@@ -186,7 +215,7 @@ export default function NewWorkspaceWizard() {
           <div className="w-full max-w-lg">
             {/* Progress */}
             <div className="flex items-center gap-2 mb-8">
-              {[1, 2, 3].map((s) => (
+              {[1, 2, 3, 4].map((s) => (
                 <div key={s} className="flex items-center gap-2">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -205,7 +234,7 @@ export default function NewWorkspaceWizard() {
                       s
                     )}
                   </div>
-                  {s < 3 && <div className={`w-12 h-0.5 ${s < step ? "bg-green-500" : "bg-white/10"}`} />}
+                  {s < 4 && <div className={`w-12 h-0.5 ${s < step ? "bg-green-500" : "bg-white/10"}`} />}
                 </div>
               ))}
             </div>
@@ -356,8 +385,72 @@ export default function NewWorkspaceWizard() {
               </div>
             )}
 
-            {/* Step 3: Review */}
+            {/* Step 3: Sub-accounts (optional) */}
             {step === 3 && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-white mb-2">Add sub-accounts</h1>
+                  <p className="text-gray-400">
+                    Optionally split this workspace into sub-accounts — separate spaces for
+                    clients, locations, or brands. You can always add more later.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {subAccounts.length === 0 && (
+                    <p className="text-sm text-gray-500">
+                      No sub-accounts yet. Skip this step to start at the workspace level.
+                    </p>
+                  )}
+
+                  {subAccounts.map((value, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={value}
+                        onChange={(e) => updateSubAccount(index, e.target.value)}
+                        placeholder={`Sub-account ${index + 1} name`}
+                        className="flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2B2FFF] focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeSubAccount(index)}
+                        className="p-2 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-lg"
+                        aria-label="Remove sub-account"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={addSubAccount}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-white/20 text-gray-300 hover:border-[#2B2FFF] hover:text-white transition-colors text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add sub-account
+                  </button>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-[#6961ff]/10 border border-[#6961ff]/20">
+                  <svg className="w-5 h-5 text-[#6961ff] mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-gray-300">
+                    Sub-accounts keep each client&apos;s data, files, and AI memory separate within
+                    the same workspace. Optional — leave empty to operate at the workspace level.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Review */}
+            {step === 4 && (
               <div className="space-y-6">
                 <div>
                   <h1 className="text-2xl font-bold text-white mb-2">Start your free trial</h1>
@@ -430,6 +523,24 @@ export default function NewWorkspaceWizard() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
+
+                  {/* Sub-accounts */}
+                  {cleanedSubAccounts.length > 0 && (
+                    <div className="p-4 flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-[#2B2FFF]/20 flex items-center justify-center text-[#2B2FFF] font-bold">
+                        {cleanedSubAccounts.length}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-white">
+                          {cleanedSubAccounts.length} sub-account{cleanedSubAccounts.length > 1 ? "s" : ""}
+                        </p>
+                        <p className="text-sm text-gray-400">{cleanedSubAccounts.join(", ")}</p>
+                      </div>
+                      <svg className="w-5 h-5 text-green-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
 
                 {/* Trial info */}
@@ -470,7 +581,7 @@ export default function NewWorkspaceWizard() {
                 Back
               </button>
 
-              {step < 3 ? (
+              {step < 4 ? (
                 <button
                   onClick={handleNext}
                   className="px-6 py-2.5 rounded-lg bg-[#2B2FFF] text-white font-medium hover:bg-[#2B2FFF]/90 transition-colors"
