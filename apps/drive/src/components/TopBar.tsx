@@ -1,12 +1,16 @@
 "use client";
 
+import SubAccountSwitcher from "@/components/SubAccountSwitcher";
+
 type Props = {
   onUpload: () => void;
   onNewFolder: () => void;
   userName?: string;
+  /** Reload the file view after the active sub-account changes. */
+  onScopeChange?: () => void;
 };
 
-export default function TopBar({ onUpload, onNewFolder, userName }: Props) {
+export default function TopBar({ onUpload, onNewFolder, userName, onScopeChange }: Props) {
   const initials = (userName || "U")
     .split(" ")
     .map((n) => n[0])
@@ -24,10 +28,13 @@ export default function TopBar({ onUpload, onNewFolder, userName }: Props) {
         <span className="font-bold text-sm text-white">Orbit Drive</span>
       </div>
 
-      {/* Search placeholder */}
-      <div className="hidden md:flex items-center gap-2 rounded-xl bg-white/5 border border-white/5 px-3 py-2 w-72">
-        <span className="material-symbols-outlined text-slate-500 text-lg">search</span>
-        <span className="text-sm text-slate-500">Search files...</span>
+      {/* Search + sub-account scope */}
+      <div className="hidden md:flex items-center gap-2">
+        <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/5 px-3 py-2 w-72">
+          <span className="material-symbols-outlined text-slate-500 text-lg">search</span>
+          <span className="text-sm text-slate-500">Search files...</span>
+        </div>
+        <SubAccountSwitcher onChange={onScopeChange} />
       </div>
 
       {/* Actions */}
