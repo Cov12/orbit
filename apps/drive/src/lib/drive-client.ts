@@ -42,6 +42,12 @@ export type UploadInitResponse = {
   uploadUrl: string;
 };
 
+export type SubAccount = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
 class DriveApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -138,6 +144,21 @@ export const driveClient = {
   // Quota
   getQuota() {
     return apiFetch<{ quota: DriveQuota }>('/api/drive/quota');
+  },
+
+  // Sub-accounts
+  listSubAccounts() {
+    return apiFetch<{ subAccounts: SubAccount[]; activeSubAccountId: string | null }>(
+      '/api/drive/subaccounts',
+    );
+  },
+
+  // Pass null to switch to business (org-level) scope.
+  selectSubAccount(subAccountId: string | null) {
+    return apiFetch<{ selected: string | null }>('/api/drive/subaccounts/select', {
+      method: 'POST',
+      body: JSON.stringify({ subAccountId }),
+    });
   },
 };
 

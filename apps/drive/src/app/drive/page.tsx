@@ -78,7 +78,11 @@ export default function DrivePage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <TopBar onUpload={() => setShowUpload(true)} onNewFolder={() => setShowNewFolder(true)} />
+      <TopBar
+        onUpload={() => setShowUpload(true)}
+        onNewFolder={() => setShowNewFolder(true)}
+        onScopeChange={refresh}
+      />
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         {/* Breadcrumbs */}

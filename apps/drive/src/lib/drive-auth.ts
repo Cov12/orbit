@@ -1,6 +1,13 @@
+import { cookies } from "next/headers";
 import { getPortalContext } from "@/lib/auth";
 import type { PortalJwtPayload } from "@/lib/portal-jwt";
 import { db } from "@/lib/db";
+
+// Cookie that holds Drive's local sub-account selection (set by the in-app
+// switcher). A sub-account id selects it; the BUSINESS sentinel forces business
+// scope; absence falls back to the Portal JWT's sub_account_id claim.
+export const DRIVE_SUBACCOUNT_COOKIE = "drive_subaccount";
+export const DRIVE_BUSINESS_SCOPE = "__business__";
 
 type DriveContext = {
   userId: string;
@@ -10,24 +17,38 @@ type DriveContext = {
   memberRole: string;
 };
 
+/** Returns the id only if it names an ACTIVE sub-account of this org, else null. */
+async function validateSubAccount(orgId: string, id: string): Promise<string | null> {
+  const sub = await db.subAccount.findFirst({
+    where: { id, orgId, status: "ACTIVE" },
+    select: { id: true },
+  });
+  return sub?.id ?? null;
+}
+
 /**
- * Resolve the active sub-account from the Portal JWT, strictly scoped to the
- * resolved workspace. The claim is honored ONLY when it was minted for this same
- * org (`payload.org_id === orgId`) AND names an ACTIVE sub-account belonging to
- * it. A stale/cross-org claim (e.g. when a multi-org user selected a different
- * org via X-Org-Id) resolves to null = business scope — never leaks across orgs.
+ * Resolve the active sub-account, strictly scoped to the resolved workspace.
+ * Precedence:
+ *   1. Drive's own selection cookie (the in-app switcher) — overrides, so a user
+ *      can scope Drive independently of whatever Portal baked into the JWT.
+ *      The BUSINESS sentinel means explicit business scope (null).
+ *   2. The Portal JWT `sub_account_id` claim (the propagated default), honored
+ *      only when minted for THIS org.
+ *   3. null (business scope).
+ * Every candidate is validated against the org, so a stale/cross-org id never
+ * leaks into another org's view.
  */
 async function resolveActiveSubAccountId(
   orgId: string,
   payload: PortalJwtPayload,
+  cookieValue: string | undefined,
 ): Promise<string | null> {
+  if (cookieValue === DRIVE_BUSINESS_SCOPE) return null;
+  if (cookieValue) return validateSubAccount(orgId, cookieValue);
+
   const claim = payload.sub_account_id;
   if (!claim || payload.org_id !== orgId) return null;
-  const sub = await db.subAccount.findFirst({
-    where: { id: claim, orgId, status: "ACTIVE" },
-    select: { id: true },
-  });
-  return sub?.id ?? null;
+  return validateSubAccount(orgId, claim);
 }
 
 /**
@@ -104,7 +125,12 @@ export async function getDriveContext(req?: Request): Promise<DriveContext> {
     throw new Error("DRIVE_ACCESS_DENIED");
   }
 
-  const subAccountId = await resolveActiveSubAccountId(membership.orgId, payload);
+  const cookieStore = await cookies();
+  const subAccountId = await resolveActiveSubAccountId(
+    membership.orgId,
+    payload,
+    cookieStore.get(DRIVE_SUBACCOUNT_COOKIE)?.value,
+  );
 
   return {
     userId,
