@@ -12,12 +12,12 @@ type CreateFolderBody = {
 
 export async function GET(req: Request) {
   try {
-    const { orgId } = await getDriveContext();
+    const { orgId, subAccountId } = await getDriveContext();
     const url = new URL(req.url);
     const parentId = url.searchParams.get("parentId");
 
     const folders = await db.driveFolder.findMany({
-      where: { orgId, parentId: parentId ?? null },
+      where: { orgId, subAccountId, parentId: parentId ?? null },
       orderBy: { createdAt: "asc" },
       include: { _count: { select: { files: true, children: true } } },
     });
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     let currentId = parentId;
     while (currentId) {
       const folder = await db.driveFolder.findFirst({
-        where: { id: currentId, orgId },
+        where: { id: currentId, orgId, subAccountId },
         select: { id: true, name: true, parentId: true, createdAt: true },
       });
       if (!folder) break;
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { userId, orgId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext();
     const body = (await req.json()) as CreateFolderBody;
 
     if (!body.name || !body.name.trim()) {
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
     if (body.parentId) {
       const parent = await db.driveFolder.findFirst({
-        where: { id: body.parentId, orgId },
+        where: { id: body.parentId, orgId, subAccountId },
       });
       if (!parent) {
         return NextResponse.json({ error: "Parent folder not found" }, { status: 404 });
@@ -63,12 +63,14 @@ export async function POST(req: Request) {
         name: body.name.trim(),
         parentId: body.parentId ?? null,
         orgId,
+        subAccountId,
         createdBy: userId,
       },
     });
 
     await logDriveAudit({
       orgId,
+      subAccountId,
       userId,
       action: DriveAuditAction.FOLDER_CREATE,
       metadata: {

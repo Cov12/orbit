@@ -17,7 +17,7 @@ type ShareBody = {
 
 export async function POST(req: Request, context: RouteContext) {
   try {
-    const { userId, orgId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext();
     const { fileId } = await context.params;
     const body = (await req.json().catch(() => ({}))) as ShareBody;
 
@@ -25,6 +25,7 @@ export async function POST(req: Request, context: RouteContext) {
       where: {
         id: fileId,
         orgId,
+        subAccountId,
         deletedAt: null,
         status: { not: DriveFileStatus.DELETED },
       },
@@ -46,6 +47,7 @@ export async function POST(req: Request, context: RouteContext) {
         token,
         fileId,
         orgId,
+        subAccountId,
         createdBy: userId,
         expiresAt,
         maxAccesses: typeof body.maxAccesses === "number" ? body.maxAccesses : null,
@@ -54,6 +56,7 @@ export async function POST(req: Request, context: RouteContext) {
 
     await logDriveAudit({
       orgId,
+      subAccountId,
       userId,
       fileId,
       action: DriveAuditAction.FILE_SHARE,

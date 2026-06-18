@@ -4,6 +4,8 @@ export interface PortalJwtPayload {
   sub: string;
   org_id: string;
   org_slug: string;
+  /** Active sub-account, scoped to org_id. null/absent = business scope. */
+  sub_account_id?: string | null;
   role: string;
   email: string;
   name: string;

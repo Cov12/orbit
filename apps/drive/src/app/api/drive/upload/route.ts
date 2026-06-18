@@ -18,7 +18,7 @@ type UploadRequestBody = {
 
 export async function POST(req: Request) {
   try {
-    const { userId, orgId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext();
     const body = (await req.json()) as UploadRequestBody;
 
     if (!body.name || !body.mimeType || !Number.isFinite(body.size) || body.size! <= 0) {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     if (body.folderId) {
       const folder = await db.driveFolder.findFirst({
-        where: { id: body.folderId, orgId },
+        where: { id: body.folderId, orgId, subAccountId },
       });
       if (!folder) {
         return NextResponse.json({ error: "Folder not found" }, { status: 404 });
@@ -64,6 +64,7 @@ export async function POST(req: Request) {
           checksum: null,
           folderId: body.folderId ?? null,
           orgId,
+          subAccountId,
           uploadedBy: userId,
           status: DriveFileStatus.UPLOADING,
         },
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
 
     await logDriveAudit({
       orgId,
+      subAccountId,
       userId,
       fileId: file.id,
       action: DriveAuditAction.FILE_UPLOAD,

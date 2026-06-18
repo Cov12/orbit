@@ -7,7 +7,7 @@ import { driveErrorResponse, serializeBigInts } from "@/lib/drive-http";
 
 export async function GET(req: Request) {
   try {
-    const { userId, orgId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext();
 
     const url = new URL(req.url);
     const folderId = url.searchParams.get("folderId");
@@ -15,6 +15,7 @@ export async function GET(req: Request) {
     const files = await db.driveFile.findMany({
       where: {
         orgId,
+        subAccountId,
         deletedAt: null,
         status: { not: DriveFileStatus.DELETED },
         folderId: folderId === null ? undefined : folderId,
@@ -35,6 +36,7 @@ export async function GET(req: Request) {
 
     await logDriveAudit({
       orgId,
+      subAccountId,
       userId,
       action: DriveAuditAction.FILE_LIST,
       metadata: { folderId },

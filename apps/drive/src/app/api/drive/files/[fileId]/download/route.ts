@@ -63,6 +63,7 @@ async function handlePublicDownload(req: Request, context: RouteContext, token: 
         r2Key: true,
         name: true,
         orgId: true,
+        subAccountId: true,
       },
     });
 
@@ -81,6 +82,7 @@ async function handlePublicDownload(req: Request, context: RouteContext, token: 
     // Audit log (no userId for public downloads)
     await logDriveAudit({
       orgId: file.orgId,
+      subAccountId: file.subAccountId,
       userId: null,
       fileId,
       action: DriveAuditAction.FILE_DOWNLOAD,
@@ -101,13 +103,14 @@ async function handlePublicDownload(req: Request, context: RouteContext, token: 
 
 async function handleAuthDownload(req: Request, context: RouteContext) {
   try {
-    const { userId, orgId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext();
     const { fileId } = await context.params;
 
     const file = await db.driveFile.findFirst({
       where: {
         id: fileId,
         orgId,
+        subAccountId,
         deletedAt: null,
         status: { not: DriveFileStatus.DELETED },
       },
@@ -126,6 +129,7 @@ async function handleAuthDownload(req: Request, context: RouteContext) {
 
     await logDriveAudit({
       orgId,
+      subAccountId,
       userId,
       fileId,
       action: DriveAuditAction.FILE_DOWNLOAD,
