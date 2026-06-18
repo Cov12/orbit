@@ -44,50 +44,12 @@ export async function POST(req: Request) {
   try {
     switch (type) {
       case "user.created": {
-        // Auto-create a personal workspace for new users
-        const { id, email_addresses, first_name, last_name } = data as {
-          id: string;
-          email_addresses: Array<{ email_address: string }>;
-          first_name?: string;
-          last_name?: string;
-        };
-
-        const email = email_addresses?.[0]?.email_address;
-        const displayName = [first_name, last_name].filter(Boolean).join(" ") || "My Workspace";
-
-        // Check if user already has a workspace (e.g., created via /api/workspaces)
-        const existing = await db.member.findFirst({
-          where: { clerkUserId: id },
-        });
-
-        if (!existing) {
-          await db.organization.create({
-            data: {
-              name: `${displayName}'s Workspace`,
-              slug: `ws-${id.slice(-8).toLowerCase()}`,
-              members: {
-                create: {
-                  clerkUserId: id,
-                  email,
-                  name: displayName !== "My Workspace" ? displayName : null,
-                  role: "OWNER",
-                },
-              },
-              subscriptions: {
-                create: [
-                  { app: "WORKPIPE", plan: "FREE", status: "ACTIVE" },
-                  { app: "DRIVE", plan: "FREE", status: "ACTIVE" },
-                ],
-              },
-              appAccess: {
-                create: [
-                  { app: "WORKPIPE", enabled: true },
-                  { app: "DRIVE", enabled: true },
-                ],
-              },
-            },
-          });
-        }
+        // No workspace is auto-created on sign-up. Onboarding is mandatory: the
+        // user is routed to the wizard (/onboarding/new-workspace), which creates
+        // the workspace with their chosen apps/plans and initial sub-accounts.
+        // This is the single, controlled entry point for org creation.
+        const { id } = data as { id: string };
+        console.log(`[Clerk Webhook] user.created ${id} — awaiting onboarding wizard`);
         break;
       }
 
