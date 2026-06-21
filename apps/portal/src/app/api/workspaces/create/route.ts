@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
@@ -74,6 +74,15 @@ export async function POST(req: Request) {
         return { name: s.name.trim(), slug: subSlug };
       });
 
+    // Seed the owner's email/name from Clerk so the member record isn't empty
+    // (token minting falls back to these / the email local-part for display).
+    const clerkUser = await currentUser();
+    const ownerEmail =
+      clerkUser?.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress ??
+      null;
+    const ownerName =
+      [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ").trim() || null;
+
     // Create the organization with subscriptions
     const org = await db.organization.create({
       data: {
@@ -82,6 +91,8 @@ export async function POST(req: Request) {
         members: {
           create: {
             clerkUserId: userId,
+            email: ownerEmail,
+            name: ownerName,
             role: "OWNER",
           },
         },

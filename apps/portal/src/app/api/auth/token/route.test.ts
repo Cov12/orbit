@@ -94,6 +94,29 @@ describe('POST /api/auth/token — aud handling', () => {
     expect(decoded.app_access).toContain('CONDUCTOR');
   });
 
+  it('mints a token (does not 500) when neither Clerk nor member has a name — falls back to email local-part', async () => {
+    currentUserMock.mockResolvedValue({
+      emailAddresses: [{ id: 'e1', emailAddress: 'nameless@example.com' }],
+      primaryEmailAddressId: 'e1',
+      firstName: null,
+      lastName: null,
+    });
+    memberFindFirstMock.mockResolvedValue({
+      org: {
+        ...baseOrgWithConductor,
+        members: [{ id: 'm_1', clerkUserId: 'user_1', email: null, name: null, role: 'MEMBER' }],
+      },
+    });
+    const { POST } = await import('./route');
+
+    const res = await POST(makeRequest({}));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const decoded = jwt.verify(body.token, TEST_SECRET, { algorithms: ['HS256'] }) as Record<string, unknown>;
+    expect(decoded.email).toBe('nameless@example.com');
+    expect(decoded.name).toBe('nameless');
+  });
+
   it('aud=conductor with no ATRIUM subscription → 403 with conductor_entitlement_missing', async () => {
     memberFindFirstMock.mockResolvedValue({ org: orgWithoutAtrium });
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
