@@ -97,11 +97,17 @@ export async function POST(req: Request) {
     // Always fetch from Clerk — source of truth for email/name.
     const clerkUser = await currentUser();
     const email = clerkUser?.emailAddresses.find((entry) => entry.id === clerkUser.primaryEmailAddressId)?.emailAddress || member.email;
-    const name = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ") || member.name;
 
-    if (!email || !name) {
+    // Email is the only hard requirement. A user without a Clerk display name
+    // (e.g. an email-only signup) must not be locked out of every app — fall back
+    // to the email local-part as the display name.
+    if (!email) {
       return NextResponse.json({ error: "Unable to resolve user profile" }, { status: 500 });
     }
+    const name =
+      [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ").trim() ||
+      member.name ||
+      email.split("@")[0];
 
     // Platform admins (OWNER/ADMIN) get access to all apps regardless of subscription
     const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
