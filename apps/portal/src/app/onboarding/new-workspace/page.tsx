@@ -275,11 +275,13 @@ export default function NewWorkspaceWizard() {
                     <select
                       value={industry}
                       onChange={(e) => setIndustry(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#2B2FFF] focus:border-transparent"
+                      className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#2B2FFF] focus:border-transparent [color-scheme:dark]"
                     >
-                      <option value="">Select an industry</option>
+                      <option value="" className="bg-[#1c1c21] text-white">
+                        Select an industry
+                      </option>
                       {industries.map((ind) => (
-                        <option key={ind} value={ind}>
+                        <option key={ind} value={ind} className="bg-[#1c1c21] text-white">
                           {ind}
                         </option>
                       ))}
