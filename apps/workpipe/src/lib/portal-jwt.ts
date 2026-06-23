@@ -16,6 +16,8 @@ export interface PortalJwtPayload {
   name: string
   org_id: string // Workspace ID
   org_slug: string // Workspace slug
+  org_name?: string // Workspace display name (for Business auto-provision)
+  org_logo?: string | null // Workspace logo URL (for Business auto-provision)
   role: string // OWNER | ADMIN | MEMBER
   subscriptions: {
     plan: string
