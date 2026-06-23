@@ -30,7 +30,9 @@ You are a coding agent working on Orbit Drive, a secure file storage service.
 
 ## When Done
 
-Run this command to notify completion:
+If OpenClaw is installed in the current environment, notify completion with:
 ```
-openclaw system event --text "Done: <brief summary>" --mode now
+if command -v openclaw >/dev/null 2>&1; then
+  openclaw system event --text "Done: <brief summary>" --mode now
+fi
 ```
