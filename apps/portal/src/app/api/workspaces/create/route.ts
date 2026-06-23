@@ -18,9 +18,10 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, industry, products, subAccounts } = body as {
+    const { name, industry, logoUrl, products, subAccounts } = body as {
       name: string;
       industry?: string;
+      logoUrl?: string;
       products: Array<{
         app: "WORKPIPE" | "ATRIUM";
         plan: string;
@@ -84,10 +85,15 @@ export async function POST(req: Request) {
       [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ").trim() || null;
 
     // Create the organization with subscriptions
+    // Trust only a real https URL from our upload host; ignore anything else.
+    const cleanLogoUrl =
+      typeof logoUrl === "string" && logoUrl.startsWith("https://") ? logoUrl : null;
+
     const org = await db.organization.create({
       data: {
         name: name.trim(),
         slug,
+        logoUrl: cleanLogoUrl,
         members: {
           create: {
             clerkUserId: userId,
