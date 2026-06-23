@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import LogoUpload from "@/components/onboarding/logo-upload";
+
 type Step = 1 | 2 | 3 | 4;
 
 interface ProductSelection {
@@ -82,6 +84,7 @@ export default function NewWorkspaceWizard() {
   // Step 1
   const [workspaceName, setWorkspaceName] = useState("");
   const [industry, setIndustry] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
 
   // Step 2
   const [selectedProducts, setSelectedProducts] = useState<ProductSelection[]>([]);
@@ -175,6 +178,7 @@ export default function NewWorkspaceWizard() {
         body: JSON.stringify({
           name: workspaceName.trim(),
           industry: industry || undefined,
+          logoUrl: logoUrl || undefined,
           products: selectedProducts,
           subAccounts: cleanedSubAccounts.map((name) => ({ name })),
         }),
@@ -280,6 +284,13 @@ export default function NewWorkspaceWizard() {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Workspace logo (optional)
+                    </label>
+                    <LogoUpload value={logoUrl} onChange={(url) => setLogoUrl(url ?? "")} />
                   </div>
                 </div>
               </div>
