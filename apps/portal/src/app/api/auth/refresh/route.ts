@@ -161,6 +161,8 @@ export async function GET(req: Request) {
         name,
         org_id: org.id,
         org_slug: org.slug,
+        org_name: org.name,
+        org_logo: org.logoUrl ?? null,
         sub_account_id: subAccountId,
         role: member.role,
         subscriptions,
