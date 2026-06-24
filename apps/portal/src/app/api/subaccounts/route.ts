@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { verifyOrbitToken } from "@/lib/jwt";
 import { uniqueSubAccountSlug } from "@/lib/subaccount";
 
 /**
@@ -17,11 +18,39 @@ async function resolveWorkspaceId(explicit?: string): Promise<string | null> {
 /**
  * GET /api/subaccounts[?workspace_id=<id>]
  *
- * Lists the ACTIVE sub-accounts for the current workspace (for the switcher).
- * Requires membership in the workspace.
+ * Lists the ACTIVE sub-accounts for an org. Two callers:
+ *
+ *  1. Service-to-service — another Orbit app (WorkPipe, Atrium, …) calls with
+ *     its Orbit JWT as a Bearer token. The signed token's `org_id` is both the
+ *     authentication and the scope, so no Clerk session is needed. This is the
+ *     canonical cross-app read of sub-account identity (Portal is the source of
+ *     truth; apps consume it).
+ *  2. Interactive — the in-app switcher, authenticated by the Clerk session and
+ *     the `orbit_workspace` cookie / `?workspace_id=`.
  */
 export async function GET(req: Request) {
   try {
+    // (1) Service-to-service via Orbit JWT bearer.
+    const authz = req.headers.get("authorization");
+    if (authz?.startsWith("Bearer ")) {
+      let orgId: string | null = null;
+      try {
+        orgId = verifyOrbitToken(authz.slice(7))?.org_id ?? null;
+      } catch {
+        orgId = null;
+      }
+      if (!orgId) {
+        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+      }
+      const subAccounts = await db.subAccount.findMany({
+        where: { orgId, status: "ACTIVE" },
+        select: { id: true, name: true, slug: true, status: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
+      });
+      return NextResponse.json({ subAccounts });
+    }
+
+    // (2) Interactive via Clerk session.
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
