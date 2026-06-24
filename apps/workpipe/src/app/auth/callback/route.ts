@@ -97,6 +97,144 @@ async function provisionBusinessFromPortal(
   }
 }
 
+type PortalSubAccount = { id: string; name: string; slug: string }
+
+/**
+ * Mirror Portal's sub-accounts into WorkPipe's own DB so they appear in the
+ * dashboard. WorkPipe is on a separate database from Portal and owns data
+ * (funnels/contacts/pipelines) that FKs to SubAccount, so it must materialise
+ * local rows. Portal is the source of truth for sub-account identity; we PULL
+ * the list from its JWT-authed endpoint (no Clerk session needed server-side).
+ *
+ * Best-effort and create-if-missing: failures never block login, and an
+ * existing sub-account's real details are never overwritten with placeholders.
+ * Contact fields are left blank (completed later in WorkPipe), mirroring how the
+ * Business is provisioned. Each new sub-account gets the same Permissions,
+ * onboarding Pipeline, and SidebarOptions as the native `upsertSubAccount`.
+ */
+async function provisionSubAccountsFromPortal(
+  token: string,
+  payload: PortalJwtPayload
+): Promise<void> {
+  const orgId = payload.org_id
+  const email = payload.email
+  if (!orgId || !email) return
+
+  try {
+    const portalUrl =
+      process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'
+    const res = await fetch(`${portalUrl}/api/subaccounts`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    })
+    if (!res.ok) {
+      console.error('[Auth Callback] sub-account fetch failed:', res.status)
+      return
+    }
+
+    const { subAccounts = [] } = (await res.json()) as {
+      subAccounts?: PortalSubAccount[]
+    }
+    if (subAccounts.length === 0) return
+
+    // Create-if-missing only — never touch existing rows.
+    const existing = await db.subAccount.findMany({
+      where: { id: { in: subAccounts.map(s => s.id) } },
+      select: { id: true },
+    })
+    const existingIds = new Set(existing.map(e => e.id))
+
+    for (const sa of subAccounts) {
+      if (existingIds.has(sa.id)) continue
+      await db.subAccount
+        .create({
+          data: {
+            id: sa.id,
+            businessId: orgId,
+            name: sa.name,
+            subAccountLogo: '',
+            companyEmail: email,
+            companyPhone: '',
+            address: '',
+            city: '',
+            zipCode: '',
+            state: '',
+            country: '',
+            Permissions: { create: { access: true, email } },
+            Pipeline: { create: { name: 'Sub Account Onboarding' } },
+            SidebarOption: {
+              create: [
+                {
+                  name: 'Dashboard',
+                  icon: 'category',
+                  link: `/subaccount/${sa.id}`,
+                },
+                {
+                  name: 'Kick Start',
+                  icon: 'clipboardIcon',
+                  link: `/subaccount/${sa.id}/kickstart`,
+                },
+                {
+                  name: 'Funnels',
+                  icon: 'pipelines',
+                  link: `/subaccount/${sa.id}/funnels`,
+                },
+                {
+                  name: 'Media',
+                  icon: 'database',
+                  link: `/subaccount/${sa.id}/media`,
+                },
+                {
+                  name: 'Automations',
+                  icon: 'chip',
+                  link: `/subaccount/${sa.id}/automations`,
+                },
+                {
+                  name: 'Pipelines',
+                  icon: 'flag',
+                  link: `/subaccount/${sa.id}/pipelines`,
+                },
+                {
+                  name: 'Contacts',
+                  icon: 'person',
+                  link: `/subaccount/${sa.id}/contacts`,
+                },
+                {
+                  name: 'Calendar',
+                  icon: 'calendar',
+                  link: `/subaccount/${sa.id}/calendar`,
+                },
+                {
+                  name: 'Services',
+                  icon: 'clipboardIcon',
+                  link: `/subaccount/${sa.id}/services`,
+                },
+                {
+                  name: 'Documents',
+                  icon: 'database',
+                  link: `/subaccount/${sa.id}/documents`,
+                },
+                {
+                  name: 'Settings',
+                  icon: 'settings',
+                  link: `/subaccount/${sa.id}/settings`,
+                },
+              ],
+            },
+          },
+        })
+        .catch((err: unknown) =>
+          console.error(
+            `[Auth Callback] sub-account provision failed (${sa.id}):`,
+            err
+          )
+        )
+    }
+  } catch (err) {
+    console.error('[Auth Callback] sub-account auto-provision failed:', err)
+  }
+}
+
 /**
  * Get the public-facing origin.
  * Render resolves req.url to localhost:PORT internally.
@@ -149,6 +287,10 @@ export async function GET(req: Request) {
     // Provision the Business so the user lands in the dashboard rather than the
     // onboarding form (the bypass). Best-effort — never blocks login.
     await provisionBusinessFromPortal(payload)
+
+    // Mirror the org's Portal sub-accounts into WorkPipe so they show up in the
+    // dashboard. Runs after the Business (and owner User) exist. Best-effort.
+    await provisionSubAccountsFromPortal(token, payload)
 
     // Set the JWT as an HTTP-only cookie and redirect to dashboard
     const response = NextResponse.redirect(new URL('/business', publicOrigin))
