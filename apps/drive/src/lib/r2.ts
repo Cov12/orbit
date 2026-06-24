@@ -40,3 +40,53 @@ export async function getDownloadSignedUrl(key: string, expiresIn = 900) {
 
   return getSignedUrl(r2Client, command, { expiresIn });
 }
+
+// ---------------------------------------------------------------------------
+// Public branding bucket — separate, public-read bucket for unencrypted assets
+// (logos / branding). Distinct credentials + bucket from the encrypted vault
+// above; objects are served directly from R2_PUBLIC_BASE_URL (no signing).
+// ---------------------------------------------------------------------------
+
+export const R2_PUBLIC_BUCKET = process.env.R2_PUBLIC_BUCKET || "";
+// Public read base (r2.dev dev URL or a bound custom domain). No trailing slash.
+export const R2_PUBLIC_BASE_URL = (process.env.R2_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
+
+// Same Cloudflare account as the vault → reuse R2_ENDPOINT unless overridden.
+const R2_PUBLIC_ENDPOINT = process.env.R2_PUBLIC_ENDPOINT || R2_ENDPOINT;
+
+export const r2PublicClient = new S3Client({
+  region: R2_REGION,
+  endpoint: R2_PUBLIC_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.R2_PUBLIC_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.R2_PUBLIC_SECRET_ACCESS_KEY || "",
+  },
+});
+
+/** True when the public branding bucket is fully configured. */
+export function isPublicBucketConfigured(): boolean {
+  return Boolean(
+    R2_PUBLIC_BUCKET &&
+      R2_PUBLIC_BASE_URL &&
+      process.env.R2_PUBLIC_ACCESS_KEY_ID &&
+      process.env.R2_PUBLIC_SECRET_ACCESS_KEY
+  );
+}
+
+/** Upload unencrypted bytes to the public bucket. */
+export async function putPublicObject(key: string, body: Buffer, contentType: string) {
+  await r2PublicClient.send(
+    new PutObjectCommand({
+      Bucket: R2_PUBLIC_BUCKET,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      CacheControl: "public, max-age=31536000, immutable",
+    })
+  );
+}
+
+/** Stable public URL for a key in the public bucket. */
+export function publicUrlForKey(key: string): string {
+  return `${R2_PUBLIC_BASE_URL}/${key}`;
+}

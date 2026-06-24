@@ -138,10 +138,14 @@ model DriveFile {
   mimeType     String
   size         BigInt
   r2Key        String          @unique
-  encryptedDek String
-  dekIv        String
-  dekTag       String
-  fileIv       String
+  // Public assets (logos / branding) live in the public R2 bucket and are NOT
+  // envelope-encrypted, so the DEK fields are null for them. isPublic also
+  // selects the public bucket + stable URL on read.
+  isPublic     Boolean         @default(false)
+  encryptedDek String?
+  dekIv        String?
+  dekTag       String?
+  fileIv       String?
   checksum     String?
   folderId     String?
   folder       DriveFolder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
