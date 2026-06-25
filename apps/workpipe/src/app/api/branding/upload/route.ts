@@ -47,11 +47,32 @@ export async function POST(req: Request) {
   const forwarded = new FormData()
   forwarded.append('file', file)
 
+  // Decode the JWT org_id (no verification — Drive verifies). Drive resolves the
+  // org from DB memberships and needs X-Org-Id to disambiguate multi-org users.
+  let orgId: string | undefined
+  try {
+    const claims = JSON.parse(
+      Buffer.from(token.split('.')[1], 'base64url').toString()
+    )
+    if (typeof claims.org_id === 'string') orgId = claims.org_id
+  } catch {
+    /* leave undefined — single-org users don't need it */
+  }
+
   let res: Response
   try {
     res = await fetch(`${DRIVE_API_URL}/api/drive/public`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        // Forward the token as BOTH a cookie (Drive's primary, proven auth
+        // path) and a Bearer (for non-cookie consumers). The Cookie header is
+        // never stripped in transit, and Drive reads it via its existing
+        // getPortalUser cookie flow — no reliance on header() Bearer parsing.
+        // Node's server-side fetch permits setting Cookie (browsers don't).
+        Cookie: `${PORTAL_TOKEN_COOKIE}=${token}`,
+        Authorization: `Bearer ${token}`,
+        ...(orgId ? { 'X-Org-Id': orgId } : {}),
+      },
       body: forwarded,
       cache: 'no-store',
     })
