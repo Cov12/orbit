@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { getDriveContext } from "@/lib/drive-auth";
 import { logDriveAudit } from "@/lib/drive-audit";
 import { driveErrorResponse } from "@/lib/drive-http";
-import { getDownloadSignedUrl } from "@/lib/r2";
+import { getDownloadSignedUrl, publicUrlForKey } from "@/lib/r2";
 
 type RouteContext = {
   params: Promise<{ fileId: string }>;
@@ -64,6 +64,7 @@ async function handlePublicDownload(req: Request, context: RouteContext, token: 
         name: true,
         orgId: true,
         subAccountId: true,
+        isPublic: true,
       },
     });
 
@@ -77,7 +78,9 @@ async function handlePublicDownload(req: Request, context: RouteContext, token: 
       data: { accessCount: { increment: 1 } },
     });
 
-    const downloadUrl = await getDownloadSignedUrl(file.r2Key);
+    const downloadUrl = file.isPublic
+      ? publicUrlForKey(file.r2Key)
+      : await getDownloadSignedUrl(file.r2Key);
 
     // Audit log (no userId for public downloads)
     await logDriveAudit({
@@ -118,6 +121,7 @@ async function handleAuthDownload(req: Request, context: RouteContext) {
         id: true,
         r2Key: true,
         name: true,
+        isPublic: true,
       },
     });
 
@@ -125,7 +129,11 @@ async function handleAuthDownload(req: Request, context: RouteContext) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    const downloadUrl = await getDownloadSignedUrl(file.r2Key);
+    // Public assets live in the public bucket and are served directly (no
+    // signing/expiry) — never sign them against the vault bucket.
+    const downloadUrl = file.isPublic
+      ? publicUrlForKey(file.r2Key)
+      : await getDownloadSignedUrl(file.r2Key);
 
     await logDriveAudit({
       orgId,
