@@ -103,12 +103,26 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
         connectAccountId: '',
         goal: 5000,
       })
-      if (!response) throw new Error('No response from server')
-      await saveActivityLogsNotification({
-        businessId: response.businessId,
-        description: `${userName} | updated sub account | ${response.name}`,
-        subaccountId: response.id,
-      })
+      if (!response?.id) {
+        // upsertSubAccount returns null when companyEmail is missing or the
+        // business has no BUSINESS_OWNER — surface a real message rather than a
+        // cryptic downstream crash.
+        throw new Error(
+          'Could not save — the sub account is missing a company email or business owner.'
+        )
+      }
+
+      // The activity-log notification is a non-critical side effect; never let
+      // it abort a save that already succeeded.
+      try {
+        await saveActivityLogsNotification({
+          businessId: response.businessId,
+          description: `${userName} | updated sub account | ${response.name}`,
+          subaccountId: response.id,
+        })
+      } catch (logError) {
+        console.error('[SubAccountDetails] activity log failed:', logError)
+      }
 
       toast({
         title: 'Subaccount details saved',
@@ -121,7 +135,10 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
       toast({
         variant: 'destructive',
         title: 'Oops!',
-        description: 'Could not save sub account details.',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Could not save sub account details.',
       })
     }
   }
