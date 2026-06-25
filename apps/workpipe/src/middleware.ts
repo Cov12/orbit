@@ -16,11 +16,7 @@ import type { NextRequest } from 'next/server'
 const PORTAL_TOKEN_COOKIE = 'orbit_token'
 
 /** Routes that don't require authentication */
-const PUBLIC_PATHS = new Set([
-  '/api/uploadthing',
-  '/auth/callback',
-  '/api/health',
-])
+const PUBLIC_PATHS = new Set(['/auth/callback', '/api/health'])
 
 const PUBLIC_PREFIXES = ['/api/internal/', '/api/stripe/', '/site', '/_next']
 
