@@ -17,17 +17,31 @@ const DRIVE_API_URL = process.env.DRIVE_API_URL || 'https://drive.orbit.example'
  * public branding bucket and returns its stable URL.
  *
  * Returns: { url }
+ *
+ * Error responses carry a `stage` field so a 401 can be traced to the proxy
+ * (no cookie) vs. Drive (rejected the Bearer) — both otherwise look identical.
  */
 export async function POST(req: Request) {
-  const token = (await cookies()).get(PORTAL_TOKEN_COOKIE)?.value
+  const cookieStore = await cookies()
+  const token = cookieStore.get(PORTAL_TOKEN_COOKIE)?.value
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    console.error(
+      '[Branding] no orbit_token cookie at proxy; cookies present:',
+      cookieStore.getAll().map(c => c.name)
+    )
+    return NextResponse.json(
+      { error: 'Unauthorized', stage: 'proxy:no-token' },
+      { status: 401 }
+    )
   }
 
   const form = await req.formData().catch(() => null)
   const file = form?.get('file')
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'No file provided', stage: 'proxy:no-file' },
+      { status: 400 }
+    )
   }
 
   const forwarded = new FormData()
@@ -44,7 +58,10 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error('[Branding] Drive upload request failed:', err)
     return NextResponse.json(
-      { error: 'Upload failed, please try again' },
+      {
+        error: 'Upload failed, please try again',
+        stage: 'proxy:drive-fetch-threw',
+      },
       { status: 502 }
     )
   }
@@ -54,8 +71,13 @@ export async function POST(req: Request) {
     error?: string
   }
   if (!res.ok) {
+    console.error('[Branding] Drive returned', res.status, data)
     return NextResponse.json(
-      { error: data.error || 'Upload failed' },
+      {
+        error: data.error || 'Upload failed',
+        stage: 'drive',
+        driveStatus: res.status,
+      },
       { status: res.status }
     )
   }
