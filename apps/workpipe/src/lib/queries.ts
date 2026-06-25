@@ -331,7 +331,13 @@ export const upsertBusiness = async (business: Business, _price?: Plan) => {
 }
 
 export const upsertSubAccount = async (subAccount: SubAccount) => {
-  if (!subAccount.companyEmail) return null
+  if (!subAccount.companyEmail) {
+    console.error(
+      '[upsertSubAccount] missing companyEmail for subaccount',
+      subAccount.id
+    )
+    return null
+  }
   const businessOwner = await db.user.findFirst({
     where: {
       Business: {
@@ -340,7 +346,13 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
       role: 'BUSINESS_OWNER',
     },
   })
-  if (!businessOwner) return console.log('🔴Erorr could not create subaccount')
+  if (!businessOwner) {
+    console.error(
+      '[upsertSubAccount] no BUSINESS_OWNER for business',
+      subAccount.businessId
+    )
+    return null
+  }
   const permissionId = v4()
   const response = await db.subAccount.upsert({
     where: { id: subAccount.id },
@@ -934,7 +946,10 @@ export const upsertFunnelPage = async (
 
   try {
     // Log incoming data for debugging
-    console.log('[upsertFunnelPage] Received:', JSON.stringify(funnelPage, null, 2))
+    console.log(
+      '[upsertFunnelPage] Received:',
+      JSON.stringify(funnelPage, null, 2)
+    )
 
     // Extract fields explicitly
     const pageId = (funnelPage as UpsertFunnelPage & { id?: string }).id || ''
@@ -944,7 +959,14 @@ export const upsertFunnelPage = async (
     const content = funnelPage.content
     const previewImage = funnelPage.previewImage
 
-    console.log('[upsertFunnelPage] Extracted - name:', name, 'pathName:', pathName, 'order:', order)
+    console.log(
+      '[upsertFunnelPage] Extracted - name:',
+      name,
+      'pathName:',
+      pathName,
+      'order:',
+      order
+    )
 
     // Validate required fields
     if (!name) {
@@ -964,15 +986,17 @@ export const upsertFunnelPage = async (
         name,
         pathName,
         order,
-        content: content || JSON.stringify([
-          {
-            content: [],
-            id: '__body',
-            name: 'Body',
-            styles: { backgroundColor: 'white' },
-            type: '__body',
-          },
-        ]),
+        content:
+          content ||
+          JSON.stringify([
+            {
+              content: [],
+              id: '__body',
+              name: 'Body',
+              styles: { backgroundColor: 'white' },
+              type: '__body',
+            },
+          ]),
         funnelId,
       },
     })
