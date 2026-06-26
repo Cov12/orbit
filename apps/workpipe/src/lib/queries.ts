@@ -155,81 +155,81 @@ export const saveActivityLogsNotification = async ({
   description: string
   subaccountId?: string
 }) => {
-  const authUser = await getCurrentUser()
-  let userData
-  if (!authUser) {
-    const response = await db.user.findFirst({
-      where: {
-        Business: {
-          SubAccount: {
-            some: { id: subaccountId },
+  // Activity logging is a non-critical side effect — it must never throw and
+  // abort the caller's action (saving settings, accepting an invite, etc.).
+  // Any failure is logged and swallowed.
+  try {
+    const authUser = await getCurrentUser()
+    let userData
+    if (!authUser) {
+      const response = await db.user.findFirst({
+        where: {
+          Business: {
+            SubAccount: {
+              some: { id: subaccountId },
+            },
           },
         },
-      },
-    })
-    if (response) {
-      userData = response
+      })
+      if (response) {
+        userData = response
+      }
+    } else {
+      userData = await db.user.findUnique({
+        where: { email: authUser.email },
+      })
     }
-  } else {
-    userData = await db.user.findUnique({
-      where: { email: authUser.email },
-    })
-  }
 
-  // Cleanup
-  // TO DO: add error handling
-  if (!userData) {
-    console.log('Could not find a user')
-    return
-  }
-
-  let foundBusinessId = businessId
-  if (!foundBusinessId) {
-    if (!subaccountId) {
-      throw new Error(
-        'You need to provide atleast an business Id or subaccount Id'
+    if (!userData) {
+      console.log(
+        '[saveActivityLogsNotification] could not find a user — skipping'
       )
+      return
     }
-    const response = await db.subAccount.findUnique({
-      where: { id: subaccountId },
-    })
-    if (response) foundBusinessId = response.businessId
-  }
-  if (subaccountId) {
-    await db.notification.create({
-      data: {
-        notification: `${userData.name} | ${description ?? 'Updated information'}`,
-        User: {
-          connect: {
-            id: userData.id,
-          },
+
+    let foundBusinessId = businessId
+    if (!foundBusinessId) {
+      if (!subaccountId) {
+        console.error(
+          '[saveActivityLogsNotification] no businessId or subaccountId — skipping'
+        )
+        return
+      }
+      const response = await db.subAccount.findUnique({
+        where: { id: subaccountId },
+      })
+      if (response) foundBusinessId = response.businessId
+    }
+    if (!foundBusinessId) {
+      console.error(
+        '[saveActivityLogsNotification] could not resolve a businessId — skipping'
+      )
+      return
+    }
+
+    if (subaccountId) {
+      await db.notification.create({
+        data: {
+          notification: `${userData.name} | ${description ?? 'Updated information'}`,
+          User: { connect: { id: userData.id } },
+          Business: { connect: { id: foundBusinessId } },
+          SubAccount: { connect: { id: subaccountId } },
         },
-        Business: {
-          connect: {
-            id: foundBusinessId,
-          },
+      })
+    } else {
+      await db.notification.create({
+        data: {
+          notification: `${userData.name} | ${description}`,
+          User: { connect: { id: userData.id } },
+          Business: { connect: { id: foundBusinessId } },
         },
-        SubAccount: {
-          connect: { id: subaccountId },
-        },
-      },
-    })
-  } else {
-    await db.notification.create({
-      data: {
-        notification: `${userData.name} | ${description}`,
-        User: {
-          connect: {
-            id: userData.id,
-          },
-        },
-        Business: {
-          connect: {
-            id: foundBusinessId,
-          },
-        },
-      },
-    })
+      })
+    }
+  } catch (error) {
+    console.error(
+      '[saveActivityLogsNotification] failed (non-blocking):',
+      error
+    )
   }
 }
 
