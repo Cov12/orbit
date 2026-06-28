@@ -146,11 +146,11 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
         businessId: authUserData?.Business?.id,
         description: `Gave ${userData?.name} access to | ${
           subAccountPermissions?.Permissions.find(
-            (p) => p.subAccountId === subAccountId
+            p => p.subAccountId === subAccountId
           )?.SubAccount.name
         } `,
         subaccountId: subAccountPermissions?.Permissions.find(
-          (p) => p.subAccountId === subAccountId
+          p => p.subAccountId === subAccountId
         )?.SubAccount.id,
       })
     }
@@ -161,7 +161,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
         description: 'The request was successfull',
       })
       if (subAccountPermissions) {
-        subAccountPermissions.Permissions.find((perm) => {
+        subAccountPermissions.Permissions.find(perm => {
           if (perm.subAccountId === subAccountId) {
             return { ...perm, access: !perm.access }
           }
@@ -181,13 +181,35 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
 
   const onSubmit = async (values: z.infer<typeof userDataSchema>) => {
     if (!id) return
-    if (userData || data?.user) {
-      const updatedUser = await updateUser(values)
-      authUserData?.Business?.SubAccount.filter((subacc) =>
+    const base = userData || data?.user
+    // This form renders inline on the settings page (no modal context), and RHF
+    // was occasionally handing onSubmit an empty/partial object here — which made
+    // updateUser run `user.update({ where:{email:undefined}, data:{} })` and 500.
+    // Fall back to the user record we were handed so the email (the update key)
+    // and any unchanged fields are always present. The log line confirms what
+    // RHF actually submitted.
+    console.log('[user-details] submit values:', values)
+    const payload = {
+      email: values.email || base?.email || '',
+      name: values.name || base?.name || '',
+      avatarUrl: values.avatarUrl ?? base?.avatarUrl ?? '',
+      role: values.role || base?.role,
+    }
+    if (!payload.email) {
+      toast({
+        variant: 'destructive',
+        title: 'Oops!',
+        description: 'Missing user email — could not update user information.',
+      })
+      return
+    }
+    if (base) {
+      const updatedUser = await updateUser(payload)
+      authUserData?.Business?.SubAccount.filter(subacc =>
         authUserData.Permissions.find(
-          (p) => p.subAccountId === subacc.id && p.access
+          p => p.subAccountId === subacc.id && p.access
         )
-      ).forEach(async (subaccount) => {
+      ).forEach(async subaccount => {
         await saveActivityLogsNotification({
           businessId: undefined,
           description: `Updated ${userData?.name} information`,
@@ -222,10 +244,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               disabled={form.formState.isSubmitting}
               control={form.control}
@@ -253,11 +272,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
                 <FormItem className="flex-1">
                   <FormLabel>User full name</FormLabel>
                   <FormControl>
-                    <Input
-                      required
-                      placeholder="Full Name"
-                      {...field}
-                    />
+                    <Input required placeholder="Full Name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -293,7 +308,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
                   <FormLabel> User Role</FormLabel>
                   <Select
                     disabled={field.value === 'BUSINESS_OWNER'}
-                    onValueChange={(value) => {
+                    onValueChange={value => {
                       if (
                         value === 'SUBACCOUNT_USER' ||
                         value === 'SUBACCOUNT_GUEST'
@@ -336,10 +351,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
               )}
             />
 
-            <Button
-              disabled={form.formState.isSubmitting}
-              type="submit"
-            >
+            <Button disabled={form.formState.isSubmitting} type="submit">
               {form.formState.isSubmitting ? <Loading /> : 'Save User Details'}
             </Button>
             {authUserData?.role === 'BUSINESS_OWNER' && (
@@ -352,10 +364,10 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
                   business owners
                 </FormDescription>
                 <div className="flex flex-col gap-4">
-                  {subAccounts?.map((subAccount) => {
+                  {subAccounts?.map(subAccount => {
                     const subAccountPermissionsDetails =
                       subAccountPermissions?.Permissions.find(
-                        (p) => p.subAccountId === subAccount.id
+                        p => p.subAccountId === subAccount.id
                       )
                     return (
                       <div
@@ -368,7 +380,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
                         <Switch
                           disabled={loadingPermissions}
                           checked={subAccountPermissionsDetails?.access}
-                          onCheckedChange={(permission) => {
+                          onCheckedChange={permission => {
                             onChangePermission(
                               subAccount.id,
                               permission,
