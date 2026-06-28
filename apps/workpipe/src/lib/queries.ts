@@ -515,9 +515,26 @@ export const deleteUser = async (userId: string) => {
 }
 
 export const updateUser = async (user: Partial<User>) => {
+  if (!user.email) {
+    console.error('[updateUser] missing email in payload — skipping', user)
+    return null
+  }
+
+  // Only touch the columns this form owns — never spread id/timestamps/FKs.
+  // Guards against the empty-payload 500 (`update({ where:{email:undefined},
+  // data:{} })`) seen when the settings form submitted a blank object.
+  const data: Prisma.UserUpdateInput = {}
+  if (user.name !== undefined) data.name = user.name
+  if (user.avatarUrl !== undefined) data.avatarUrl = user.avatarUrl
+  if (user.role !== undefined) data.role = user.role
+  if (Object.keys(data).length === 0) {
+    console.error('[updateUser] no updatable fields for', user.email)
+    return null
+  }
+
   const response = await db.user.update({
     where: { email: user.email },
-    data: { ...user },
+    data,
   })
 
   const client = await getAuthAdmin()

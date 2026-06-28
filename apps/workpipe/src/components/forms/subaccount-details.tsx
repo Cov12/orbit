@@ -85,23 +85,28 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
 
   async function onSubmit() {
     const values = form.getValues()
+    // Same empty/partial-submit guard as user-details: if RHF hands back blank
+    // fields, fall back to the sub-account record we loaded so required fields
+    // (notably companyEmail, which upsertSubAccount rejects when missing) are
+    // never lost. The log line confirms what the form actually submitted.
+    console.log('[subaccount-details] submit values:', values)
     try {
       const response = await upsertSubAccount({
         id: details?.id ? details.id : v4(),
-        address: values.address,
-        subAccountLogo: values.subAccountLogo,
-        city: values.city,
-        companyPhone: values.companyPhone,
-        country: values.country,
-        name: values.name,
-        state: values.state,
-        zipCode: values.zipCode,
-        createdAt: new Date(),
+        address: values.address || details?.address || '',
+        subAccountLogo: values.subAccountLogo || details?.subAccountLogo || '',
+        city: values.city || details?.city || '',
+        companyPhone: values.companyPhone || details?.companyPhone || '',
+        country: values.country || details?.country || '',
+        name: values.name || details?.name || '',
+        state: values.state || details?.state || '',
+        zipCode: values.zipCode || details?.zipCode || '',
+        createdAt: details?.createdAt || new Date(),
         updatedAt: new Date(),
-        companyEmail: values.companyEmail,
+        companyEmail: values.companyEmail || details?.companyEmail || '',
         businessId: businessDetails.id,
-        connectAccountId: '',
-        goal: 5000,
+        connectAccountId: details?.connectAccountId || '',
+        goal: details?.goal ?? 5000,
       })
       if (!response?.id) {
         // upsertSubAccount returns null when companyEmail is missing or the
