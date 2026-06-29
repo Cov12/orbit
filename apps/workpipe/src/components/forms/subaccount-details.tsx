@@ -108,10 +108,13 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
         connectAccountId: details?.connectAccountId || '',
         goal: details?.goal ?? 5000,
       })
-      if (!response?.id) {
-        // upsertSubAccount returns null when companyEmail is missing or the
-        // business has no BUSINESS_OWNER — surface a real message rather than a
-        // cryptic downstream crash.
+      if (!response) {
+        // upsertSubAccount's contract: it returns `null` ONLY when it bailed on a
+        // guard (missing companyEmail / no BUSINESS_OWNER) — and it already logged
+        // the reason server-side. Any non-null return means the write succeeded.
+        // Check for null, NOT `response.id`: keying off `.id` falsely errored on
+        // saves that actually persisted whenever the serialized return wasn't a
+        // full record.
         throw new Error(
           'Could not save — the sub account is missing a company email or business owner.'
         )
@@ -121,9 +124,11 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
       // it abort a save that already succeeded.
       try {
         await saveActivityLogsNotification({
-          businessId: response.businessId,
-          description: `${userName} | updated sub account | ${response.name}`,
-          subaccountId: response.id,
+          businessId: response.businessId ?? businessDetails.id,
+          description: `${userName} | updated sub account | ${
+            response.name ?? values.name ?? details?.name ?? ''
+          }`,
+          subaccountId: response.id ?? details?.id,
         })
       } catch (logError) {
         console.error('[SubAccountDetails] activity log failed:', logError)
