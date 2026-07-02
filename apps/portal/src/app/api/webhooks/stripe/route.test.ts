@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const dbMock = vi.hoisted(() => ({
+  organization: {
+    findUnique: vi.fn(),
+  },
   subscription: {
     upsert: vi.fn(),
     findUnique: vi.fn(),
@@ -12,6 +15,8 @@ const dbMock = vi.hoisted(() => ({
   },
 }));
 
+const fetchMock = vi.hoisted(() => vi.fn());
+
 const stripeMock = vi.hoisted(() => ({
   webhooks: { constructEvent: vi.fn() },
   subscriptions: { retrieve: vi.fn() },
@@ -22,6 +27,8 @@ vi.mock('@/lib/stripe', () => ({ getStripe: () => stripeMock }));
 vi.mock('next/headers', () => ({
   headers: async () => new Headers({ 'stripe-signature': 'test-sig' }),
 }));
+
+vi.stubGlobal('fetch', fetchMock);
 
 function makeReq(body: unknown = { ignored: true }): Request {
   return new Request('http://localhost/api/webhooks/stripe', {
@@ -41,6 +48,18 @@ describe('stripe webhook → CONDUCTOR AppAccess lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
+    process.env.CONDUCTOR_URL = 'https://conductor.example.com';
+    process.env.ORBIT_PORTAL_JWT_SECRET = 'bridge-secret';
+    fetchMock.mockResolvedValue(new Response(null, { status: 202 }));
+    dbMock.organization.findUnique.mockResolvedValue({
+      id: 'org_1',
+      subscriptions: [{ app: 'ATRIUM', status: 'ACTIVE' }],
+      appAccess: [
+        { app: 'ATRIUM', enabled: true },
+        { app: 'CONDUCTOR', enabled: true },
+        { app: 'WORKPIPE', enabled: true },
+      ],
+    });
   });
 
   describe('checkout.session.completed', () => {
@@ -71,6 +90,24 @@ describe('stripe webhook → CONDUCTOR AppAccess lifecycle', () => {
         create: { orgId: 'org_1', app: 'CONDUCTOR', enabled: true },
         update: { enabled: true },
       });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://conductor.example.com/api/webhooks/portal/entitlements',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-orbit-bridge-secret': 'bridge-secret',
+          },
+          body: JSON.stringify({
+            org_id: 'org_1',
+            appAccess: [
+              { app: 'ATRIUM', enabled: true },
+              { app: 'CONDUCTOR', enabled: true },
+              { app: 'WORKPIPE', enabled: true },
+            ],
+          }),
+        })
+      );
     });
 
     it('does NOT touch CONDUCTOR AppAccess when app=WORKPIPE', async () => {
@@ -114,6 +151,15 @@ describe('stripe webhook → CONDUCTOR AppAccess lifecycle', () => {
         app: 'ATRIUM',
         status: 'ACTIVE',
       });
+      dbMock.organization.findUnique.mockResolvedValue({
+        id: 'org_1',
+        subscriptions: [{ app: 'ATRIUM', status: 'CANCELED' }],
+        appAccess: [
+          { app: 'ATRIUM', enabled: true },
+          { app: 'CONDUCTOR', enabled: false },
+          { app: 'WORKPIPE', enabled: true },
+        ],
+      });
 
       const { POST } = await import('./route');
       const res = await POST(makeReq());
@@ -126,6 +172,19 @@ describe('stripe webhook → CONDUCTOR AppAccess lifecycle', () => {
         create: { orgId: 'org_1', app: 'CONDUCTOR', enabled: false },
         update: { enabled: false },
       });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://conductor.example.com/api/webhooks/portal/entitlements',
+        expect.objectContaining({
+          body: JSON.stringify({
+            org_id: 'org_1',
+            appAccess: [
+              { app: 'ATRIUM', enabled: true },
+              { app: 'CONDUCTOR', enabled: false },
+              { app: 'WORKPIPE', enabled: true },
+            ],
+          }),
+        })
+      );
     });
 
     it('flips CONDUCTOR back to enabled=true when ATRIUM sub transitions CANCELED → ACTIVE', async () => {
@@ -180,6 +239,7 @@ describe('stripe webhook → CONDUCTOR AppAccess lifecycle', () => {
 
       expect(res.status).toBe(200);
       expect(findUpsertFor('CONDUCTOR')).toBeUndefined();
+      expect(fetchMock).not.toHaveBeenCalled();
     });
   });
 
@@ -196,6 +256,15 @@ describe('stripe webhook → CONDUCTOR AppAccess lifecycle', () => {
         app: 'ATRIUM',
         status: 'ACTIVE',
       });
+      dbMock.organization.findUnique.mockResolvedValue({
+        id: 'org_1',
+        subscriptions: [{ app: 'ATRIUM', status: 'CANCELED' }],
+        appAccess: [
+          { app: 'ATRIUM', enabled: false },
+          { app: 'CONDUCTOR', enabled: false },
+          { app: 'WORKPIPE', enabled: true },
+        ],
+      });
 
       const { POST } = await import('./route');
       const res = await POST(makeReq());
@@ -209,6 +278,19 @@ describe('stripe webhook → CONDUCTOR AppAccess lifecycle', () => {
         where: { orgId: 'org_1', app: 'CONDUCTOR' },
         data: { enabled: false },
       });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://conductor.example.com/api/webhooks/portal/entitlements',
+        expect.objectContaining({
+          body: JSON.stringify({
+            org_id: 'org_1',
+            appAccess: [
+              { app: 'ATRIUM', enabled: false },
+              { app: 'CONDUCTOR', enabled: false },
+              { app: 'WORKPIPE', enabled: true },
+            ],
+          }),
+        })
+      );
     });
 
     it('does NOT touch CONDUCTOR AppAccess when a non-ATRIUM sub is deleted', async () => {

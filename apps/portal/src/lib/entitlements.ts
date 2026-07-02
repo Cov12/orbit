@@ -11,6 +11,11 @@ export interface OrgWithRelations {
   appAccess: ReadonlyArray<{ app: AppType; enabled: boolean }>;
 }
 
+export interface EffectiveAppAccessEntry {
+  app: AppType;
+  enabled: boolean;
+}
+
 export function isSubscriptionActive(status: SubStatus): boolean {
   return ACTIVE_STATUS_SET.has(status);
 }
@@ -23,6 +28,15 @@ export function conductorActive(org: OrgWithRelations): boolean {
   return org.appAccess.some((a) => a.app === 'CONDUCTOR' && a.enabled);
 }
 
+export function getEffectiveAppAccessEntries(org: OrgWithRelations): EffectiveAppAccessEntry[] {
+  return org.appAccess
+    .map((a) => ({
+      app: a.app,
+      enabled: a.app === 'CONDUCTOR' ? conductorActive(org) : a.enabled,
+    }))
+    .sort((a, b) => a.app.localeCompare(b.app));
+}
+
 export function getEffectiveAppAccess(
   org: OrgWithRelations,
   isPlatformAdmin: boolean
@@ -33,9 +47,7 @@ export function getEffectiveAppAccess(
     if (conductorActive(org)) base.push('CONDUCTOR');
     return Array.from(new Set(base)).sort((a, b) => a.localeCompare(b));
   }
-  const apps = org.appAccess
+  return getEffectiveAppAccessEntries(org)
     .filter((a) => a.enabled)
-    .map((a) => a.app)
-    .filter((app) => (app === 'CONDUCTOR' ? conductorActive(org) : true));
-  return Array.from(new Set(apps)).sort((a, b) => a.localeCompare(b));
+    .map((a) => a.app);
 }

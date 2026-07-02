@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import type { AppType, Plan, SubStatus } from "@prisma/client";
 import Stripe from "stripe";
 import { isSubscriptionActive } from "@/lib/entitlements";
+import { postConductorEntitlements } from "@/lib/conductor-entitlements";
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -78,6 +79,12 @@ export async function POST(req: Request) {
               update: { enabled: true },
             });
           }
+
+          try {
+            await postConductorEntitlements(orgId);
+          } catch (error) {
+            console.error(`[Entitlements Sync] Unexpected failure after checkout.session.completed for ${orgId}:`, error);
+          }
         }
         break;
       }
@@ -114,6 +121,20 @@ export async function POST(req: Request) {
               update: { enabled: isSubscriptionActive(nextStatus) },
             });
           }
+
+          if (
+            existing.app === "ATRIUM" &&
+            isSubscriptionActive(existing.status) !== isSubscriptionActive(nextStatus)
+          ) {
+            try {
+              await postConductorEntitlements(existing.orgId);
+            } catch (error) {
+              console.error(
+                `[Entitlements Sync] Unexpected failure after customer.subscription.updated for ${existing.orgId}:`,
+                error
+              );
+            }
+          }
         }
         break;
       }
@@ -142,6 +163,15 @@ export async function POST(req: Request) {
               where: { orgId: existing.orgId, app: "CONDUCTOR" },
               data: { enabled: false },
             });
+          }
+
+          try {
+            await postConductorEntitlements(existing.orgId);
+          } catch (error) {
+            console.error(
+              `[Entitlements Sync] Unexpected failure after customer.subscription.deleted for ${existing.orgId}:`,
+              error
+            );
           }
         }
         break;

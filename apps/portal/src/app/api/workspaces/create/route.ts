@@ -2,6 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { postConductorEntitlements } from "@/lib/conductor-entitlements";
 
 /**
  * POST /api/workspaces/create
@@ -142,6 +143,12 @@ export async function POST(req: Request) {
         enabled: true,
       },
     });
+
+    try {
+      await postConductorEntitlements(org.id);
+    } catch (error) {
+      console.error(`[Entitlements Sync] Unexpected failure after workspace bootstrap for ${org.id}:`, error);
+    }
 
     // Set this as the current workspace
     const cookieStore = await cookies();

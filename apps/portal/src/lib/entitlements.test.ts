@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { conductorActive, getEffectiveAppAccess, type OrgWithRelations } from './entitlements';
+import {
+  conductorActive,
+  getEffectiveAppAccess,
+  getEffectiveAppAccessEntries,
+  type OrgWithRelations,
+} from './entitlements';
 
 function makeOrg(opts: Partial<OrgWithRelations>): OrgWithRelations {
   return {
@@ -47,6 +52,25 @@ describe('conductorActive', () => {
       appAccess: [{ app: 'CONDUCTOR', enabled: true }],
     });
     expect(conductorActive(org)).toBe(false);
+  });
+});
+
+describe('getEffectiveAppAccessEntries', () => {
+  it('keeps non-CONDUCTOR entries as stored and applies subscription gating to CONDUCTOR', () => {
+    const org = makeOrg({
+      subscriptions: [],
+      appAccess: [
+        { app: 'WORKPIPE', enabled: true },
+        { app: 'CONDUCTOR', enabled: true },
+        { app: 'ATRIUM', enabled: false },
+      ],
+    });
+
+    expect(getEffectiveAppAccessEntries(org)).toEqual([
+      { app: 'ATRIUM', enabled: false },
+      { app: 'CONDUCTOR', enabled: false },
+      { app: 'WORKPIPE', enabled: true },
+    ]);
   });
 });
 
