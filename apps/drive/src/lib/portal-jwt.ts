@@ -4,6 +4,10 @@ export interface PortalJwtPayload {
   sub: string;
   org_id: string;
   org_slug: string;
+  /** Public org display name. Optional — older tokens may omit it. */
+  org_name?: string;
+  /** Public org logo URL (e.g. R2 CDN). Optional — older tokens may omit it. */
+  org_logo?: string | null;
   /** Active sub-account, scoped to org_id. null/absent = business scope. */
   sub_account_id?: string | null;
   role: string;

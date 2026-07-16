@@ -1,6 +1,7 @@
 "use client";
 
 import SubAccountSwitcher from "@/components/SubAccountSwitcher";
+import { useOrgBranding } from "@/components/OrgBrandingProvider";
 
 type Props = {
   onUpload: () => void;
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export default function TopBar({ onUpload, onNewFolder, userName, onScopeChange }: Props) {
+  const { logo: orgLogo, name: orgName } = useOrgBranding();
   const initials = (userName || "U")
     .split(" ")
     .map((n) => n[0])
@@ -20,12 +22,28 @@ export default function TopBar({ onUpload, onNewFolder, userName, onScopeChange 
 
   return (
     <header className="h-14 border-b border-white/5 flex items-center justify-between px-4 md:px-6 bg-[#0f0f13]">
-      {/* Mobile logo */}
+      {/* Mobile brand — org logo when available, else default Orbit Drive mark */}
       <div className="flex items-center gap-2 md:hidden">
-        <div className="w-7 h-7 rounded-lg bg-[#6961ff] flex items-center justify-center">
-          <span className="material-symbols-outlined text-white text-sm">cloud</span>
-        </div>
-        <span className="font-bold text-sm text-white">Orbit Drive</span>
+        {orgLogo ? (
+          <>
+            {/* Plain <img> (not next/image) so no remotePatterns config is needed */}
+            <img
+              src={orgLogo}
+              alt={orgName || "Organization logo"}
+              className="h-7 w-auto max-w-[128px] rounded-lg object-contain"
+            />
+            {orgName && (
+              <span className="font-bold text-sm text-white truncate max-w-[128px]">{orgName}</span>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="w-7 h-7 rounded-lg bg-[#6961ff] flex items-center justify-center">
+              <span className="material-symbols-outlined text-white text-sm">cloud</span>
+            </div>
+            <span className="font-bold text-sm text-white">Orbit Drive</span>
+          </>
+        )}
       </div>
 
       {/* Search + sub-account scope */}
