@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import QuotaBar from "./QuotaBar";
+import { useOrgBranding } from "@/components/OrgBrandingProvider";
 
 const navItems = [
   { href: "/drive", icon: "folder_open", label: "My Drive" },
@@ -12,15 +13,26 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { logo, name } = useOrgBranding();
 
   return (
     <aside className="hidden md:flex flex-col w-60 border-r border-white/5 bg-[#0f0f13] p-4">
-      {/* Logo */}
+      {/* Brand: org logo when available, else the default Orbit Drive mark */}
       <div className="flex items-center gap-2.5 mb-8 px-2">
-        <div className="w-8 h-8 rounded-lg bg-[#6961ff] flex items-center justify-center">
-          <span className="material-symbols-outlined text-white text-lg">cloud</span>
-        </div>
-        <span className="font-bold text-white tracking-tight">Orbit Drive</span>
+        {logo ? (
+          <img
+            src={logo}
+            alt={name || "Organization"}
+            className="h-8 w-auto max-w-[160px] rounded-lg object-contain"
+          />
+        ) : (
+          <>
+            <div className="w-8 h-8 rounded-lg bg-[#6961ff] flex items-center justify-center">
+              <span className="material-symbols-outlined text-white text-lg">cloud</span>
+            </div>
+            <span className="font-bold text-white tracking-tight">Orbit Drive</span>
+          </>
+        )}
       </div>
 
       {/* Nav */}
