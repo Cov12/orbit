@@ -85,12 +85,20 @@ export async function GET(req: Request) {
       });
     }
 
-    if (!org) {
+    // Fall back to the user's own first membership when there is no saved workspace,
+    // OR when the saved workspace is not one THIS user belongs to (a stale orbit_workspace
+    // cookie left over from a different account in the same browser). `includeRelations`
+    // scopes `members` to the current Clerk user, so `members.length === 0` means the
+    // saved org isn't theirs — reconcile to a real membership instead of bouncing them
+    // to /dashboard?setup=true on every app launch.
+    if (!org || org.members.length === 0) {
       const firstMembership = await db.member.findFirst({
         where: { clerkUserId: userId },
         include: { org: { include: includeRelations } },
       });
-      org = firstMembership?.org;
+      if (firstMembership?.org) {
+        org = firstMembership.org;
+      }
     }
 
     if (!org || org.members.length === 0) {
