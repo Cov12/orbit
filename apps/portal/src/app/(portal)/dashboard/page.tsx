@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
 import { conductorActive } from "@/lib/entitlements";
-import { isFlagEnabled } from "@/lib/flags";
 
 interface DashboardData {
   workspaceName: string;
@@ -92,10 +91,8 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
   // Check if any subscription is trialing
   const trialingSub = org.subscriptions.find((s) => s.status === "TRIALING");
 
-  const conductorVisible = isFlagEnabled("portal_conductor_visible", {
-    id: org.id,
-    slug: org.slug,
-  });
+  // Entitlement-driven (atrium#58): the Conductor card shows only when the org is entitled.
+  const conductorVisible = conductorOn;
 
   return {
     workspaceName: org.name,
