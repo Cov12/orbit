@@ -123,4 +123,33 @@ describe('GET /api/auth/refresh — aud derivation from redirect_uri origin', ()
     }) as Record<string, unknown>;
     expect(decoded.aud).toBeUndefined();
   });
+
+  it('stale orbit_workspace for an org the user is NOT a member of → falls back to their own org, launches the app', async () => {
+    // A orbit_workspace cookie left over from a different account: the saved org exists
+    // but has NO membership row for THIS user (members filtered by clerkUserId is empty).
+    cookiesMock.mockResolvedValue({
+      get: (name: string) => (name === 'orbit_workspace' ? { value: 'other_org' } : undefined),
+    });
+    orgFindUniqueMock.mockResolvedValue({
+      id: 'other_org',
+      slug: 'not-mine',
+      members: [], // current user is not a member of the saved workspace
+      subscriptions: [],
+      appAccess: [],
+    });
+    memberFindFirstMock.mockResolvedValue({ org: orgWithConductor });
+
+    const { GET } = await import('./route');
+    const res = await GET(makeReq(`${ATRIUM_URL}/atrium/auth/callback`));
+
+    // Must NOT bounce to /dashboard?setup=true — must mint a token for the user's own org.
+    expect(res.status).toBeGreaterThanOrEqual(300);
+    expect(res.status).toBeLessThan(400);
+    const location = res.headers.get('location')!;
+    expect(location).toContain(`${ATRIUM_URL}/atrium/auth/callback`);
+    const decoded = jwt.verify(tokenFromRedirect(res), TEST_SECRET, {
+      algorithms: ['HS256'],
+    }) as Record<string, unknown>;
+    expect(decoded.org_id).toBe('org_1'); // the user's real org, not the stale 'other_org'
+  });
 });
