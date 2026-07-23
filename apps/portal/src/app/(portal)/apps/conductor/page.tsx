@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { AppLanding } from "@/components/portal/app-landing";
 import { conductorActive } from "@/lib/entitlements";
-import { isFlagEnabled } from "@/lib/flags";
 
 async function getConductorStatus(userId: string): Promise<{
   status: "bundled" | "coming_online";
@@ -38,18 +37,15 @@ async function getConductorStatus(userId: string): Promise<{
 
   const org = member.org;
   const active = conductorActive(org);
-  const launchEnabled = isFlagEnabled("portal_conductor_launch_enabled", {
-    id: org.id,
-    slug: org.slug,
-  });
 
   if (!active) {
     return { status: "coming_online", launchEnabled: false };
   }
 
+  // Launch is entitlement-driven (atrium#58): an entitled org can launch — no env allowlist.
   return {
     status: "bundled",
-    launchEnabled,
+    launchEnabled: true,
     launchUrl: process.env.NEXT_PUBLIC_CONDUCTOR_URL,
   };
 }

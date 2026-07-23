@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
 import { conductorActive } from "@/lib/entitlements";
-import { isFlagEnabled } from "@/lib/flags";
 
 async function getConductorCardState(): Promise<
   | { visible: false }
@@ -36,11 +35,14 @@ async function getConductorCardState(): Promise<
   if (!member?.org) return { visible: false };
 
   const org = member.org;
-  if (!isFlagEnabled("portal_conductor_visible", { id: org.id, slug: org.slug })) {
+  // Conductor visibility is entitlement-driven (atrium#58): show the tile only to orgs that
+  // actually have Conductor (conductorActive = active ATRIUM sub + appAccess.CONDUCTOR enabled, kept
+  // in sync by the Stripe webhook). No manual env allowlist — a non-entitled org sees no tile.
+  if (!conductorActive(org)) {
     return { visible: false };
   }
 
-  return { visible: true, status: conductorActive(org) ? "bundled" : "coming_online" };
+  return { visible: true, status: "bundled" };
 }
 
 export default async function AppsPage() {
