@@ -18,7 +18,7 @@ type UploadRequestBody = {
 
 export async function POST(req: Request) {
   try {
-    const { userId, orgId, subAccountId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext(req);
     const body = (await req.json()) as UploadRequestBody;
 
     if (!body.name || !body.mimeType || !Number.isFinite(body.size) || body.size! <= 0) {

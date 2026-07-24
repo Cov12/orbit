@@ -4,9 +4,9 @@ import { db } from "@/lib/db";
 import { getDriveContext } from "@/lib/drive-auth";
 import { driveErrorResponse, serializeBigInts } from "@/lib/drive-http";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const { userId, orgId, subAccountId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext(req);
 
     const shares = await db.driveShare.findMany({
       where: { orgId, subAccountId, createdBy: userId },

@@ -17,7 +17,7 @@ type ShareBody = {
 
 export async function POST(req: Request, context: RouteContext) {
   try {
-    const { userId, orgId, subAccountId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext(req);
     const { fileId } = await context.params;
     const body = (await req.json().catch(() => ({}))) as ShareBody;
 

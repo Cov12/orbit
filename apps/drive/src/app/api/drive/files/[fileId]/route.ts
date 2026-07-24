@@ -11,7 +11,7 @@ type RouteContext = {
 
 export async function GET(req: Request, context: RouteContext) {
   try {
-    const { userId, orgId, subAccountId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext(req);
     const { fileId } = await context.params;
 
     const file = await db.driveFile.findFirst({
@@ -56,7 +56,7 @@ export async function GET(req: Request, context: RouteContext) {
 
 export async function POST(req: Request, context: RouteContext) {
   try {
-    const { userId, orgId, subAccountId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext(req);
     const { fileId } = await context.params;
 
     const file = await db.driveFile.findFirst({
@@ -113,7 +113,7 @@ export async function POST(req: Request, context: RouteContext) {
 
 export async function DELETE(req: Request, context: RouteContext) {
   try {
-    const { userId, orgId, subAccountId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext(req);
     const { fileId } = await context.params;
 
     const existing = await db.driveFile.findFirst({

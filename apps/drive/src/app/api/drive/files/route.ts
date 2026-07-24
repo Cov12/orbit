@@ -7,7 +7,7 @@ import { driveErrorResponse, serializeBigInts } from "@/lib/drive-http";
 
 export async function GET(req: Request) {
   try {
-    const { userId, orgId, subAccountId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext(req);
 
     const url = new URL(req.url);
     const folderId = url.searchParams.get("folderId");
