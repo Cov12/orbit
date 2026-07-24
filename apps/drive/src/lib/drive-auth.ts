@@ -18,7 +18,7 @@ type DriveContext = {
 };
 
 /** Returns the id only if it names an ACTIVE sub-account of this org, else null. */
-async function validateSubAccount(orgId: string, id: string): Promise<string | null> {
+export async function validateSubAccount(orgId: string, id: string): Promise<string | null> {
   const sub = await db.subAccount.findFirst({
     where: { id, orgId, status: "ACTIVE" },
     select: { id: true },
