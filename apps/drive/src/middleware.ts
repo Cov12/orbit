@@ -53,7 +53,15 @@ function getPublicOrigin(req: NextRequest): string {
  * Only decodes the base64 payload — no crypto in edge middleware.
  */
 function hasValidPortalToken(req: NextRequest): boolean {
-  const token = req.cookies.get(PORTAL_TOKEN_COOKIE)?.value;
+  let token = req.cookies.get(PORTAL_TOKEN_COOKIE)?.value;
+  if (!token) {
+    // Service-to-service (Atrium dashboard, WorkPipe, …): a Portal JWT forwarded as a
+    // Bearer token instead of the browser cookie. Edge middleware can't do crypto, so it
+    // only gates on presence + expiry here (same as the cookie path); the route handler's
+    // verifyPortalToken does the real signature verification.
+    const authz = req.headers.get('authorization');
+    if (authz?.startsWith('Bearer ')) token = authz.slice(7);
+  }
   if (!token) return false;
 
   try {
