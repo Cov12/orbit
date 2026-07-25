@@ -58,9 +58,9 @@ export async function GET(_req: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_req: Request, context: RouteContext) {
+export async function DELETE(req: Request, context: RouteContext) {
   try {
-    const { orgId, userId, subAccountId } = await getDriveContext();
+    const { orgId, userId, subAccountId } = await getDriveContext(req);
     const { shareId } = await context.params;
 
     const share = await db.driveShare.findFirst({

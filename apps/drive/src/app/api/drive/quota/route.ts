@@ -7,7 +7,7 @@ import { getOrCreateQuota } from "@/lib/drive-quota";
 
 export async function GET(req: Request) {
   try {
-    const { userId, orgId } = await getDriveContext();
+    const { userId, orgId } = await getDriveContext(req);
     const quota = await getOrCreateQuota(orgId);
 
     await logDriveAudit({

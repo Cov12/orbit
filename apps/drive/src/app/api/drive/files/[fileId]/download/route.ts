@@ -106,7 +106,7 @@ async function handlePublicDownload(req: Request, context: RouteContext, token: 
 
 async function handleAuthDownload(req: Request, context: RouteContext) {
   try {
-    const { userId, orgId, subAccountId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext(req);
     const { fileId } = await context.params;
 
     const file = await db.driveFile.findFirst({

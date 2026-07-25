@@ -38,7 +38,7 @@ const EXT_BY_TYPE: Record<string, string> = {
  */
 export async function POST(req: Request) {
   try {
-    const { userId, orgId, subAccountId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext(req);
 
     if (!isPublicBucketConfigured()) {
       return NextResponse.json(

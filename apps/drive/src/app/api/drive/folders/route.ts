@@ -12,7 +12,7 @@ type CreateFolderBody = {
 
 export async function GET(req: Request) {
   try {
-    const { orgId, subAccountId } = await getDriveContext();
+    const { orgId, subAccountId } = await getDriveContext(req);
     const url = new URL(req.url);
     const parentId = url.searchParams.get("parentId");
 
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { userId, orgId, subAccountId } = await getDriveContext();
+    const { userId, orgId, subAccountId } = await getDriveContext(req);
     const body = (await req.json()) as CreateFolderBody;
 
     if (!body.name || !body.name.trim()) {
