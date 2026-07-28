@@ -123,24 +123,32 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
   return (
     <BlurPage>
       <div className="relative h-full">
+        {/* Stripe Connect is optional — surface a non-blocking CTA instead of
+            gating the whole dashboard. Payment-derived metrics below already
+            self-disable to $0 when no account is connected. Mirrors the
+            business-tier soft CTA. */}
         {!subaccountDetails.connectAccountId && (
-          <div className="absolute -left-10 -top-10 bottom-0 right-0 z-30 flex items-center justify-center bg-background/50 backdrop-blur-md">
-            <Card>
-              <CardHeader>
-                <CardTitle>Connect Your Stripe</CardTitle>
-                <CardDescription>
-                  You need to connect your stripe account to see metrics
-                </CardDescription>
-                <Link
-                  href={`/subaccount/${subaccountDetails.id}/kickstart`}
-                  className="flex w-fit items-center gap-2 rounded-md bg-secondary p-2 text-white"
-                >
-                  <ClipboardIcon />
-                  Launch Pad
-                </Link>
-              </CardHeader>
-            </Card>
-          </div>
+          <Card className="mb-6 border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <ClipboardIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <CardTitle className="text-lg">Connect Stripe</CardTitle>
+              </div>
+              <CardDescription>
+                Connect a Stripe account to unlock payment metrics, funnel
+                checkout, and revenue reporting. You can set this up any time.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link
+                href={`/subaccount/${subaccountDetails.id}/kickstart`}
+                className="inline-flex w-fit items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                <ClipboardIcon className="h-4 w-4" />
+                Launch Pad
+              </Link>
+            </CardContent>
+          </Card>
         )}
         <div className="flex flex-col gap-4 pb-6">
           <div className="flex flex-col gap-4 xl:!flex-row">
