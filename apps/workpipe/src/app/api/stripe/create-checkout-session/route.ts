@@ -7,10 +7,12 @@ export async function POST(req: Request) {
     subAccountConnectAccId,
     prices,
     subaccountId,
+    funnelId,
   }: {
     subAccountConnectAccId: string
     prices: { recurring: boolean; productId: string }[]
     subaccountId: string
+    funnelId?: string
   } = await req.json()
 
   const origin = req.headers.get('origin')
@@ -34,23 +36,35 @@ export async function POST(req: Request) {
   //   include: { Business: true },
   // })
 
-  const subscriptionPriceExists = prices.find((price) => price.recurring)
+  const subscriptionPriceExists = prices.find(price => price.recurring)
   // if (!businessIdConnectedAccountId?.Business.connectAccountId) {
   //   console.log('Business is not connected')
   //   return NextResponse.json({ error: 'Business account is not connected' })
   // }
 
   try {
+    // Attribution the webhook reads off `checkout.session.completed` to record
+    // a Payment ledger row against the right sub-account (and funnel). Amounts
+    // are always taken from Stripe in the webhook, never from the client.
+    const attribution = {
+      source: 'FUNNEL',
+      subAccountId: subaccountId,
+      ...(funnelId ? { funnelId } : {}),
+    }
+
     const session = await stripe.checkout.sessions.create(
       {
-        line_items: prices.map((price) => ({
+        line_items: prices.map(price => ({
           price: price.productId,
           quantity: 1,
         })),
 
+        // Session-level metadata is what `checkout.session.completed` carries.
+        metadata: attribution,
+
         ...(subscriptionPriceExists && {
           subscription_data: {
-            metadata: { connectAccountSubscriptions: 'true' },
+            metadata: { connectAccountSubscriptions: 'true', ...attribution },
             application_fee_percent:
               +process.env.NEXT_PUBLIC_PLATFORM_SUBSCRIPTION_PERCENT,
           },
@@ -58,7 +72,7 @@ export async function POST(req: Request) {
 
         ...(!subscriptionPriceExists && {
           payment_intent_data: {
-            metadata: { connectAccountPayments: 'true' },
+            metadata: { connectAccountPayments: 'true', ...attribution },
             application_fee_amount:
               +process.env.NEXT_PUBLIC_PLATFORM_ONETIME_FEE * 100,
           },

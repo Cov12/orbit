@@ -135,6 +135,7 @@ model SubAccount {
   Services         Service[]
   Documents        Document[]
   Invoices         Invoice[]
+  Payments         Payment[]
   CalendarEvent    CalendarEvent[]
 
   Business         Business                    @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -359,6 +360,36 @@ model InvoiceService {
   updatedAt    DateTime   @updatedAt
   Invoice      Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
+  @@index([invoiceId])
+}
+
+enum PaymentSource {
+  FUNNEL
+  INVOICE
+}
+
+// Unified revenue ledger. Every completed Stripe Connect payment — funnel
+// checkout or invoice pay-link — records exactly one Payment row. Amounts are
+// captured from Stripe (never the client) in the smallest currency unit.
+// `source` disambiguates origin; funnelId/invoiceId link back to the source.
+model Payment {
+  id                    String        @id @default(uuid())
+  amountCents           Int
+  currency              String        @default("usd")
+  source                PaymentSource
+  status                String        @default("PAID")
+  stripeSessionId       String        @unique
+  stripePaymentIntentId String?
+  funnelId              String?
+  invoiceId             String?
+  customerEmail         String?
+  subAccountId          String
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  Subaccount            SubAccount    @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+
+  @@index([subAccountId])
+  @@index([funnelId])
   @@index([invoiceId])
 }
 
