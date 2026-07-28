@@ -178,9 +178,9 @@ export type UpsertFunnelPage = Prisma.FunnelPageCreateWithoutFunnelInput
 export type UpsertProfilePage = Prisma.ProfilePageCreateWithoutProfileInput
 
 export const CalendarEventFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  start: z.string().min(1, "Start date is required"),
+  start: z.string().min(1, 'Start date is required'),
   end: z.string().optional(),
   allDay: z.boolean().default(false),
   color: z.string().optional(),
@@ -188,4 +188,27 @@ export const CalendarEventFormSchema = z.object({
   contactId: z.string().optional(),
   ticketId: z.string().optional(),
   category: z.string().optional(),
+})
+
+// A single invoice line item. Amounts are integer cents; the server computes
+// each line's total (quantity × unit price) — it does not trust a client total.
+export const InvoiceServiceFormSchema = z.object({
+  name: z.string().min(1, 'Required'),
+  description: z.string().optional(),
+  type: z.string().optional(),
+  quantity: z.number().int().min(1).default(1),
+  unitPriceCents: z.number().int().min(0),
+})
+
+// Invoice create/edit input. `status`, `number`, `paidAt`, and all computed
+// amounts are managed server-side and are intentionally NOT part of this schema.
+export const InvoiceFormSchema = z.object({
+  name: z.string().min(1, 'Required'),
+  type: z.string().optional(),
+  dueDate: z.coerce.date().optional(),
+  currency: z.string().default('usd'),
+  netPaymentTerm: z.string().optional(),
+  taxCents: z.number().int().min(0).default(0),
+  discountCents: z.number().int().min(0).default(0),
+  services: z.array(InvoiceServiceFormSchema).default([]),
 })
