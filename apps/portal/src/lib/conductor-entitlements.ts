@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getEffectiveAppAccessEntries } from "@/lib/entitlements";
+import { isLicenseActive } from "@/lib/license";
 import type { AppType, SubStatus } from "@prisma/client";
 
 type OrgEntitlementSnapshot = {
@@ -38,7 +39,7 @@ export async function postConductorEntitlements(orgId: string): Promise<void> {
     return;
   }
 
-  const appAccess = getEffectiveAppAccessEntries(org);
+  const appAccess = getEffectiveAppAccessEntries(org, isLicenseActive());
   if (appAccess.length === 0) {
     console.warn(`[Entitlements Sync] Skipped: effective appAccess empty for ${orgId}`);
     return;
