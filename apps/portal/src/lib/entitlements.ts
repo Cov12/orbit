@@ -51,3 +51,31 @@ export function getEffectiveAppAccess(
     .filter((a) => a.enabled)
     .map((a) => a.app);
 }
+
+// Every app Orbit ships. Iterated to build a complete status map so UI consumers
+// always get an explicit entry (true/false) for each app rather than a partial map.
+export const ALL_APP_TYPES: ReadonlyArray<AppType> = ['ATRIUM', 'CONDUCTOR', 'DRIVE', 'WORKPIPE'];
+
+export type AppEntitlementMap = Record<AppType, boolean>;
+
+/**
+ * The single UI-facing entitlement selector. Returns a complete per-app map of
+ * whether the org/user is entitled to each app, derived EXACTLY from
+ * getEffectiveAppAccess — i.e. the same set the signed JWT grants. Every
+ * entitlement surface (dashboard, apps grid, per-app landing pages) must derive
+ * its "Active / Upgrade Required" status from this, so the UI can never disagree
+ * with what the token actually authorizes.
+ *
+ * `true`  => entitled now (app opens; show "Active"/"Included").
+ * `false` => not entitled (show "Upgrade Required").
+ */
+export function getAppEntitlementMap(
+  org: OrgWithRelations,
+  isPlatformAdmin: boolean
+): AppEntitlementMap {
+  const granted = new Set<AppType>(getEffectiveAppAccess(org, isPlatformAdmin));
+  return ALL_APP_TYPES.reduce((acc, app) => {
+    acc[app] = granted.has(app);
+    return acc;
+  }, {} as AppEntitlementMap);
+}

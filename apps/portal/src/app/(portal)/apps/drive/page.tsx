@@ -1,4 +1,5 @@
 import { AppLanding } from "@/components/portal/app-landing";
+import { getCurrentOrgEntitlements } from "@/lib/org-entitlements";
 
 const features = [
   {
@@ -33,7 +34,10 @@ const features = [
   },
 ];
 
-export default function DrivePage() {
+export default async function DrivePage() {
+  const entitlements = await getCurrentOrgEntitlements();
+  const status = entitlements?.appStatus.DRIVE ? "active" : "inactive";
+
   // Drive's SSO callback lives at the ORIGIN root (/auth/callback), NOT the Atrium default
   // path — and NEXT_PUBLIC_DRIVE_URL may carry a /drive UI path. Strip to the origin so the
   // launch redirect_uri is exactly `${origin}/auth/callback`, not `${…}/drive/atrium/auth/callback`.
@@ -60,7 +64,7 @@ export default function DrivePage() {
       videoUrl="/videos/drive-bg.mp4"
       launchUrl={driveOrigin}
       callbackPath="/auth/callback"
-      status="active"
+      status={status}
       features={features}
       freeNote="Orbit Drive is included at no extra cost with any WorkPipe or Atrium subscription. Storage limits scale with your plan tier."
     />

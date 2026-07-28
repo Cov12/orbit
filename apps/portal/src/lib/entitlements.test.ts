@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   conductorActive,
+  getAppEntitlementMap,
   getEffectiveAppAccess,
   getEffectiveAppAccessEntries,
   type OrgWithRelations,
@@ -131,5 +132,46 @@ describe('getEffectiveAppAccess', () => {
     const result = getEffectiveAppAccess(org, false);
     const sorted = [...result].sort((a, b) => a.localeCompare(b));
     expect(result).toEqual(sorted);
+  });
+});
+
+describe('getAppEntitlementMap', () => {
+  it('returns a complete map for every app, mirroring getEffectiveAppAccess', () => {
+    const org = makeOrg({
+      subscriptions: [{ app: 'ATRIUM', status: 'ACTIVE' }],
+      appAccess: [
+        { app: 'WORKPIPE', enabled: true },
+        { app: 'CONDUCTOR', enabled: true },
+        { app: 'ATRIUM', enabled: true },
+        { app: 'DRIVE', enabled: false },
+      ],
+    });
+    // Member (non-admin) view: exactly the enabled/derived set the JWT grants.
+    expect(getAppEntitlementMap(org, false)).toEqual({
+      ATRIUM: true,
+      WORKPIPE: true,
+      CONDUCTOR: true, // active ATRIUM sub + CONDUCTOR appAccess enabled
+      DRIVE: false, // appAccess disabled → not entitled
+    });
+  });
+
+  it('reflects the admin free-base branch (ATRIUM/DRIVE/WORKPIPE true, CONDUCTOR still gated)', () => {
+    const org = makeOrg({ subscriptions: [], appAccess: [] });
+    expect(getAppEntitlementMap(org, true)).toEqual({
+      ATRIUM: true,
+      DRIVE: true,
+      WORKPIPE: true,
+      CONDUCTOR: false, // no ATRIUM sub → no Conductor, even for admins
+    });
+  });
+
+  it('is all-false for a member with no entitlements', () => {
+    const org = makeOrg({ subscriptions: [], appAccess: [] });
+    expect(getAppEntitlementMap(org, false)).toEqual({
+      ATRIUM: false,
+      DRIVE: false,
+      WORKPIPE: false,
+      CONDUCTOR: false,
+    });
   });
 });
