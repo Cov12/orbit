@@ -6,6 +6,7 @@ import type { AppType, Plan, SubStatus } from "@prisma/client";
 import Stripe from "stripe";
 import { isSubscriptionActive } from "@/lib/entitlements";
 import { postConductorEntitlements } from "@/lib/conductor-entitlements";
+import { isLicenseActive } from "@/lib/license";
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -114,11 +115,13 @@ export async function POST(req: Request) {
           });
 
           // Conductor rides on Atrium — flip CONDUCTOR AppAccess to mirror parent.
+          // Under a term license, keep it enabled regardless of Stripe status.
           if (existing.app === "ATRIUM") {
+            const conductorEnabled = isLicenseActive() || isSubscriptionActive(nextStatus);
             await db.appAccess.upsert({
               where: { orgId_app: { orgId: existing.orgId, app: "CONDUCTOR" } },
-              create: { orgId: existing.orgId, app: "CONDUCTOR", enabled: isSubscriptionActive(nextStatus) },
-              update: { enabled: isSubscriptionActive(nextStatus) },
+              create: { orgId: existing.orgId, app: "CONDUCTOR", enabled: conductorEnabled },
+              update: { enabled: conductorEnabled },
             });
           }
 
@@ -151,18 +154,22 @@ export async function POST(req: Request) {
             data: { status: "CANCELED", plan: "FREE" },
           });
 
-          // Disable app access
-          await db.appAccess.updateMany({
-            where: { orgId: existing.orgId, app: existing.app },
-            data: { enabled: false },
-          });
-
-          // Conductor rides on Atrium — disable CONDUCTOR too when parent is deleted.
-          if (existing.app === "ATRIUM") {
+          // Under a term license, entitlement is granted by the license, not by
+          // Stripe — never disable app access in response to a subscription event.
+          if (!isLicenseActive()) {
+            // Disable app access
             await db.appAccess.updateMany({
-              where: { orgId: existing.orgId, app: "CONDUCTOR" },
+              where: { orgId: existing.orgId, app: existing.app },
               data: { enabled: false },
             });
+
+            // Conductor rides on Atrium — disable CONDUCTOR too when parent is deleted.
+            if (existing.app === "ATRIUM") {
+              await db.appAccess.updateMany({
+                where: { orgId: existing.orgId, app: "CONDUCTOR" },
+                data: { enabled: false },
+              });
+            }
           }
 
           try {

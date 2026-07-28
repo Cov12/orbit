@@ -175,3 +175,40 @@ describe('getAppEntitlementMap', () => {
     });
   });
 });
+
+describe('license mode (licensed flag)', () => {
+  const emptyOrg = makeOrg({ subscriptions: [], appAccess: [] });
+
+  it('conductorActive is true under license even with no ATRIUM subscription', () => {
+    expect(conductorActive(emptyOrg)).toBe(false);
+    expect(conductorActive(emptyOrg, true)).toBe(true);
+  });
+
+  it('getEffectiveAppAccess grants every app under license (non-admin, no subs)', () => {
+    expect(getEffectiveAppAccess(emptyOrg, false)).toEqual([]);
+    expect(getEffectiveAppAccess(emptyOrg, false, true)).toEqual([
+      'ATRIUM',
+      'CONDUCTOR',
+      'DRIVE',
+      'WORKPIPE',
+    ]);
+  });
+
+  it('getEffectiveAppAccessEntries marks every app enabled under license', () => {
+    expect(getEffectiveAppAccessEntries(emptyOrg, true)).toEqual([
+      { app: 'ATRIUM', enabled: true },
+      { app: 'CONDUCTOR', enabled: true },
+      { app: 'DRIVE', enabled: true },
+      { app: 'WORKPIPE', enabled: true },
+    ]);
+  });
+
+  it('getAppEntitlementMap is all-true under license', () => {
+    expect(getAppEntitlementMap(emptyOrg, false, true)).toEqual({
+      ATRIUM: true,
+      CONDUCTOR: true,
+      DRIVE: true,
+      WORKPIPE: true,
+    });
+  });
+});
