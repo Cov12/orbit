@@ -1,4 +1,5 @@
 import { AppLanding } from "@/components/portal/app-landing";
+import { getCurrentOrgEntitlements } from "@/lib/org-entitlements";
 
 const features = [
   {
@@ -82,7 +83,10 @@ const plans = [
   },
 ];
 
-export default function WorkPipePage() {
+export default async function WorkPipePage() {
+  const entitlements = await getCurrentOrgEntitlements();
+  const status = entitlements?.appStatus.WORKPIPE ? "active" : "inactive";
+
   return (
     <AppLanding
       name="WorkPipe CRM"
@@ -97,7 +101,7 @@ export default function WorkPipePage() {
       videoUrl="/videos/workpipe-bg.mp4"
       previewImage="/images/workpipe-preview.png"
       launchUrl={process.env.NEXT_PUBLIC_WORKPIPE_URL}
-      status="active"
+      status={status}
       features={features}
       plans={plans}
     />

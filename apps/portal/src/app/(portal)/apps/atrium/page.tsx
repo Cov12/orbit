@@ -1,42 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
-import { db } from "@/lib/db";
+import { getCurrentOrgEntitlements } from "@/lib/org-entitlements";
 import { AppLanding } from "@/components/portal/app-landing";
-
-async function getAtriumStatus(userId: string): Promise<{
-  status: "active" | "inactive" | "coming_soon";
-  launchUrl?: string;
-}> {
-  const member = await db.member.findFirst({
-    where: { clerkUserId: userId },
-    include: {
-      org: {
-        include: {
-          appAccess: { where: { app: "ATRIUM" } },
-          subscriptions: { where: { app: "ATRIUM" } },
-        },
-      },
-    },
-  });
-
-  if (!member?.org) return { status: "inactive" };
-
-  // Platform admins (OWNER/ADMIN) get access to all apps regardless of subscription
-  const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
-
-  const hasAccess = member.org.appAccess.some((a) => a.enabled);
-  const hasSub = member.org.subscriptions.some(
-    (s) => s.status === "ACTIVE" || s.status === "TRIALING"
-  );
-
-  if (isPlatformAdmin || (hasAccess && hasSub)) {
-    return {
-      status: "active",
-      launchUrl: process.env.NEXT_PUBLIC_ATRIUM_URL || "https://atrium.orbit.example",
-    };
-  }
-
-  return { status: "inactive" };
-}
 
 const features = [
   {
@@ -130,10 +93,12 @@ const plans = [
 ];
 
 export default async function AtriumPage() {
-  const { userId } = await auth();
-  const { status, launchUrl } = userId
-    ? await getAtriumStatus(userId)
-    : { status: "inactive" as const, launchUrl: undefined };
+  const entitlements = await getCurrentOrgEntitlements();
+  const status = entitlements?.appStatus.ATRIUM ? "active" : "inactive";
+  const launchUrl =
+    status === "active"
+      ? process.env.NEXT_PUBLIC_ATRIUM_URL || "https://atrium.orbit.example"
+      : undefined;
 
   return (
     <AppLanding

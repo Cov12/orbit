@@ -2,7 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
-import { conductorActive } from "@/lib/entitlements";
+import { getAppEntitlementMap } from "@/lib/entitlements";
 
 interface DashboardData {
   workspaceName: string;
@@ -69,17 +69,13 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
   }
 
   const org = member.org;
-  const conductorOn = conductorActive(org);
-  const appStatuses: Record<string, boolean> = {};
-  for (const access of org.appAccess) {
-    if (access.app === "CONDUCTOR") {
-      appStatuses[access.app] = conductorOn;
-      continue;
-    }
-    const hasSub = org.subscriptions.some((s) => s.app === access.app);
-    const isFree = access.app === "DRIVE"; // Drive is always free
-    appStatuses[access.app] = access.enabled && (hasSub || isFree);
-  }
+  const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
+  // Per-app status from the single unified selector — identical to what the JWT
+  // grants (getEffectiveAppAccess). No local subscription/free heuristics here;
+  // appAccess.enabled is already kept in sync with subscription state by the
+  // Stripe webhook, so deriving from it is what keeps the UI honest.
+  const appStatuses = getAppEntitlementMap(org, isPlatformAdmin);
+  const conductorOn = appStatuses.CONDUCTOR;
 
   // Find the highest-tier plan name
   const planNames: Record<string, number> = { FREE: 0, STARTER: 1, PRO: 2, BUSINESS: 3, GROWTH: 4, ENTERPRISE: 5 };

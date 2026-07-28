@@ -1,52 +1,17 @@
-import { auth } from "@clerk/nextjs/server";
-import { cookies } from "next/headers";
-import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
-import { conductorActive } from "@/lib/entitlements";
-
-async function getConductorCardState(): Promise<
-  | { visible: false }
-  | { visible: true; status: "bundled" | "coming_online" }
-> {
-  const { userId } = await auth();
-  if (!userId) return { visible: false };
-
-  const cookieStore = await cookies();
-  const selectedWorkspaceId = cookieStore.get("orbit_workspace")?.value;
-
-  const include = {
-    appAccess: true,
-    subscriptions: { where: { status: { in: ["ACTIVE" as const, "TRIALING" as const] } } },
-  };
-
-  let member;
-  if (selectedWorkspaceId) {
-    member = await db.member.findFirst({
-      where: { clerkUserId: userId, orgId: selectedWorkspaceId },
-      include: { org: { include } },
-    });
-  }
-  if (!member) {
-    member = await db.member.findFirst({
-      where: { clerkUserId: userId },
-      include: { org: { include } },
-    });
-  }
-  if (!member?.org) return { visible: false };
-
-  const org = member.org;
-  // Conductor visibility is entitlement-driven (atrium#58): show the tile only to orgs that
-  // actually have Conductor (conductorActive = active ATRIUM sub + appAccess.CONDUCTOR enabled, kept
-  // in sync by the Stripe webhook). No manual env allowlist — a non-entitled org sees no tile.
-  if (!conductorActive(org)) {
-    return { visible: false };
-  }
-
-  return { visible: true, status: "bundled" };
-}
+import { getCurrentOrgEntitlements } from "@/lib/org-entitlements";
 
 export default async function AppsPage() {
-  const conductor = await getConductorCardState();
+  // Single source of truth for every tile's status — same entitlement the JWT grants.
+  const entitlements = await getCurrentOrgEntitlements();
+  const appStatus = entitlements?.appStatus;
+
+  const cardStatus = (app: "WORKPIPE" | "DRIVE" | "ATRIUM") =>
+    appStatus?.[app] ? ("active" as const) : ("inactive" as const);
+
+  // Conductor visibility stays entitlement-driven (atrium#58): the tile only appears
+  // for orgs actually entitled to Conductor. Entitled => "Included with Atrium".
+  const conductorVisible = !!appStatus?.CONDUCTOR;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -68,7 +33,7 @@ export default async function AppsPage() {
             </svg>
           }
           color="#2B2FFF"
-          status="active"
+          status={cardStatus("WORKPIPE")}
         />
 
         <AppCard
@@ -81,7 +46,7 @@ export default async function AppsPage() {
             </svg>
           }
           color="#6961ff"
-          status="active"
+          status={cardStatus("DRIVE")}
         />
 
         <AppCard
@@ -94,10 +59,10 @@ export default async function AppsPage() {
             </svg>
           }
           color="#20B2AA"
-          status="inactive"
+          status={cardStatus("ATRIUM")}
         />
 
-        {conductor.visible && (
+        {conductorVisible && (
           <AppCard
             name="Conductor"
             slug="conductor"
@@ -108,7 +73,7 @@ export default async function AppsPage() {
               </svg>
             }
             color="#A78BFA"
-            status={conductor.status}
+            status="bundled"
           />
         )}
 
