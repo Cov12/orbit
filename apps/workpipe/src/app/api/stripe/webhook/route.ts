@@ -55,9 +55,15 @@ async function recordPaymentFromSession(session: Stripe.Checkout.Session) {
     },
   })
 
-  // Invoice pay-links (source=INVOICE) also flip the Invoice to PAID — wired in
-  // #22 once the Invoice model gains a `status` field. The Payment row above is
-  // already the source of truth for revenue in the meantime.
+  // Invoice pay-links (source=INVOICE) also flip the Invoice to PAID. Idempotent:
+  // re-setting PAID on a retry is harmless. Scoped to the sub-account so a spoofed
+  // invoiceId can't mark another tenant's invoice paid.
+  if (source === 'INVOICE' && meta.invoiceId) {
+    await db.invoice.updateMany({
+      where: { id: meta.invoiceId, subAccountId },
+      data: { status: 'PAID', paidAt: new Date() },
+    })
+  }
 }
 
 export async function POST(req: NextRequest) {

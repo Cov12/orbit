@@ -328,37 +328,55 @@ model Document {
   @@index([subAccountId])
 }
 
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  VOID
+}
+
 model Invoice {
-  id              String     @id @default(uuid())
+  id              String           @id @default(uuid())
+  number          String?
+  status          InvoiceStatus    @default(DRAFT)
   type            String?
-  dueDate         DateTime?
-  totalDue        String?
   name            String
-  link            String     @unique
-  subAccountId    String
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  dueDate         DateTime?
+  currency        String           @default("usd")
+  // Amounts stored as integer cents (consistent with the Payment ledger) —
+  // no float/decimal-string drift. Server always computes these from services.
+  subTotalCents   Int              @default(0)
+  taxCents        Int              @default(0)
+  discountCents   Int              @default(0)
+  totalDueCents   Int              @default(0)
   netPaymentTerm  String?
-  subTotal        String?
-  tax             String?
-  discount        String?
+  // Public pay/view token — assigned when the invoice is sent (nullable so
+  // drafts don't collide on the unique constraint).
+  link            String?          @unique
+  paidAt          DateTime?
+  subAccountId    String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   services        InvoiceService[]
-  Subaccount      SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  Subaccount      SubAccount       @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
 
   @@index([subAccountId])
+  @@index([status])
 }
 
 model InvoiceService {
-  id           String     @id @default(uuid())
-  type         String?
-  total        String?
-  name         String
-  quanity      String?
-  description  String?
-  invoiceId    String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  Invoice      Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  id             String   @id @default(uuid())
+  type           String?
+  name           String
+  description    String?
+  quantity       Int      @default(1)
+  unitPriceCents Int      @default(0)
+  totalCents     Int      @default(0)
+  invoiceId      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  Invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId])
 }
