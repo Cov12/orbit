@@ -10,7 +10,8 @@ const errorResponse = (error: string, code: string, status: number) =>
   NextResponse.json({ error, code }, { status })
 
 /** GET /api/internal/invoices?subAccountId=  — invoice summary (read-only).
- *  totalDue is stored as a String, so it is parsed and summed in-app (not via SQL). */
+ *  Amounts are integer cents in the DB; the response reports dollars (cents/100)
+ *  to keep the shape stable for existing dashboard consumers. */
 export async function GET(request: Request) {
   try {
     const { businessId } = await validateInternalAuth(request)
@@ -30,24 +31,21 @@ export async function GET(request: Request) {
         id: true,
         name: true,
         type: true,
-        totalDue: true,
+        status: true,
+        totalDueCents: true,
         dueDate: true,
         createdAt: true,
       },
     })
 
-    const toNumber = (v: string | null) => {
-      const n = parseFloat((v ?? '').replace(/[^0-9.-]/g, ''))
-      return Number.isFinite(n) ? n : 0
-    }
+    const toDollars = (cents: number) => cents / 100
 
     const now = new Date()
     const soon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 
     const count = invoices.length
-    const totalDue = invoices.reduce(
-      (sum, inv) => sum + toNumber(inv.totalDue),
-      0
+    const totalDue = toDollars(
+      invoices.reduce((sum, inv) => sum + inv.totalDueCents, 0)
     )
     const dueSoonCount = invoices.filter(
       inv => inv.dueDate && inv.dueDate >= now && inv.dueDate <= soon
@@ -56,7 +54,8 @@ export async function GET(request: Request) {
       id: inv.id,
       name: inv.name,
       type: inv.type,
-      totalDue: toNumber(inv.totalDue),
+      status: inv.status,
+      totalDue: toDollars(inv.totalDueCents),
       dueDate: inv.dueDate,
     }))
 
