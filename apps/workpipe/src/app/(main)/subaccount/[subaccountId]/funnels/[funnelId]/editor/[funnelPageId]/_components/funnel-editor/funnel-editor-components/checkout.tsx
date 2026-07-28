@@ -2,8 +2,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 
 import {
-    EmbeddedCheckout,
-    EmbeddedCheckoutProvider,
+  EmbeddedCheckout,
+  EmbeddedCheckoutProvider,
 } from '@stripe/react-stripe-js'
 import clsx from 'clsx'
 import { Trash } from 'lucide-react'
@@ -16,7 +16,6 @@ import { EditorBtns } from '@/lib/constants'
 import { getFunnel, getSubaccountDetails } from '@/lib/queries'
 import { getStripe } from '@/lib/stripe/stripe-client'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
-
 
 type Props = {
   element: EditorElement
@@ -61,6 +60,7 @@ const Checkout = (props: Props) => {
             subAccountConnectAccId,
             prices: livePrices,
             subaccountId,
+            funnelId,
           })
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_URL}api/stripe/create-checkout-session`,
@@ -116,7 +116,7 @@ const Checkout = (props: Props) => {
     if (funnelPages.FunnelPages.length > pageDetails.order + 1) {
       console.log(funnelPages.FunnelPages.length, pageDetails.order + 1)
       const nextPage = funnelPages.FunnelPages.find(
-        (page) => page.order === pageDetails.order + 1
+        page => page.order === pageDetails.order + 1
       )
       if (!nextPage) return
       router.replace(
@@ -136,28 +136,28 @@ const Checkout = (props: Props) => {
     <div
       style={styles}
       draggable
-      onDragStart={(e) => handleDragStart(e, 'contactForm')}
+      onDragStart={e => handleDragStart(e, 'contactForm')}
       onClick={handleOnClickBody}
       className={clsx(
-        'p-[2px] w-full m-[5px] relative text-[16px] transition-all flex items-center justify-center',
+        'relative m-[5px] flex w-full items-center justify-center p-[2px] text-[16px] transition-all',
         {
           '!border-blue-500':
             state.editor.selectedElement.id === props.element.id,
 
           '!border-solid': state.editor.selectedElement.id === props.element.id,
-          'border-dashed border-[1px] border-slate-300': !state.editor.liveMode,
+          'border-[1px] border-dashed border-slate-300': !state.editor.liveMode,
         }
       )}
     >
       {state.editor.selectedElement.id === props.element.id &&
         !state.editor.liveMode && (
-          <Badge className="absolute -top-[23px] -left-[1px] rounded-none rounded-t-lg ">
+          <Badge className="absolute -left-[1px] -top-[23px] rounded-none rounded-t-lg">
             {state.editor.selectedElement.name}
           </Badge>
         )}
 
-      <div className="border-none transition-all w-full">
-        <div className="flex flex-col gap-4 w-full">
+      <div className="w-full border-none transition-all">
+        <div className="flex w-full flex-col gap-4">
           {options.clientSecret && subAccountConnectAccId && (
             <div className="text-white">
               <EmbeddedCheckoutProvider
@@ -170,7 +170,7 @@ const Checkout = (props: Props) => {
           )}
 
           {!options.clientSecret && (
-            <div className="flex items-center justify-center w-full h-40">
+            <div className="flex h-40 w-full items-center justify-center">
               <Loading />
             </div>
           )}
@@ -179,7 +179,7 @@ const Checkout = (props: Props) => {
 
       {state.editor.selectedElement.id === props.element.id &&
         !state.editor.liveMode && (
-          <div className="absolute bg-primary px-2.5 py-1 text-xs font-bold  -top-[25px] -right-[1px] rounded-none rounded-t-lg !text-white">
+          <div className="absolute -right-[1px] -top-[25px] rounded-none rounded-t-lg bg-primary px-2.5 py-1 text-xs font-bold !text-white">
             <Trash
               className="cursor-pointer"
               size={16}
