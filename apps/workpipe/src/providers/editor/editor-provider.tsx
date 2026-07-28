@@ -14,7 +14,21 @@ export type EditorElement = {
   styles: React.CSSProperties
   name: string
   type: EditorBtns
-  content: EditorElement[] | { href?: string; innerText?: string; src?: string }
+  // Element content is either child elements (containers) or a leaf's property
+  // bag. Leaf content is polymorphic per element type (button/icon/image/heading
+  // /…) and every consumer reads it via a typed cast (`content as ButtonContent`,
+  // etc.), so the bag is intentionally open-ended. href/innerText/src are called
+  // out as the most common fields; the index signature admits the rest
+  // (text, iconName, alt, level, alignment, objectFit, size, color, …).
+  content:
+    | EditorElement[]
+    | {
+        href?: string
+        innerText?: string
+        src?: string
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        [key: string]: any
+      }
 }
 
 export type Editor = {
@@ -77,7 +91,7 @@ const addAnElement = (
     throw Error(
       'You sent the wrong action type to the Add Element editor State'
     )
-  return editorArray.map((item) => {
+  return editorArray.map(item => {
     if (item.id === action.payload.containerId && Array.isArray(item.content)) {
       return {
         ...item,
@@ -100,7 +114,7 @@ const updateAnElement = (
   if (action.type !== 'UPDATE_ELEMENT') {
     throw Error('You sent the wrong action type to the update Element State')
   }
-  return editorArray.map((item) => {
+  return editorArray.map(item => {
     if (item.id === action.payload.elementDetails.id) {
       return { ...item, ...action.payload.elementDetails }
     } else if (item.content && Array.isArray(item.content)) {
@@ -115,9 +129,9 @@ const updateAnElement = (
 
 // Helper function to generate UUID (simple version)
 const generateId = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0
-    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
     return v.toString(16)
   })
 }
@@ -131,7 +145,9 @@ const cloneElementWithNewIds = (element: EditorElement): EditorElement => {
   }
 
   if (Array.isArray(element.content)) {
-    clonedElement.content = element.content.map(child => cloneElementWithNewIds(child))
+    clonedElement.content = element.content.map(child =>
+      cloneElementWithNewIds(child)
+    )
   } else {
     clonedElement.content = { ...element.content }
   }
@@ -153,7 +169,11 @@ const insertElementAfter = (
     if (item.id === targetId) {
       result.push(newElement)
     } else if (Array.isArray(item.content)) {
-      const updatedContent = insertElementAfter(item.content, targetId, newElement)
+      const updatedContent = insertElementAfter(
+        item.content,
+        targetId,
+        newElement
+      )
       if (updatedContent !== item.content) {
         result[result.length - 1] = {
           ...item,
@@ -174,7 +194,7 @@ const deleteAnElement = (
     throw Error(
       'You sent the wrong action type to the Delete Element editor State'
     )
-  return editorArray.filter((item) => {
+  return editorArray.filter(item => {
     if (item.id === action.payload.elementDetails.id) {
       return false
     } else if (item.content && Array.isArray(item.content)) {
@@ -395,7 +415,9 @@ const editorReducer = (
       return funnelPageIdState
 
     case 'DUPLICATE_ELEMENT':
-      const clonedElement = cloneElementWithNewIds(action.payload.elementDetails)
+      const clonedElement = cloneElementWithNewIds(
+        action.payload.elementDetails
+      )
       const elementsWithDuplicate = insertElementAfter(
         state.editor.elements,
         action.payload.elementDetails.id,

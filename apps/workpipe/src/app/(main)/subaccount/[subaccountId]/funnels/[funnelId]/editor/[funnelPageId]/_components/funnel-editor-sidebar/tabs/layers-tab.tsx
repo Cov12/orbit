@@ -72,11 +72,12 @@ const LayerItem = ({ element, depth }: LayerItemProps) => {
   const { state, dispatch } = useEditor()
   const [isExpanded, setIsExpanded] = React.useState(true)
 
-  const hasChildren = Array.isArray(element.content) && element.content.length > 0
+  const hasChildren =
+    Array.isArray(element.content) && element.content.length > 0
   const isSelected = state.editor.selectedElement.id === element.id
   const isBody = element.type === '__body'
 
-  const IconComponent = elementIcons[element.type] || Box
+  const IconComponent = (element.type && elementIcons[element.type]) || Box
 
   const handleSelect = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -160,7 +161,7 @@ const LayerItem = ({ element, depth }: LayerItemProps) => {
       {/* Children */}
       {hasChildren && isExpanded && (
         <div>
-          {(element.content as EditorElement[]).map((child) => (
+          {(element.content as EditorElement[]).map(child => (
             <LayerItem key={child.id} element={child} depth={depth + 1} />
           ))}
         </div>
@@ -173,7 +174,7 @@ const LayersTab = (props: Props) => {
   const { state } = useEditor()
 
   // Find the body element
-  const bodyElement = state.editor.elements.find((el) => el.type === '__body')
+  const bodyElement = state.editor.elements.find(el => el.type === '__body')
 
   if (!bodyElement) {
     return (

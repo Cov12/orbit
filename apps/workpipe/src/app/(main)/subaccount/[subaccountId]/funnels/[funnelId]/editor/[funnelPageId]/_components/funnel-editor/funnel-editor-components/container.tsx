@@ -425,9 +425,22 @@ const Container = ({ element }: Props) => {
             elementDetails: {
               content: {
                 items: [
-                  { id: v4(), title: 'What is your return policy?', content: 'We offer a 30-day return policy for all unused items.' },
-                  { id: v4(), title: 'How long does shipping take?', content: 'Standard shipping takes 5-7 business days.' },
-                  { id: v4(), title: 'Do you offer international shipping?', content: 'Yes, we ship to over 50 countries worldwide.' },
+                  {
+                    id: v4(),
+                    title: 'What is your return policy?',
+                    content:
+                      'We offer a 30-day return policy for all unused items.',
+                  },
+                  {
+                    id: v4(),
+                    title: 'How long does shipping take?',
+                    content: 'Standard shipping takes 5-7 business days.',
+                  },
+                  {
+                    id: v4(),
+                    title: 'Do you offer international shipping?',
+                    content: 'Yes, we ship to over 50 countries worldwide.',
+                  },
                 ],
                 allowMultiple: false,
                 variant: 'default',
@@ -474,12 +487,19 @@ const Container = ({ element }: Props) => {
 
   const handleDuplicateElement = () => {
     // Find the parent container ID
-    const findParentId = (elements: any[], targetId: string, parentId: string = '__body'): string => {
+    const findParentId = (
+      elements: any[],
+      targetId: string,
+      parentId: string = '__body'
+    ): string => {
       for (const el of elements) {
         if (el.id === targetId) return parentId
         if (Array.isArray(el.content)) {
           const found = findParentId(el.content, targetId, el.id)
-          if (found !== '__body' || el.content.some((c: any) => c.id === targetId)) {
+          if (
+            found !== '__body' ||
+            el.content.some((c: any) => c.id === targetId)
+          ) {
             return found !== '__body' ? found : el.id
           }
         }
@@ -502,7 +522,8 @@ const Container = ({ element }: Props) => {
     <div
       style={styles}
       className={clsx('group relative p-4 transition-all', {
-        'w-full max-w-full': type === 'container' || type === '2Col' || type === '3Col',
+        'w-full max-w-full':
+          type === 'container' || type === '2Col' || type === '3Col',
         'h-fit': type === 'container',
         'h-full': type === '__body',
         'overflow-scroll': type === '__body',
@@ -546,19 +567,25 @@ const Container = ({ element }: Props) => {
       {state.editor.selectedElement.id === element.id &&
         !state.editor.liveMode &&
         state.editor.selectedElement.type !== '__body' && (
-          <div className="absolute -right-[1px] -top-[25px] rounded-none rounded-t-lg bg-primary px-2 py-1 text-xs font-bold flex gap-1">
-            <Copy
-              size={16}
+          <div className="absolute -right-[1px] -top-[25px] flex gap-1 rounded-none rounded-t-lg bg-primary px-2 py-1 text-xs font-bold">
+            <button
+              type="button"
               className="cursor-pointer hover:text-blue-300"
               onClick={handleDuplicateElement}
               title="Duplicate"
-            />
-            <Trash
-              size={16}
+              aria-label="Duplicate"
+            >
+              <Copy size={16} />
+            </button>
+            <button
+              type="button"
               className="cursor-pointer hover:text-red-300"
               onClick={handleDeleteElement}
               title="Delete"
-            />
+              aria-label="Delete"
+            >
+              <Trash size={16} />
+            </button>
           </div>
         )}
     </div>
