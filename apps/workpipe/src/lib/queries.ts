@@ -822,9 +822,13 @@ export const upsertLane = async (lane: Prisma.LaneUncheckedCreateInput) => {
 }
 
 export const getDomainContent = async (subDomainName: string) => {
-  const response = await db.funnel.findUnique({
+  // Only resolve PUBLISHED funnels on the public live site. subDomainName is
+  // unique, but findFirst lets us also require published — a draft funnel that
+  // happens to have a subdomain must not be publicly reachable.
+  const response = await db.funnel.findFirst({
     where: {
       subDomainName,
+      published: true,
     },
     include: { FunnelPages: true },
   })
