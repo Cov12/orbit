@@ -91,7 +91,14 @@ const SettingsTab = (props: Props) => {
     <Accordion
       type="multiple"
       className="w-full"
-      defaultValue={['Custom', 'Typography', 'Dimensions', 'Decorations', 'Flexbox', 'Effects']}
+      defaultValue={[
+        'Custom',
+        'Typography',
+        'Dimensions',
+        'Decorations',
+        'Flexbox',
+        'Effects',
+      ]}
     >
       <AccordionItem value="Custom" className="px-6 py-0">
         <AccordionTrigger className="!no-underline">
@@ -107,7 +114,9 @@ const SettingsTab = (props: Props) => {
                   id="href"
                   placeholder="https://example.com"
                   onChange={handleChangeCustomValues}
-                  value={(state.editor.selectedElement.content as any)?.href || ''}
+                  value={
+                    (state.editor.selectedElement.content as any)?.href || ''
+                  }
                 />
               </div>
             )}
@@ -122,7 +131,9 @@ const SettingsTab = (props: Props) => {
                     id="text"
                     placeholder="Click Me"
                     onChange={handleChangeCustomValues}
-                    value={(state.editor.selectedElement.content as any)?.text || ''}
+                    value={
+                      (state.editor.selectedElement.content as any)?.text || ''
+                    }
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -131,15 +142,22 @@ const SettingsTab = (props: Props) => {
                     id="href"
                     placeholder="https://example.com"
                     onChange={handleChangeCustomValues}
-                    value={(state.editor.selectedElement.content as any)?.href || ''}
+                    value={
+                      (state.editor.selectedElement.content as any)?.href || ''
+                    }
                   />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label className="text-muted-foreground">Variant</Label>
                   <Select
-                    value={(state.editor.selectedElement.content as any)?.variant || 'primary'}
+                    value={
+                      (state.editor.selectedElement.content as any)?.variant ||
+                      'primary'
+                    }
                     onValueChange={value =>
-                      handleChangeCustomValues({ target: { id: 'variant', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'variant', value },
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -156,9 +174,14 @@ const SettingsTab = (props: Props) => {
                 <div className="flex flex-col gap-2">
                   <Label className="text-muted-foreground">Size</Label>
                   <Select
-                    value={(state.editor.selectedElement.content as any)?.size || 'md'}
+                    value={
+                      (state.editor.selectedElement.content as any)?.size ||
+                      'md'
+                    }
                     onValueChange={value =>
-                      handleChangeCustomValues({ target: { id: 'size', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'size', value },
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -176,40 +199,68 @@ const SettingsTab = (props: Props) => {
                     <Label className="text-muted-foreground">Background</Label>
                     <ColorPicker
                       onChange={value =>
-                        handleChangeCustomValues({ target: { id: 'backgroundColor', value } })
+                        handleChangeCustomValues({
+                          target: { id: 'backgroundColor', value },
+                        })
                       }
-                      value={(state.editor.selectedElement.content as any)?.backgroundColor || '#6366f1'}
+                      value={
+                        (state.editor.selectedElement.content as any)
+                          ?.backgroundColor || '#6366f1'
+                      }
                     />
                   </div>
                   <div className="flex-1">
                     <Label className="text-muted-foreground">Text Color</Label>
                     <ColorPicker
                       onChange={value =>
-                        handleChangeCustomValues({ target: { id: 'textColor', value } })
+                        handleChangeCustomValues({
+                          target: { id: 'textColor', value },
+                        })
                       }
-                      value={(state.editor.selectedElement.content as any)?.textColor || '#ffffff'}
+                      value={
+                        (state.editor.selectedElement.content as any)
+                          ?.textColor || '#ffffff'
+                      }
                     />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="fullWidth"
-                    checked={(state.editor.selectedElement.content as any)?.fullWidth || false}
+                    checked={
+                      (state.editor.selectedElement.content as any)
+                        ?.fullWidth || false
+                    }
                     onCheckedChange={checked =>
-                      handleChangeCustomValues({ target: { id: 'fullWidth', value: checked } })
+                      handleChangeCustomValues({
+                        target: { id: 'fullWidth', value: checked },
+                      })
                     }
                   />
-                  <Label htmlFor="fullWidth" className="text-muted-foreground">Full Width</Label>
+                  <Label htmlFor="fullWidth" className="text-muted-foreground">
+                    Full Width
+                  </Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="newTab"
-                    checked={(state.editor.selectedElement.content as any)?.target === '_blank'}
+                    checked={
+                      (state.editor.selectedElement.content as any)?.target ===
+                      '_blank'
+                    }
                     onCheckedChange={checked =>
-                      handleChangeCustomValues({ target: { id: 'target', value: checked ? '_blank' : '_self' } })
+                      handleChangeCustomValues({
+                        target: {
+                          id: 'target',
+                          value: checked ? '_blank' : '_self',
+                        },
+                      })
                     }
                   />
-                  <Label htmlFor="newTab" className="text-muted-foreground flex items-center gap-1">
+                  <Label
+                    htmlFor="newTab"
+                    className="flex items-center gap-1 text-muted-foreground"
+                  >
                     Open in new tab <ExternalLink size={12} />
                   </Label>
                 </div>
@@ -226,7 +277,9 @@ const SettingsTab = (props: Props) => {
                     id="src"
                     placeholder="https://example.com/image.jpg"
                     onChange={handleChangeCustomValues}
-                    value={(state.editor.selectedElement.content as any)?.src || ''}
+                    value={
+                      (state.editor.selectedElement.content as any)?.src || ''
+                    }
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -235,24 +288,35 @@ const SettingsTab = (props: Props) => {
                     id="alt"
                     placeholder="Image description"
                     onChange={handleChangeCustomValues}
-                    value={(state.editor.selectedElement.content as any)?.alt || ''}
+                    value={
+                      (state.editor.selectedElement.content as any)?.alt || ''
+                    }
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label className="text-muted-foreground">Link URL (optional)</Label>
+                  <Label className="text-muted-foreground">
+                    Link URL (optional)
+                  </Label>
                   <Input
                     id="href"
                     placeholder="https://example.com"
                     onChange={handleChangeCustomValues}
-                    value={(state.editor.selectedElement.content as any)?.href || ''}
+                    value={
+                      (state.editor.selectedElement.content as any)?.href || ''
+                    }
                   />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label className="text-muted-foreground">Object Fit</Label>
                   <Select
-                    value={(state.editor.selectedElement.content as any)?.objectFit || 'cover'}
+                    value={
+                      (state.editor.selectedElement.content as any)
+                        ?.objectFit || 'cover'
+                    }
                     onValueChange={value =>
-                      handleChangeCustomValues({ target: { id: 'objectFit', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'objectFit', value },
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -276,9 +340,14 @@ const SettingsTab = (props: Props) => {
                 <div className="flex flex-col gap-2">
                   <Label className="text-muted-foreground">Icon</Label>
                   <Select
-                    value={(state.editor.selectedElement.content as any)?.iconName || 'star'}
+                    value={
+                      (state.editor.selectedElement.content as any)?.iconName ||
+                      'star'
+                    }
                     onValueChange={value =>
-                      handleChangeCustomValues({ target: { id: 'iconName', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'iconName', value },
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -297,7 +366,9 @@ const SettingsTab = (props: Props) => {
                       <SelectItem value="arrow-right">Arrow Right</SelectItem>
                       <SelectItem value="arrow-left">Arrow Left</SelectItem>
                       <SelectItem value="search">Search</SelectItem>
-                      <SelectItem value="shopping-cart">Shopping Cart</SelectItem>
+                      <SelectItem value="shopping-cart">
+                        Shopping Cart
+                      </SelectItem>
                       <SelectItem value="download">Download</SelectItem>
                       <SelectItem value="play">Play</SelectItem>
                     </SelectContent>
@@ -306,25 +377,35 @@ const SettingsTab = (props: Props) => {
                 <div className="flex flex-col gap-2">
                   <Label className="text-muted-foreground">Size (px)</Label>
                   <Slider
-                    value={[(state.editor.selectedElement.content as any)?.size || 24]}
+                    value={[
+                      (state.editor.selectedElement.content as any)?.size || 24,
+                    ]}
                     onValueChange={([value]) =>
-                      handleChangeCustomValues({ target: { id: 'size', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'size', value },
+                      })
                     }
                     min={12}
                     max={96}
                     step={4}
                   />
                   <small className="text-right text-muted-foreground">
-                    {(state.editor.selectedElement.content as any)?.size || 24}px
+                    {(state.editor.selectedElement.content as any)?.size || 24}
+                    px
                   </small>
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label className="text-muted-foreground">Color</Label>
                   <ColorPicker
                     onChange={value =>
-                      handleChangeCustomValues({ target: { id: 'color', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'color', value },
+                      })
                     }
-                    value={(state.editor.selectedElement.content as any)?.color || '#000000'}
+                    value={
+                      (state.editor.selectedElement.content as any)?.color ||
+                      '#000000'
+                    }
                   />
                 </div>
               </>
@@ -337,9 +418,14 @@ const SettingsTab = (props: Props) => {
                 <div className="flex flex-col gap-2">
                   <Label className="text-muted-foreground">Heading Level</Label>
                   <Select
-                    value={(state.editor.selectedElement.content as any)?.level || 'h2'}
+                    value={
+                      (state.editor.selectedElement.content as any)?.level ||
+                      'h2'
+                    }
                     onValueChange={value =>
-                      handleChangeCustomValues({ target: { id: 'level', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'level', value },
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -358,19 +444,33 @@ const SettingsTab = (props: Props) => {
                 <div className="flex flex-col gap-2">
                   <Label className="text-muted-foreground">Alignment</Label>
                   <Tabs
-                    value={(state.editor.selectedElement.content as any)?.alignment || 'left'}
+                    value={
+                      (state.editor.selectedElement.content as any)
+                        ?.alignment || 'left'
+                    }
                     onValueChange={value =>
-                      handleChangeCustomValues({ target: { id: 'alignment', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'alignment', value },
+                      })
                     }
                   >
                     <TabsList className="flex h-fit flex-row items-center justify-between gap-4 rounded-md border-[1px] bg-transparent">
-                      <TabsTrigger value="left" className="h-10 w-10 p-0 data-[state=active]:bg-muted">
+                      <TabsTrigger
+                        value="left"
+                        className="h-10 w-10 p-0 data-[state=active]:bg-muted"
+                      >
                         <AlignLeft size={18} />
                       </TabsTrigger>
-                      <TabsTrigger value="center" className="h-10 w-10 p-0 data-[state=active]:bg-muted">
+                      <TabsTrigger
+                        value="center"
+                        className="h-10 w-10 p-0 data-[state=active]:bg-muted"
+                      >
                         <AlignCenter size={18} />
                       </TabsTrigger>
-                      <TabsTrigger value="right" className="h-10 w-10 p-0 data-[state=active]:bg-muted">
+                      <TabsTrigger
+                        value="right"
+                        className="h-10 w-10 p-0 data-[state=active]:bg-muted"
+                      >
                         <AlignRight size={18} />
                       </TabsTrigger>
                     </TabsList>
@@ -386,9 +486,14 @@ const SettingsTab = (props: Props) => {
                 <div className="flex flex-col gap-2">
                   <Label className="text-muted-foreground">Style</Label>
                   <Select
-                    value={(state.editor.selectedElement.content as any)?.style || 'solid'}
+                    value={
+                      (state.editor.selectedElement.content as any)?.style ||
+                      'solid'
+                    }
                     onValueChange={value =>
-                      handleChangeCustomValues({ target: { id: 'style', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'style', value },
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -403,27 +508,41 @@ const SettingsTab = (props: Props) => {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label className="text-muted-foreground">Thickness (px)</Label>
+                  <Label className="text-muted-foreground">
+                    Thickness (px)
+                  </Label>
                   <Slider
-                    value={[(state.editor.selectedElement.content as any)?.thickness || 1]}
+                    value={[
+                      (state.editor.selectedElement.content as any)
+                        ?.thickness || 1,
+                    ]}
                     onValueChange={([value]) =>
-                      handleChangeCustomValues({ target: { id: 'thickness', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'thickness', value },
+                      })
                     }
                     min={1}
                     max={10}
                     step={1}
                   />
                   <small className="text-right text-muted-foreground">
-                    {(state.editor.selectedElement.content as any)?.thickness || 1}px
+                    {(state.editor.selectedElement.content as any)?.thickness ||
+                      1}
+                    px
                   </small>
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label className="text-muted-foreground">Color</Label>
                   <ColorPicker
                     onChange={value =>
-                      handleChangeCustomValues({ target: { id: 'color', value } })
+                      handleChangeCustomValues({
+                        target: { id: 'color', value },
+                      })
                     }
-                    value={(state.editor.selectedElement.content as any)?.color || '#e5e5e5'}
+                    value={
+                      (state.editor.selectedElement.content as any)?.color ||
+                      '#e5e5e5'
+                    }
                   />
                 </div>
               </>
@@ -438,7 +557,10 @@ const SettingsTab = (props: Props) => {
                   id="height"
                   placeholder="50px"
                   onChange={handleChangeCustomValues}
-                  value={(state.editor.selectedElement.content as any)?.height || '50px'}
+                  value={
+                    (state.editor.selectedElement.content as any)?.height ||
+                    '50px'
+                  }
                 />
               </div>
             )}
@@ -447,20 +569,31 @@ const SettingsTab = (props: Props) => {
           {state.editor.selectedElement.type === 'video' &&
             !Array.isArray(state.editor.selectedElement.content) && (
               <div className="flex flex-col gap-2">
-                <Label className="text-muted-foreground">Video URL (YouTube Embed)</Label>
+                <Label className="text-muted-foreground">
+                  Video URL (YouTube Embed)
+                </Label>
                 <Input
                   id="src"
                   placeholder="https://www.youtube.com/embed/..."
                   onChange={handleChangeCustomValues}
-                  value={(state.editor.selectedElement.content as any)?.src || ''}
+                  value={
+                    (state.editor.selectedElement.content as any)?.src || ''
+                  }
                 />
               </div>
             )}
 
           {/* No custom settings message */}
-          {!['link', 'button', 'image', 'icon', 'heading', 'divider', 'spacer', 'video'].includes(
-            state.editor.selectedElement.type
-          ) && (
+          {![
+            'link',
+            'button',
+            'image',
+            'icon',
+            'heading',
+            'divider',
+            'spacer',
+            'video',
+          ].includes(state.editor.selectedElement.type ?? '') && (
             <p className="text-sm text-muted-foreground">
               No custom settings for this element. Use the style panels below.
             </p>
@@ -791,7 +924,10 @@ const SettingsTab = (props: Props) => {
           <div className="flex flex-col gap-2">
             <Label className="text-muted-foreground">Border Style</Label>
             <Select
-              value={state.editor.selectedElement.styles.borderStyle?.toString() || 'none'}
+              value={
+                state.editor.selectedElement.styles.borderStyle?.toString() ||
+                'none'
+              }
               onValueChange={value =>
                 handleOnChanges({
                   target: { id: 'borderStyle', value },
@@ -817,7 +953,10 @@ const SettingsTab = (props: Props) => {
                 id="borderWidth"
                 placeholder="1px"
                 onChange={handleOnChanges}
-                value={state.editor.selectedElement.styles.borderWidth?.toString() || ''}
+                value={
+                  state.editor.selectedElement.styles.borderWidth?.toString() ||
+                  ''
+                }
               />
             </div>
             <div className="flex-1">
@@ -828,7 +967,10 @@ const SettingsTab = (props: Props) => {
                     target: { id: 'borderColor', value },
                   })
                 }
-                value={state.editor.selectedElement.styles.borderColor?.toString() || '#000000'}
+                value={
+                  state.editor.selectedElement.styles.borderColor?.toString() ||
+                  '#000000'
+                }
               />
             </div>
           </div>
@@ -853,7 +995,10 @@ const SettingsTab = (props: Props) => {
                   inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
                 }
                 handleOnChanges({
-                  target: { id: 'boxShadow', value: shadowPresets[value] || 'none' },
+                  target: {
+                    id: 'boxShadow',
+                    value: shadowPresets[value] || 'none',
+                  },
                 })
               }}
             >
@@ -877,7 +1022,9 @@ const SettingsTab = (props: Props) => {
               id="boxShadow"
               placeholder="0 4px 6px rgba(0,0,0,0.1)"
               onChange={handleOnChanges}
-              value={state.editor.selectedElement.styles.boxShadow?.toString() || ''}
+              value={
+                state.editor.selectedElement.styles.boxShadow?.toString() || ''
+              }
             />
           </div>
 
@@ -1056,7 +1203,8 @@ const SettingsTab = (props: Props) => {
               ]}
               onValueChange={([value]) => {
                 const currentTransform =
-                  state.editor.selectedElement.styles.transform?.toString() || ''
+                  state.editor.selectedElement.styles.transform?.toString() ||
+                  ''
                 const newScale = `scale(${value / 100})`
                 const newTransform = currentTransform.includes('scale')
                   ? currentTransform.replace(/scale\([^)]+\)/, newScale)
@@ -1074,7 +1222,8 @@ const SettingsTab = (props: Props) => {
                 state.editor.selectedElement.styles.transform
                   ?.toString()
                   .match(/scale\(([^)]+)\)/)?.[1] || '1'
-              ) * 100}%
+              ) * 100}
+              %
             </small>
           </div>
           <div className="flex flex-col gap-2">
@@ -1089,7 +1238,8 @@ const SettingsTab = (props: Props) => {
               ]}
               onValueChange={([value]) => {
                 const currentTransform =
-                  state.editor.selectedElement.styles.transform?.toString() || ''
+                  state.editor.selectedElement.styles.transform?.toString() ||
+                  ''
                 const newRotate = `rotate(${value}deg)`
                 const newTransform = currentTransform.includes('rotate')
                   ? currentTransform.replace(/rotate\([^)]+\)/, newRotate)
@@ -1107,7 +1257,8 @@ const SettingsTab = (props: Props) => {
                 state.editor.selectedElement.styles.transform
                   ?.toString()
                   .match(/rotate\(([^)]+)deg\)/)?.[1] || '0'
-              )}°
+              )}
+              °
             </small>
           </div>
           <div className="flex gap-4">
@@ -1117,15 +1268,20 @@ const SettingsTab = (props: Props) => {
                 placeholder="0px"
                 onChange={e => {
                   const currentTransform =
-                    state.editor.selectedElement.styles.transform?.toString() || ''
+                    state.editor.selectedElement.styles.transform?.toString() ||
+                    ''
                   const currentY =
-                    currentTransform.match(/translateY\(([^)]+)\)/)?.[1] || '0px'
+                    currentTransform.match(/translateY\(([^)]+)\)/)?.[1] ||
+                    '0px'
                   const newTranslate = `translateX(${e.target.value}) translateY(${currentY})`
                   const newTransform = currentTransform
                     .replace(/translateX\([^)]+\)/, '')
                     .replace(/translateY\([^)]+\)/, '')
                   handleOnChanges({
-                    target: { id: 'transform', value: `${newTransform} ${newTranslate}`.trim() },
+                    target: {
+                      id: 'transform',
+                      value: `${newTransform} ${newTranslate}`.trim(),
+                    },
                   })
                 }}
                 value={
@@ -1141,15 +1297,20 @@ const SettingsTab = (props: Props) => {
                 placeholder="0px"
                 onChange={e => {
                   const currentTransform =
-                    state.editor.selectedElement.styles.transform?.toString() || ''
+                    state.editor.selectedElement.styles.transform?.toString() ||
+                    ''
                   const currentX =
-                    currentTransform.match(/translateX\(([^)]+)\)/)?.[1] || '0px'
+                    currentTransform.match(/translateX\(([^)]+)\)/)?.[1] ||
+                    '0px'
                   const newTranslate = `translateX(${currentX}) translateY(${e.target.value})`
                   const newTransform = currentTransform
                     .replace(/translateX\([^)]+\)/, '')
                     .replace(/translateY\([^)]+\)/, '')
                   handleOnChanges({
-                    target: { id: 'transform', value: `${newTransform} ${newTranslate}`.trim() },
+                    target: {
+                      id: 'transform',
+                      value: `${newTransform} ${newTranslate}`.trim(),
+                    },
                   })
                 }}
                 value={
@@ -1162,7 +1323,7 @@ const SettingsTab = (props: Props) => {
           </div>
 
           {/* Transition Controls */}
-          <div className="flex flex-col gap-2 pt-4 border-t">
+          <div className="flex flex-col gap-2 border-t pt-4">
             <Label className="text-muted-foreground">Transition</Label>
             <Select
               value={
@@ -1179,7 +1340,10 @@ const SettingsTab = (props: Props) => {
                   bounce: 'all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
                 }
                 handleOnChanges({
-                  target: { id: 'transition', value: transitionPresets[value] || 'none' },
+                  target: {
+                    id: 'transition',
+                    value: transitionPresets[value] || 'none',
+                  },
                 })
               }}
             >
@@ -1201,7 +1365,9 @@ const SettingsTab = (props: Props) => {
               id="transition"
               placeholder="all 0.3s ease"
               onChange={handleOnChanges}
-              value={state.editor.selectedElement.styles.transition?.toString() || ''}
+              value={
+                state.editor.selectedElement.styles.transition?.toString() || ''
+              }
             />
           </div>
 
@@ -1209,7 +1375,9 @@ const SettingsTab = (props: Props) => {
           <div className="flex flex-col gap-2">
             <Label className="text-muted-foreground">Cursor</Label>
             <Select
-              value={state.editor.selectedElement.styles.cursor?.toString() || 'auto'}
+              value={
+                state.editor.selectedElement.styles.cursor?.toString() || 'auto'
+              }
               onValueChange={value =>
                 handleOnChanges({
                   target: { id: 'cursor', value },
