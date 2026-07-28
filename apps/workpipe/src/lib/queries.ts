@@ -16,11 +16,13 @@ import { redirect } from 'next/navigation'
 import { v4 } from 'uuid'
 import { z } from 'zod'
 
-import { db } from './db'
 import { getAuthAdmin, getCurrentUser } from './auth'
+import { db } from './db'
+import { computeInvoiceTotals } from './invoice-totals'
 import {
   CreateFunnelFormSchema,
   CreateMediaType,
+  InvoiceFormSchema,
   UpsertFunnelPage,
 } from './types'
 
@@ -647,6 +649,108 @@ export const deleteMedia = async (mediaId: string) => {
     },
   })
   return response
+}
+
+// ---------------------------------------------------------------------------
+// Invoices (#22)
+// ---------------------------------------------------------------------------
+
+export const getInvoices = async (subaccountId: string) => {
+  return db.invoice.findMany({
+    where: { subAccountId: subaccountId },
+    include: { services: true },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export const getInvoice = async (invoiceId: string) => {
+  return db.invoice.findUnique({
+    where: { id: invoiceId },
+    include: { services: true },
+  })
+}
+
+/**
+ * Create or update an invoice and its line items.
+ *
+ * Input is validated with Zod; all amounts (line totals, subtotal, total due)
+ * are recomputed server-side from quantity × unit price + tax − discount, so a
+ * client can never dictate what is owed. `status`/`paidAt`/`number` are managed
+ * elsewhere (draft on create; PAID via the Stripe webhook) and are never
+ * overwritten here. Line items are replaced wholesale inside a transaction.
+ */
+export const upsertInvoice = async (
+  subaccountId: string,
+  data: z.infer<typeof InvoiceFormSchema>,
+  invoiceId?: string
+) => {
+  const parsed = InvoiceFormSchema.parse(data)
+  const { lines, subTotalCents, totalDueCents } = computeInvoiceTotals(
+    parsed.services,
+    parsed.taxCents,
+    parsed.discountCents
+  )
+
+  const id = invoiceId || v4()
+  const invoiceData = {
+    name: parsed.name,
+    type: parsed.type ?? null,
+    dueDate: parsed.dueDate ?? null,
+    currency: parsed.currency,
+    netPaymentTerm: parsed.netPaymentTerm ?? null,
+    taxCents: parsed.taxCents,
+    discountCents: parsed.discountCents,
+    subTotalCents,
+    totalDueCents,
+  }
+
+  const invoice = await db.$transaction(async tx => {
+    const upserted = await tx.invoice.upsert({
+      where: { id },
+      update: invoiceData,
+      create: { ...invoiceData, id, subAccountId: subaccountId },
+    })
+    // The form edits the full line-item set — replace, don't diff.
+    await tx.invoiceService.deleteMany({ where: { invoiceId: id } })
+    if (lines.length) {
+      await tx.invoiceService.createMany({
+        data: lines.map(l => ({
+          invoiceId: id,
+          name: l.name,
+          description: l.description ?? null,
+          type: l.type ?? null,
+          quantity: l.quantity,
+          unitPriceCents: l.unitPriceCents,
+          totalCents: l.totalCents,
+        })),
+      })
+    }
+    return upserted
+  })
+
+  await saveActivityLogsNotification({
+    subaccountId,
+    description: `Updated invoice | ${invoice.name}`,
+  })
+
+  return invoice
+}
+
+export const deleteInvoice = async (
+  subaccountId: string,
+  invoiceId: string
+) => {
+  // Scope by sub-account so a caller can only delete their own invoices.
+  const result = await db.invoice.deleteMany({
+    where: { id: invoiceId, subAccountId: subaccountId },
+  })
+  if (result.count > 0) {
+    await saveActivityLogsNotification({
+      subaccountId,
+      description: `Deleted an invoice`,
+    })
+  }
+  return result
 }
 
 export const getPipelineDetails = async (pipelineId: string) => {
