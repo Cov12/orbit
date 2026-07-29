@@ -660,6 +660,33 @@ export const deleteMedia = async (mediaId: string) => {
 // Invoices (#22)
 // ---------------------------------------------------------------------------
 
+/**
+ * Back-fill the "Invoices" sidebar link for a sub-account. Sidebar options are
+ * seeded once at provisioning, so sub-accounts created before the Invoices
+ * entry existed never got it. Called from the sub-account layout — idempotent
+ * (no-op once present) and non-blocking (a failure never breaks the page).
+ */
+export const ensureInvoicesSidebarOption = async (subaccountId: string) => {
+  try {
+    const link = `/subaccount/${subaccountId}/invoices`
+    const existing = await db.subAccountSidebarOption.findFirst({
+      where: { subAccountId: subaccountId, link },
+      select: { id: true },
+    })
+    if (existing) return
+    await db.subAccountSidebarOption.create({
+      data: {
+        name: 'Invoices',
+        icon: 'receipt',
+        link,
+        subAccountId: subaccountId,
+      },
+    })
+  } catch (error) {
+    console.error('[ensureInvoicesSidebarOption] failed (non-blocking):', error)
+  }
+}
+
 export const getInvoices = async (subaccountId: string) => {
   return db.invoice.findMany({
     where: { subAccountId: subaccountId },
