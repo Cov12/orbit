@@ -18,7 +18,14 @@ const PORTAL_TOKEN_COOKIE = 'orbit_token'
 /** Routes that don't require authentication */
 const PUBLIC_PATHS = new Set(['/auth/callback', '/api/health'])
 
-const PUBLIC_PREFIXES = ['/api/internal/', '/api/stripe/', '/site', '/_next']
+const PUBLIC_PREFIXES = [
+  '/api/internal/',
+  '/api/stripe/',
+  '/site',
+  '/_next',
+  // Customer-facing invoice pay/view pages are token-authorized, not logged in.
+  '/invoice/',
+]
 
 function isPublicRoute(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true
