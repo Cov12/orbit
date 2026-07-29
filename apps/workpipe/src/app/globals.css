@@ -196,3 +196,25 @@ B (255 */
     @apply bg-background text-foreground;
   }
 } */
+
+/* Print: isolate the invoice document so "Save as PDF" produces a clean page
+   with none of the app chrome (sidebar, buttons, blur overlay). */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #invoice-print-root,
+  #invoice-print-root * {
+    visibility: visible;
+  }
+  #invoice-print-root {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
