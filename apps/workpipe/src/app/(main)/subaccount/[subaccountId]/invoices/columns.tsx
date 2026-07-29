@@ -3,10 +3,18 @@ import { useState } from 'react'
 
 import { Invoice, InvoiceService, InvoiceStatus } from '@prisma/client'
 import { ColumnDef } from '@tanstack/react-table'
-import { Edit, FileText, Link2, MoreHorizontal, Trash } from 'lucide-react'
+import {
+  Edit,
+  FileText,
+  Link2,
+  MoreHorizontal,
+  Send,
+  Trash,
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import InvoiceForm from '@/components/forms/invoice-form'
+import SendInvoiceForm from '@/components/forms/send-invoice-form'
 import CustomModal from '@/components/global/custom-modal'
 import {
   AlertDialog,
@@ -118,6 +126,24 @@ const ActionsCell = ({ invoice }: { invoice: InvoiceRow }) => {
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-2" onClick={handleCopyLink}>
             <Link2 size={15} /> Copy pay link
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="gap-2"
+            onClick={() =>
+              setOpen(
+                <CustomModal
+                  title="Send invoice"
+                  subheading="Email this invoice with a pay link to your customer."
+                >
+                  <SendInvoiceForm
+                    subAccountId={invoice.subAccountId}
+                    invoiceId={invoice.id}
+                  />
+                </CustomModal>
+              )
+            }
+          >
+            <Send size={15} /> Send invoice
           </DropdownMenuItem>
           <DropdownMenuItem
             className="gap-2"

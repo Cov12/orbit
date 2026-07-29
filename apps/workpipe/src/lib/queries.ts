@@ -19,6 +19,7 @@ import { z } from 'zod'
 import { getAuthAdmin, getCurrentUser } from './auth'
 import { db } from './db'
 import { computeInvoiceTotals } from './invoice-totals'
+import { sendMail } from './mailer'
 import {
   CreateFunnelFormSchema,
   CreateMediaType,
@@ -799,6 +800,83 @@ export const markInvoiceSent = async (
   })
 
   return updated
+}
+
+// Flat {id,name,email} contact list for the "send invoice to a contact" picker.
+export const getContactOptions = async (subaccountId: string) => {
+  return db.contact.findMany({
+    where: { subAccountId: subaccountId },
+    select: { id: true, name: true, email: true },
+    orderBy: { name: 'asc' },
+  })
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/**
+ * Email an invoice to a customer over SMTP. Ensures the pay link + SENT status
+ * (reuses markInvoiceSent), renders a branded email with a View & Pay button
+ * pointing at the public invoice page, and sends it. Scoped by sub-account.
+ */
+export const sendInvoiceEmail = async (
+  subaccountId: string,
+  invoiceId: string,
+  recipientEmail: string
+) => {
+  const to = recipientEmail.trim()
+  if (!EMAIL_RE.test(to)) throw new Error('INVALID_EMAIL')
+
+  const invoice = await db.invoice.findFirst({
+    where: { id: invoiceId, subAccountId: subaccountId },
+    include: { Subaccount: true },
+  })
+  if (!invoice) throw new Error('NOT_FOUND')
+
+  // Ensure the public pay link exists and mark the invoice SENT.
+  const { link } = await markInvoiceSent(subaccountId, invoiceId)
+
+  const base = (process.env.NEXT_PUBLIC_URL || '').replace(/\/$/, '')
+  const payUrl = `${base}/invoice/${link}`
+  const businessName = invoice.Subaccount?.name || 'Invoice'
+  const currency = (invoice.currency || 'usd').toUpperCase()
+  const amount = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(invoice.totalDueCents / 100)
+  const dueStr = invoice.dueDate
+    ? new Date(invoice.dueDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    : null
+
+  const html = `
+  <div style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111;">
+    <h2 style="margin: 0 0 4px;">${businessName}</h2>
+    <p style="color: #555; margin: 0 0 20px;">You have a new invoice${invoice.number ? ` #${invoice.number}` : ''}.</p>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <tr><td style="padding: 6px 0; color: #555;">Invoice</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${invoice.name}</td></tr>
+      <tr><td style="padding: 6px 0; color: #555;">Amount due</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${amount}</td></tr>
+      ${dueStr ? `<tr><td style="padding: 6px 0; color: #555;">Due</td><td style="padding: 6px 0; text-align: right;">${dueStr}</td></tr>` : ''}
+    </table>
+    <a href="${payUrl}" style="display: inline-block; background: #2B2FFF; color: #fff; padding: 12px 22px; border-radius: 8px; text-decoration: none; font-weight: 600;">View &amp; Pay Invoice</a>
+    <p style="color: #888; font-size: 12px; margin-top: 20px;">Or open this link: <a href="${payUrl}" style="color: #2B2FFF;">${payUrl}</a></p>
+  </div>`
+
+  await sendMail({
+    to,
+    subject: `Invoice from ${businessName} — ${amount} due`,
+    html,
+    fromName: businessName,
+  })
+
+  await saveActivityLogsNotification({
+    subaccountId,
+    description: `Emailed an invoice to ${to}`,
+  })
+
+  return { ok: true }
 }
 
 export const getPipelineDetails = async (pipelineId: string) => {
