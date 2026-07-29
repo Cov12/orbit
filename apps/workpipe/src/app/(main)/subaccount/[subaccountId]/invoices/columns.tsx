@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { Invoice, InvoiceService, InvoiceStatus } from '@prisma/client'
 import { ColumnDef } from '@tanstack/react-table'
-import { Edit, MoreHorizontal, Trash } from 'lucide-react'
+import { Edit, FileText, MoreHorizontal, Trash } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import InvoiceForm from '@/components/forms/invoice-form'
@@ -87,6 +87,16 @@ const ActionsCell = ({ invoice }: { invoice: InvoiceRow }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem
+            className="gap-2"
+            onClick={() =>
+              router.push(
+                `/subaccount/${invoice.subAccountId}/invoices/${invoice.id}`
+              )
+            }
+          >
+            <FileText size={15} /> View
+          </DropdownMenuItem>
           <DropdownMenuItem
             className="gap-2"
             onClick={() =>
