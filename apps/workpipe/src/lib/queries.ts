@@ -758,6 +758,49 @@ export const deleteInvoice = async (
   return result
 }
 
+// Public, token-authorized lookup for the customer-facing pay/view page.
+// The `link` token is an unguessable UUID — possession of it IS the authorization.
+export const getInvoiceByLink = async (link: string) => {
+  return db.invoice.findUnique({
+    where: { link },
+    include: { services: true, Subaccount: true },
+  })
+}
+
+/**
+ * Ensure an invoice has a public pay link and mark it SENT. Idempotent: the
+ * token is generated once and reused; re-sharing a PAID/SENT invoice keeps its
+ * status. Scoped by sub-account. Returns the token so the caller can build the
+ * shareable URL.
+ */
+export const markInvoiceSent = async (
+  subaccountId: string,
+  invoiceId: string
+) => {
+  const existing = await db.invoice.findFirst({
+    where: { id: invoiceId, subAccountId: subaccountId },
+    select: { id: true, link: true, status: true },
+  })
+  if (!existing) throw new Error('NOT_FOUND')
+
+  const link = existing.link || v4()
+  const updated = await db.invoice.update({
+    where: { id: existing.id },
+    data: {
+      link,
+      status: existing.status === 'DRAFT' ? 'SENT' : existing.status,
+    },
+    select: { link: true, status: true },
+  })
+
+  await saveActivityLogsNotification({
+    subaccountId,
+    description: `Shared an invoice link`,
+  })
+
+  return updated
+}
+
 export const getPipelineDetails = async (pipelineId: string) => {
   const response = await db.pipeline.findUnique({
     where: {

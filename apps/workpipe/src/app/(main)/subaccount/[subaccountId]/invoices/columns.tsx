@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { Invoice, InvoiceService, InvoiceStatus } from '@prisma/client'
 import { ColumnDef } from '@tanstack/react-table'
-import { Edit, FileText, MoreHorizontal, Trash } from 'lucide-react'
+import { Edit, FileText, Link2, MoreHorizontal, Trash } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import InvoiceForm from '@/components/forms/invoice-form'
@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { toast } from '@/components/ui/use-toast'
-import { deleteInvoice } from '@/lib/queries'
+import { deleteInvoice, markInvoiceSent } from '@/lib/queries'
 import { useModal } from '@/providers/modal-provider'
 
 type InvoiceRow = Invoice & { services: InvoiceService[] }
@@ -77,6 +77,25 @@ const ActionsCell = ({ invoice }: { invoice: InvoiceRow }) => {
     }
   }
 
+  const handleCopyLink = async () => {
+    try {
+      const { link } = await markInvoiceSent(invoice.subAccountId, invoice.id)
+      const url = `${window.location.origin}/invoice/${link}`
+      await navigator.clipboard.writeText(url)
+      toast({
+        title: 'Pay link copied',
+        description: 'Share it with your customer.',
+      })
+      router.refresh()
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Oops!',
+        description: 'Could not create the pay link',
+      })
+    }
+  }
+
   return (
     <AlertDialog>
       <DropdownMenu>
@@ -96,6 +115,9 @@ const ActionsCell = ({ invoice }: { invoice: InvoiceRow }) => {
             }
           >
             <FileText size={15} /> View
+          </DropdownMenuItem>
+          <DropdownMenuItem className="gap-2" onClick={handleCopyLink}>
+            <Link2 size={15} /> Copy pay link
           </DropdownMenuItem>
           <DropdownMenuItem
             className="gap-2"
