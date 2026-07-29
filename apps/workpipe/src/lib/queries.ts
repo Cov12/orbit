@@ -429,6 +429,11 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
             link: `/subaccount/${subAccount.id}/services`,
           },
           {
+            name: 'Invoices',
+            icon: 'receipt',
+            link: `/subaccount/${subAccount.id}/invoices`,
+          },
+          {
             name: 'Documents',
             icon: 'database',
             link: `/subaccount/${subAccount.id}/documents`,

@@ -210,6 +210,11 @@ async function provisionSubAccountsFromPortal(
                   link: `/subaccount/${sa.id}/services`,
                 },
                 {
+                  name: 'Invoices',
+                  icon: 'receipt',
+                  link: `/subaccount/${sa.id}/invoices`,
+                },
+                {
                   name: 'Documents',
                   icon: 'database',
                   link: `/subaccount/${sa.id}/documents`,
