@@ -8,6 +8,7 @@ import Sidebar from '@/components/sidebar'
 import Unauthorized from '@/components/unauthorized'
 import { requireAuth } from '@/lib/auth'
 import {
+  ensureInvoicesSidebarOption,
   getAuthUserDetails,
   getNotificationAndUser,
   verifyAndAcceptInvitation,
@@ -25,6 +26,10 @@ const SubaccountLayout = async ({ children, params }: Props) => {
   const { subaccountId } = await params
   const businessId = await verifyAndAcceptInvitation()
   if (!businessId) return <Unauthorized />
+
+  // Back-fill the Invoices nav link for sub-accounts provisioned before it
+  // existed. Idempotent + non-blocking; runs before the sidebar reads its rows.
+  await ensureInvoicesSidebarOption(subaccountId)
   const user = await requireAuth().catch(() => null)
   if (!user) {
     return redirect('/')
