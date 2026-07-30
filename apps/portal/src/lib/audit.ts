@@ -29,3 +29,20 @@ export function logTokenExchange(opts: {
     })
   );
 }
+
+/** Audit trail for super-admin actions (login, app-access changes, …). */
+export function logAdminAction(opts: {
+  action: string;
+  adminEmail: string;
+  target?: string;
+  outcome: 'success' | 'denied' | 'error';
+  detail?: string;
+}): void {
+  console.info(
+    JSON.stringify({
+      kind: 'admin_action',
+      ts: new Date().toISOString(),
+      ...opts,
+    })
+  );
+}
