@@ -1,8 +1,12 @@
+import type { AppType } from "@prisma/client";
 import { requireAdmin } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { AdminLogoutButton } from "@/components/admin/logout-button";
+import { AppAccessToggles } from "@/components/admin/app-access-toggles";
 
 export const dynamic = "force-dynamic";
+
+const ALL_APPS: AppType[] = ["WORKPIPE", "ATRIUM", "DRIVE", "CONDUCTOR"];
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
@@ -52,24 +56,18 @@ export default async function AdminDashboardPage() {
                   {org._count.members}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    {org.appAccess.length === 0 ? (
-                      <span className="text-neutral-600">—</span>
-                    ) : (
-                      org.appAccess.map((a) => (
-                        <span
-                          key={a.app}
-                          className={`rounded-full px-2 py-0.5 text-xs ${
-                            a.enabled
-                              ? "bg-emerald-500/15 text-emerald-300"
-                              : "bg-neutral-800 text-neutral-500 line-through"
-                          }`}
-                        >
-                          {a.app}
-                        </span>
-                      ))
-                    )}
-                  </div>
+                  <AppAccessToggles
+                    orgId={org.id}
+                    initial={
+                      Object.fromEntries(
+                        ALL_APPS.map((app) => [
+                          app,
+                          org.appAccess.find((a) => a.app === app)?.enabled ??
+                            false,
+                        ])
+                      ) as Record<AppType, boolean>
+                    }
+                  />
                 </td>
                 <td className="px-4 py-3 text-neutral-300">
                   {org.subscriptions.length === 0 ? (
@@ -104,7 +102,8 @@ export default async function AdminDashboardPage() {
       </div>
 
       <p className="mt-4 text-xs text-neutral-600">
-        Read-only. Per-org app-access controls arrive in the next release.
+        Click an app to toggle access for that org. Changes apply on the org&apos;s
+        next load and are pushed to Conductor immediately.
       </p>
     </div>
   );
