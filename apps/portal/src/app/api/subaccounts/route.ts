@@ -91,17 +91,46 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await req.json().catch(() => ({}));
     const name: string | undefined =
       typeof body.name === "string" ? body.name.trim() : undefined;
 
     if (!name) {
       return NextResponse.json({ error: "Sub-account name is required" }, { status: 400 });
+    }
+
+    // (1) Service-to-service create via Orbit JWT bearer — a sibling (WorkPipe)
+    // routes its native "Create Sub Account" through Portal so the id it stores
+    // is the canonical Portal cuid. Org + role come from the signed token.
+    const authz = req.headers.get("authorization");
+    if (authz?.startsWith("Bearer ")) {
+      let payload: ReturnType<typeof verifyOrbitToken> | null = null;
+      try {
+        payload = verifyOrbitToken(authz.slice(7));
+      } catch {
+        payload = null;
+      }
+      if (!payload?.org_id) {
+        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+      }
+      if (payload.role !== "OWNER" && payload.role !== "ADMIN") {
+        return NextResponse.json(
+          { error: "Only owners or admins can create sub-accounts" },
+          { status: 403 }
+        );
+      }
+      const slug = await uniqueSubAccountSlug(payload.org_id, name);
+      const subAccount = await db.subAccount.create({
+        data: { orgId: payload.org_id, name, slug },
+        select: { id: true, name: true, slug: true, status: true, createdAt: true },
+      });
+      return NextResponse.json({ subAccount }, { status: 201 });
+    }
+
+    // (2) Interactive via Clerk session.
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const orgId = await resolveWorkspaceId(
