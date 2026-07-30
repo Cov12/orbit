@@ -242,3 +242,15 @@ enum DriveAuditAction {
   FILE_SHARE
   QUOTA_VIEW
 }
+
+// Platform super-admin — a role ABOVE org owners, authenticated OUTSIDE Clerk
+// (own email + bcrypt password + a dedicated session). Never tied to a Clerk
+// user or an org. Used only from the isolated /admin surface to manage all orgs.
+model SuperAdmin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
