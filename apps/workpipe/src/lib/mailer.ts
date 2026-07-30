@@ -16,7 +16,12 @@ function getTransport(): Transporter {
   if (cached) return cached
   const host = process.env.INVOICE_NOTIFICATION_HOST
   const port = Number(process.env.INVOICE_NOTIFICATION_PORT || 587)
-  const user = process.env.INVOICE_NOTIFICATION_EMAIL
+  // The SMTP auth username is frequently NOT the from-address (e.g. SendGrid =
+  // "apikey", Resend = "resend", Mailgun = "postmaster@..."). Allow it to be set
+  // separately; fall back to the from-address for providers where they match.
+  const user =
+    process.env.INVOICE_NOTIFICATION_USER ||
+    process.env.INVOICE_NOTIFICATION_EMAIL
   const pass = process.env.INVOICE_NOTIFICATION_SECRET
   if (!host || !user || !pass) {
     throw new Error('SMTP is not configured (INVOICE_NOTIFICATION_* env vars)')
