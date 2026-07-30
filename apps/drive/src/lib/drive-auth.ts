@@ -1,6 +1,11 @@
 import { cookies } from "next/headers";
 import { getPortalContext } from "@/lib/auth";
-import type { PortalJwtPayload } from "@/lib/portal-jwt";
+import {
+  hasDriveAccess,
+  PORTAL_TOKEN_COOKIE,
+  verifyPortalToken,
+  type PortalJwtPayload,
+} from "@/lib/portal-jwt";
 import { db } from "@/lib/db";
 
 // Cookie that holds Drive's local sub-account selection (set by the in-app
@@ -16,6 +21,52 @@ type DriveContext = {
   subAccountId: string | null;
   memberRole: string;
 };
+
+export type ServiceDriveContext = {
+  userId: string;
+  orgId: string;
+  /** The explicit, validated sub-account for this request. null = business scope. */
+  subAccountId: string | null;
+};
+
+/**
+ * Auth context for SERVICE callers (sibling apps like WorkPipe), server-to-server.
+ *
+ * Unlike getDriveContext this requires NO Drive `Member` row — it trusts the
+ * signed Portal JWT's `org_id` (verified with the shared secret + DRIVE
+ * entitlement), exactly like /summary. The sub-account is taken from an EXPLICIT
+ * request value (not the cookie/claim) and validated against the org; an invalid
+ * id FAILS CLOSED (throws INVALID_SUBACCOUNT) rather than silently falling back
+ * to business scope, so a caller can never write to the wrong tenant by accident.
+ *
+ * `explicitSubAccountId` undefined/null ⇒ business scope (null). A non-empty
+ * string must name an ACTIVE sub-account of the token's org.
+ */
+export async function getServiceDriveContext(
+  req: Request,
+  explicitSubAccountId?: string | null,
+): Promise<ServiceDriveContext> {
+  const cookieStore = await cookies();
+  let token = cookieStore.get(PORTAL_TOKEN_COOKIE)?.value;
+  if (!token) {
+    const authz = req.headers.get("authorization");
+    if (authz?.startsWith("Bearer ")) token = authz.slice(7);
+  }
+
+  const payload = token ? verifyPortalToken(token) : null;
+  if (!payload) throw new Error("UNAUTHORIZED");
+  if (!hasDriveAccess(payload)) throw new Error("DRIVE_ACCESS_DENIED");
+
+  const orgId = payload.org_id;
+
+  let subAccountId: string | null = null;
+  if (explicitSubAccountId) {
+    subAccountId = await validateSubAccount(orgId, explicitSubAccountId);
+    if (!subAccountId) throw new Error("INVALID_SUBACCOUNT"); // fail closed
+  }
+
+  return { userId: payload.sub, orgId, subAccountId };
+}
 
 /** Returns the id only if it names an ACTIVE sub-account of this org, else null. */
 export async function validateSubAccount(orgId: string, id: string): Promise<string | null> {

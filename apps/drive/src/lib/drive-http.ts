@@ -17,6 +17,9 @@ export function driveErrorResponse(error: unknown) {
     if (error.message === "DRIVE_ACCESS_DENIED") {
       return NextResponse.json({ error: "Drive access requires an active subscription. Upgrade at portal.orbit.example/billing" }, { status: 403 });
     }
+    if (error.message === "INVALID_SUBACCOUNT") {
+      return NextResponse.json({ error: "Unknown or inactive sub-account for this org" }, { status: 400 });
+    }
   }
 
   console.error("[Drive API]", error);
