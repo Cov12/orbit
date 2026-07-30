@@ -12,6 +12,7 @@ import {
   User,
 } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { v4 } from 'uuid'
 import { z } from 'zod'
@@ -20,6 +21,7 @@ import { getAuthAdmin, getCurrentUser } from './auth'
 import { db } from './db'
 import { computeInvoiceTotals } from './invoice-totals'
 import { sendMail } from './mailer'
+import { PORTAL_TOKEN_COOKIE } from './portal-jwt'
 import {
   CreateFunnelFormSchema,
   CreateMediaType,
@@ -331,6 +333,43 @@ export const upsertBusiness = async (business: Business, _price?: Plan) => {
   } catch (error) {
     console.log(error)
   }
+}
+
+/**
+ * Mint a new sub-account in Portal and return its canonical Portal cuid.
+ *
+ * Portal owns sub-account IDENTITY across the ecosystem (WorkPipe, Drive, Conductor
+ * all key off the same id). Native WorkPipe creates therefore route through
+ * Portal for the id instead of inventing a local v4() that Portal/Drive never
+ * see. Forwards the logged-in user's Portal JWT as a Bearer. Throws on failure
+ * so a create can't silently fall back to a divergent local id.
+ */
+export const mintPortalSubAccountId = async (name: string): Promise<string> => {
+  const cookieStore = await cookies()
+  const token = cookieStore.get(PORTAL_TOKEN_COOKIE)?.value
+  if (!token) throw new Error('Not authenticated with Portal')
+
+  const portalUrl =
+    process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'
+  const res = await fetch(`${portalUrl}/api/subaccounts`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ name }),
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(
+      `Portal sub-account create failed (${res.status})${detail ? `: ${detail}` : ''}`
+    )
+  }
+  const data = await res.json().catch(() => null)
+  const id = data?.subAccount?.id
+  if (!id) throw new Error('Portal returned no sub-account id')
+  return id as string
 }
 
 export const upsertSubAccount = async (subAccount: SubAccount) => {

@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Business, SubAccount } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
-import { v4 } from 'uuid'
 import * as z from 'zod'
 
 import { Button } from '@/components/ui/button'
@@ -26,7 +25,11 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { saveActivityLogsNotification, upsertSubAccount } from '@/lib/queries'
+import {
+  mintPortalSubAccountId,
+  saveActivityLogsNotification,
+  upsertSubAccount,
+} from '@/lib/queries'
 import { useModal } from '@/providers/modal-provider'
 
 import FileUpload from '../global/file-upload'
@@ -91,8 +94,15 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
     // never lost. The log line confirms what the form actually submitted.
     console.log('[subaccount-details] submit values:', values)
     try {
+      // New sub-accounts get their canonical id from Portal (the ecosystem's
+      // source of truth for sub-account identity), so WorkPipe/Drive/Conductor all
+      // share one id. Editing keeps the existing id.
+      const subAccountId = details?.id
+        ? details.id
+        : await mintPortalSubAccountId(values.name || details?.name || '')
+
       const response = await upsertSubAccount({
-        id: details?.id ? details.id : v4(),
+        id: subAccountId,
         address: values.address || details?.address || '',
         subAccountLogo: values.subAccountLogo || details?.subAccountLogo || '',
         city: values.city || details?.city || '',
