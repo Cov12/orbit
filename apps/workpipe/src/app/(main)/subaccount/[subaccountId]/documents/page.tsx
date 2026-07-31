@@ -5,23 +5,23 @@ type Props = {
   params: Promise<{ subaccountId: string }>
 }
 
-const MediaPage = async ({ params }: Props) => {
+const DocumentsPage = async ({ params }: Props) => {
   const { subaccountId } = await params
 
   return (
     <BlurPage>
       <div className="flex flex-col gap-4 pb-6">
         <div>
-          <h1 className="text-2xl">Media</h1>
+          <h1 className="text-2xl">Documents</h1>
           <p className="text-sm text-muted-foreground">
-            Images, video, and audio for this sub-account, stored securely in
-            Orbit Drive.
+            Contracts, PDFs, and other files for this sub-account, stored
+            securely in Orbit Drive.
           </p>
         </div>
-        <FilesBrowser subAccountId={subaccountId} kind="media" />
+        <FilesBrowser subAccountId={subaccountId} kind="documents" />
       </div>
     </BlurPage>
   )
 }
 
-export default MediaPage
+export default DocumentsPage
