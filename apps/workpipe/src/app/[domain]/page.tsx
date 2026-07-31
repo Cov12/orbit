@@ -10,7 +10,9 @@ import FunnelEditor from '../(main)/subaccount/[subaccountId]/funnels/[funnelId]
 
 const Page = async ({ params }: { params: Promise<{ domain: string }> }) => {
   const { domain } = await params
-  const domainData = await getDomainContent(domain.slice(0, -1))
+  // Strip a trailing dot if the middleware left one (e.g. "mysite.") rather
+  // than blindly dropping the last character.
+  const domainData = await getDomainContent(domain.replace(/\.$/, ''))
   if (!domainData) return notFound()
 
   const pageData = domainData.FunnelPages.find(page => !page.pathName)
