@@ -45,16 +45,16 @@ enum SubAccountStatus {
 }
 
 model Invite {
-  id         String      @id @default(cuid())
+  id         String       @id @default(cuid())
   email      String
   orgId      String
   org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  role       MemberRole  @default(MEMBER)
-  token      String      @unique @default(cuid())
-  invitedBy  String      // clerkUserId of inviter
+  role       MemberRole   @default(MEMBER)
+  token      String       @unique @default(cuid())
+  invitedBy  String // clerkUserId of inviter
   expiresAt  DateTime
   acceptedAt DateTime?
-  createdAt  DateTime    @default(now())
+  createdAt  DateTime     @default(now())
 
   @@unique([email, orgId])
   @@index([token])
@@ -116,10 +116,10 @@ enum SubStatus {
 }
 
 model AppAccess {
-  id      String  @id @default(cuid())
+  id      String       @id @default(cuid())
   orgId   String
   app     AppType
-  enabled Boolean @default(true)
+  enabled Boolean      @default(true)
   org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@unique([orgId, app])
@@ -134,41 +134,48 @@ enum AppType {
 }
 
 model DriveFolder {
-  id        String      @id @default(cuid())
-  name      String
-  parentId  String?
-  parent    DriveFolder? @relation("DriveFolderTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children  DriveFolder[] @relation("DriveFolderTree")
-  orgId     String
-  createdBy String
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  files     DriveFile[]
+  id           String        @id @default(cuid())
+  name         String
+  parentId     String?
+  parent       DriveFolder?  @relation("DriveFolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     DriveFolder[] @relation("DriveFolderTree")
+  orgId        String
+  subAccountId String?
+  createdBy    String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  files        DriveFile[]
 
   @@index([orgId])
   @@index([parentId])
   @@index([orgId, parentId])
+  @@index([orgId, subAccountId])
 }
 
 model DriveFile {
-  id           String     @id @default(cuid())
+  id           String          @id @default(cuid())
   name         String
   mimeType     String
   size         BigInt
-  r2Key        String     @unique
-  encryptedDek String
-  dekIv        String
-  dekTag       String
-  fileIv       String
+  r2Key        String          @unique
+  // Public assets (logos / branding) live in the public R2 bucket and are NOT
+  // envelope-encrypted, so the DEK fields are null for them. isPublic also
+  // selects the public bucket + stable URL on read.
+  isPublic     Boolean         @default(false)
+  encryptedDek String?
+  dekIv        String?
+  dekTag       String?
+  fileIv       String?
   checksum     String?
   folderId     String?
-  folder       DriveFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folder       DriveFolder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
   orgId        String
+  subAccountId String?
   uploadedBy   String
   status       DriveFileStatus @default(UPLOADING)
   deletedAt    DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
   shares       DriveShare[]
   auditLogs    DriveAuditLog[]
 
@@ -176,43 +183,48 @@ model DriveFile {
   @@index([folderId])
   @@index([orgId, folderId])
   @@index([orgId, status])
+  @@index([orgId, subAccountId])
 }
 
 model DriveShare {
-  id            String      @id @default(cuid())
-  token         String      @unique
-  fileId        String
-  file          DriveFile   @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  orgId         String
-  createdBy     String
-  expiresAt     DateTime?
-  maxAccesses   Int?
-  accessCount   Int         @default(0)
-  isRevoked     Boolean     @default(false)
-  createdAt     DateTime    @default(now())
+  id           String    @id @default(cuid())
+  token        String    @unique
+  fileId       String
+  file         DriveFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  orgId        String
+  subAccountId String?
+  createdBy    String
+  expiresAt    DateTime?
+  maxAccesses  Int?
+  accessCount  Int       @default(0)
+  isRevoked    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
 
   @@index([token])
   @@index([fileId])
   @@index([orgId])
+  @@index([orgId, subAccountId])
 }
 
 model DriveAuditLog {
-  id        String           @id @default(cuid())
-  orgId     String
-  userId    String?
-  fileId    String?
-  file      DriveFile?       @relation(fields: [fileId], references: [id], onDelete: SetNull)
-  action    DriveAuditAction
-  metadata  Json?
-  ip        String?
-  userAgent String?
-  createdAt DateTime         @default(now())
+  id           String           @id @default(cuid())
+  orgId        String
+  subAccountId String?
+  userId       String?
+  fileId       String?
+  file         DriveFile?       @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  action       DriveAuditAction
+  metadata     Json?
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime         @default(now())
 
   @@index([orgId])
   @@index([fileId])
   @@index([userId])
   @@index([action])
   @@index([orgId, createdAt])
+  @@index([orgId, subAccountId])
 }
 
 model StorageQuota {
