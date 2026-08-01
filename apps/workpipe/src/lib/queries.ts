@@ -1348,10 +1348,14 @@ export const upsertContact = async (
   return response
 }
 
-export const searchContacts = async (searchTerms: string) => {
+export const searchContacts = async (
+  subAccountId: string,
+  searchTerms = ''
+) => {
   try {
     const response = await db.contact.findMany({
       where: {
+        subAccountId,
         name: {
           contains: searchTerms,
         },
