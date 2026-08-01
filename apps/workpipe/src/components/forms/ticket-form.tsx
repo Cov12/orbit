@@ -9,25 +9,25 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 import {
-    getSubAccountTeamMembers,
-    saveActivityLogsNotification,
-    searchContacts,
-    upsertTicket,
+  getSubAccountTeamMembers,
+  saveActivityLogsNotification,
+  searchContacts,
+  upsertTicket,
 } from '@/lib/queries'
 import { TicketFormSchema, TicketWithTags } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -39,11 +39,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
 } from '../ui/command'
 import { Input } from '../ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
@@ -61,13 +61,13 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
   const router = useRouter()
   const [tags, setTags] = useState<Tag[]>([])
   const [contact, setContact] = useState('')
-  const [search, setSearch] = useState('');
-  const [contactList, setContactList] = useState<Contact[]>([]);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const [allTeamMembers, setAllTeamMembers] = useState<User[]>([]);
+  const [search, setSearch] = useState('')
+  const [contactList, setContactList] = useState<Contact[]>([])
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const [allTeamMembers, setAllTeamMembers] = useState<User[]>([])
   const [assignedTo, setAssignedTo] = useState(
     defaultData.ticket?.Assigned?.id || ''
-  );
+  )
   const form = useForm<z.infer<typeof TicketFormSchema>>({
     mode: 'onChange',
     resolver: zodResolver(TicketFormSchema),
@@ -101,25 +101,26 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
 
       const fetchData = async () => {
         const response = await searchContacts(
+          subaccountId,
           //@ts-ignore
           defaultData.ticket?.Customer?.name
         )
         setContactList(response)
       }
-      fetchData();
+      fetchData()
     }
-  }, [defaultData]);
+  }, [defaultData])
 
   useEffect(() => {
     const fetchInitialContacts = async () => {
-      const response = await searchContacts('');
-      setContactList(response);
-    };
-    fetchInitialContacts();
-  }, []);
+      const response = await searchContacts(subaccountId, '')
+      setContactList(response)
+    }
+    fetchInitialContacts()
+  }, [])
 
   const onSubmit = async (values: z.infer<typeof TicketFormSchema>) => {
-    if (!laneId) return;
+    if (!laneId) return
     try {
       const response = await upsertTicket(
         {
@@ -173,10 +174,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                 <FormItem>
                   <FormLabel>Ticket Name</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Name"
-                      {...field}
-                    />
+                    <Input placeholder="Name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -190,10 +188,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Description"
-                      {...field}
-                    />
+                    <Textarea placeholder="Description" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -207,10 +202,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                 <FormItem>
                   <FormLabel>Ticket Value</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Value"
-                      {...field}
-                    />
+                    <Input placeholder="Value" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -223,15 +215,12 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
               defaultTags={defaultData.ticket?.Tags || []}
             />
             <FormLabel>Assigned To Team Member</FormLabel>
-            <Select
-              onValueChange={setAssignedTo}
-              defaultValue={assignedTo}
-            >
+            <Select onValueChange={setAssignedTo} defaultValue={assignedTo}>
               <SelectTrigger>
                 <SelectValue
                   placeholder={
                     <div className="flex items-center gap-2">
-                      <Avatar className="w-8 h-8">
+                      <Avatar className="h-8 w-8">
                         <AvatarImage alt="contact" />
                         <AvatarFallback className="bg-primary text-sm text-white">
                           <User2 size={14} />
@@ -246,17 +235,11 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                 />
               </SelectTrigger>
               <SelectContent>
-                {allTeamMembers.map((teamMember) => (
-                  <SelectItem
-                    key={teamMember.id}
-                    value={teamMember.id}
-                  >
+                {allTeamMembers.map(teamMember => (
+                  <SelectItem key={teamMember.id} value={teamMember.id}>
                     <div className="flex items-center gap-2">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage
-                          alt="contact"
-                          src={teamMember.avatarUrl}
-                        />
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage alt="contact" src={teamMember.avatarUrl} />
                         <AvatarFallback className="bg-primary text-sm text-white">
                           <User2 size={14} />
                         </AvatarFallback>
@@ -272,17 +255,14 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
             </Select>
             <FormLabel>Customer</FormLabel>
             <Popover>
-              <PopoverTrigger
-                asChild
-                className="w-full"
-              >
+              <PopoverTrigger asChild className="w-full">
                 <Button
                   variant="outline"
                   role="combobox"
                   className="justify-between"
                 >
                   {contact
-                    ? contactList.find((c) => c.id === contact)?.name
+                    ? contactList.find(c => c.id === contact)?.name
                     : 'Select Customer...'}
                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -293,12 +273,15 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                     placeholder="Search..."
                     className="h-9"
                     value={search}
-                    onValueChange={(value) => {
+                    onValueChange={value => {
                       setSearch(value)
                       if (saveTimerRef.current)
                         clearTimeout(saveTimerRef.current)
                       saveTimerRef.current = setTimeout(async () => {
-                        const response = await searchContacts(value)
+                        const response = await searchContacts(
+                          subaccountId,
+                          value
+                        )
                         setContactList(response)
                       }, 1000)
                     }}
@@ -306,14 +289,14 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                   <CommandEmpty>No Customer found.</CommandEmpty>
                   {contactList.length > 0 ? (
                     <CommandGroup>
-                      {contactList.map((c) => (
+                      {contactList.map(c => (
                         <CommandItem
                           key={c.id}
                           value={c.id}
                           onSelect={() => {
-                            const newContactId = c.id === contact ? '' : c.id;
-                            console.log('Selected contact:', newContactId);
-                            setContact(newContactId);
+                            const newContactId = c.id === contact ? '' : c.id
+                            console.log('Selected contact:', newContactId)
+                            setContact(newContactId)
                           }}
                         >
                           {c.name}
@@ -330,11 +313,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                 </Command>
               </PopoverContent>
             </Popover>
-            <Button
-              className="w-20 mt-4"
-              disabled={isLoading}
-              type="submit"
-            >
+            <Button className="mt-4 w-20" disabled={isLoading} type="submit">
               {form.formState.isSubmitting ? <Loading /> : 'Save'}
             </Button>
           </form>
