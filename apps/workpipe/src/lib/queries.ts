@@ -267,6 +267,7 @@ export const updateBusinessDetails = async (
   businessId: string,
   businessDetails: Partial<Business>
 ) => {
+  await assertOwnsBusiness(businessId)
   const response = await db.business.update({
     where: { id: businessId },
     data: { ...businessDetails },
@@ -769,6 +770,7 @@ export const upsertInvoice = async (
   data: z.infer<typeof InvoiceFormSchema>,
   invoiceId?: string
 ) => {
+  await assertOwnsSubAccount(subaccountId)
   const parsed = InvoiceFormSchema.parse(data)
   const { lines, subTotalCents, totalDueCents } = computeInvoiceTotals(
     parsed.services,
@@ -1004,6 +1006,7 @@ export const upsertTag = async (
   subaccountId: string,
   tag: Prisma.TagUncheckedCreateInput
 ) => {
+  await assertOwnsSubAccount(subaccountId)
   const response = await db.tag.upsert({
     where: { id: tag.id || v4(), subAccountId: subaccountId },
     update: tag,
@@ -1110,6 +1113,7 @@ export const getPipelines = async (subaccountId: string) => {
 }
 
 export const upsertLane = async (lane: Prisma.LaneUncheckedCreateInput) => {
+  await assertOwnsPipeline(lane.pipelineId)
   let order: number
 
   if (!lane.order) {
@@ -1170,6 +1174,7 @@ export const getLanesWithTicketAndTags = async (pipelineId: string) => {
 }
 
 export const updateLanesOrder = async (lanes: Lane[]) => {
+  await Promise.all(lanes.map(lane => assertOwnsLane(lane.id)))
   try {
     const updateTrans = lanes.map(lane =>
       db.lane.update({
@@ -1198,6 +1203,7 @@ export const deleteLane = async (laneId: string) => {
 export const upsertPipeline = async (
   pipeline: Prisma.PipelineUncheckedCreateWithoutLaneInput
 ) => {
+  await assertOwnsSubAccount(pipeline.subAccountId)
   const response = await db.pipeline.upsert({
     where: { id: pipeline.id || v4() },
     update: pipeline,
@@ -1212,6 +1218,7 @@ export const upsertFunnel = async (
   funnel: z.infer<typeof CreateFunnelFormSchema> & { liveProducts: string },
   funnelId: string
 ) => {
+  await assertOwnsSubAccount(subaccountId)
   try {
     // Convert empty subDomainName to null to avoid unique constraint issues
     const processedFunnel = {
@@ -1278,6 +1285,8 @@ export const upsertFunnelPage = async (
     console.error('[upsertFunnelPage] Missing subaccountId or funnelId')
     return null
   }
+
+  await assertOwnsSubAccount(subaccountId)
 
   try {
     // Log incoming data for debugging
@@ -1358,6 +1367,7 @@ export const updateFunnelProducts = async (
 export const upsertContact = async (
   contact: Prisma.ContactUncheckedCreateInput
 ) => {
+  await assertOwnsSubAccount(contact.subAccountId)
   const response = await db.contact.upsert({
     where: { id: contact.id || v4() },
     update: contact,
@@ -1399,6 +1409,7 @@ export const upsertTicket = async (
   ticket: Prisma.TicketUncheckedCreateInput,
   tags: Tag[]
 ) => {
+  await assertOwnsLane(ticket.laneId)
   let order: number
   if (!ticket.order) {
     const tickets = await db.ticket.findMany({
@@ -1440,6 +1451,7 @@ export const deleteTicket = async (ticketId: string) => {
 }
 
 export const updateTicketsOrder = async (tickets: Ticket[]) => {
+  await Promise.all(tickets.map(ticket => assertOwnsTicket(ticket.id)))
   try {
     const updateTrans = tickets.map(ticket =>
       db.ticket.update({
