@@ -18,6 +18,16 @@ import { v4 } from 'uuid'
 import { z } from 'zod'
 
 import { getAuthAdmin, getCurrentUser } from './auth'
+import {
+  assertOwnsBusiness,
+  assertOwnsFunnelPage,
+  assertOwnsLane,
+  assertOwnsMedia,
+  assertOwnsPipeline,
+  assertOwnsSubAccount,
+  assertOwnsTag,
+  assertOwnsTicket,
+} from './authz'
 import { db } from './db'
 import { computeInvoiceTotals } from './invoice-totals'
 import { sendMail } from './mailer'
@@ -265,6 +275,7 @@ export const updateBusinessDetails = async (
 }
 
 export const deleteBusiness = async (businessId: string) => {
+  await assertOwnsBusiness(businessId)
   const response = await db.business.delete({ where: { id: businessId } })
   return response
 }
@@ -500,6 +511,7 @@ export const getSubaccountDetails = async (subaccountId: string) => {
 }
 
 export const deleteSubAccount = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
   const response = await db.subAccount.delete({
     where: {
       id: subaccountId,
@@ -688,6 +700,7 @@ export const createMedia = async (
 }
 
 export const deleteMedia = async (mediaId: string) => {
+  await assertOwnsMedia(mediaId)
   const response = await db.media.delete({
     where: {
       id: mediaId,
@@ -812,6 +825,7 @@ export const deleteInvoice = async (
   subaccountId: string,
   invoiceId: string
 ) => {
+  await assertOwnsSubAccount(subaccountId)
   // Scope by sub-account so a caller can only delete their own invoices.
   const result = await db.invoice.deleteMany({
     where: { id: invoiceId, subAccountId: subaccountId },
@@ -955,6 +969,7 @@ export const getPipelineDetails = async (pipelineId: string) => {
 }
 
 export const deletePipeline = async (pipelineId: string) => {
+  await assertOwnsPipeline(pipelineId)
   const response = await db.pipeline.delete({
     where: { id: pipelineId },
   })
@@ -999,6 +1014,7 @@ export const upsertTag = async (
 }
 
 export const deleteTag = async (tagId: string) => {
+  await assertOwnsTag(tagId)
   const response = await db.tag.delete({ where: { id: tagId } })
   return response
 }
@@ -1174,6 +1190,7 @@ export const updateLanesOrder = async (lanes: Lane[]) => {
 }
 
 export const deleteLane = async (laneId: string) => {
+  await assertOwnsLane(laneId)
   const resposne = await db.lane.delete({ where: { id: laneId } })
   return resposne
 }
@@ -1220,6 +1237,7 @@ export const upsertFunnel = async (
 }
 
 export const deleteFunnelePage = async (funnelPageId: string) => {
+  await assertOwnsFunnelPage(funnelPageId)
   try {
     // First check if the funnel page exists
     const existingPage = await db.funnelPage.findUnique({
@@ -1413,6 +1431,7 @@ export const upsertTicket = async (
 }
 
 export const deleteTicket = async (ticketId: string) => {
+  await assertOwnsTicket(ticketId)
   await db.ticket.delete({
     where: {
       id: ticketId,
