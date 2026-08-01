@@ -21,6 +21,7 @@ import { getAuthAdmin, getCurrentUser } from './auth'
 import {
   assertOwnsBusiness,
   assertOwnsFunnelPage,
+  assertOwnsInvoice,
   assertOwnsLane,
   assertOwnsMedia,
   assertOwnsPipeline,
@@ -249,6 +250,7 @@ export const saveActivityLogsNotification = async ({
 }
 
 export const getNotificationAndUser = async (businessId: string) => {
+  await assertOwnsBusiness(businessId)
   try {
     const response = await db.notification.findMany({
       where: { businessId },
@@ -522,6 +524,7 @@ export const deleteSubAccount = async (subaccountId: string) => {
 }
 
 export const getSubAccountTeamMembers = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
   const subaccountUsersWithAccess = await db.user.findMany({
     where: {
       Business: {
@@ -643,6 +646,7 @@ export const _getTicketsWithAllRelations = async (laneId: string) => {
 }
 
 export const getFunnels = async (subacountId: string) => {
+  await assertOwnsSubAccount(subacountId)
   const funnels = await db.funnel.findMany({
     where: { subAccountId: subacountId },
     include: { FunnelPages: true },
@@ -676,6 +680,7 @@ export const getProfiles = async (subacountId: string) => {
 }
 
 export const getMedia = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
   const mediafiles = await db.subAccount.findUnique({
     where: {
       id: subaccountId,
@@ -742,6 +747,7 @@ export const ensureInvoicesSidebarOption = async (subaccountId: string) => {
 }
 
 export const getInvoices = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
   return db.invoice.findMany({
     where: { subAccountId: subaccountId },
     include: { services: true },
@@ -750,6 +756,7 @@ export const getInvoices = async (subaccountId: string) => {
 }
 
 export const getInvoice = async (invoiceId: string) => {
+  await assertOwnsInvoice(invoiceId)
   return db.invoice.findUnique({
     where: { id: invoiceId },
     include: { services: true },
@@ -886,6 +893,7 @@ export const markInvoiceSent = async (
 
 // Flat {id,name,email} contact list for the "send invoice to a contact" picker.
 export const getContactOptions = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
   return db.contact.findMany({
     where: { subAccountId: subaccountId },
     select: { id: true, name: true, email: true },
@@ -962,6 +970,7 @@ export const sendInvoiceEmail = async (
 }
 
 export const getPipelineDetails = async (pipelineId: string) => {
+  await assertOwnsPipeline(pipelineId)
   const response = await db.pipeline.findUnique({
     where: {
       id: pipelineId,
@@ -979,6 +988,7 @@ export const deletePipeline = async (pipelineId: string) => {
 }
 
 export const getTicketsWithTags = async (pipelineId: string) => {
+  await assertOwnsPipeline(pipelineId)
   const response = await db.ticket.findMany({
     where: {
       Lane: {
@@ -995,6 +1005,7 @@ export const getTicketsWithTags = async (pipelineId: string) => {
 }
 
 export const getTagsForSubaccount = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
   const response = await db.subAccount.findUnique({
     where: { id: subaccountId },
     select: { Tags: true },
@@ -1091,6 +1102,7 @@ export const sendInvitation = async (
 }
 
 export const getPipelines = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
   const response = await db.pipeline.findMany({
     where: { subAccountId: subaccountId },
     include: {
@@ -1152,6 +1164,7 @@ export const getDomainContent = async (subDomainName: string) => {
 }
 
 export const getLanesWithTicketAndTags = async (pipelineId: string) => {
+  await assertOwnsPipeline(pipelineId)
   const response = await db.lane.findMany({
     where: {
       pipelineId,
@@ -1397,6 +1410,7 @@ export const searchContacts = async (
 }
 
 export const getSubAccountContacts = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
   const response = await db.subAccount.findMany({
     where: { id: subaccountId },
     select: { Contact: true },
