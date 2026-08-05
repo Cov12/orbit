@@ -987,8 +987,7 @@ export const deletePipeline = async (pipelineId: string) => {
   return response
 }
 
-export const getTicketsWithTags = async (pipelineId: string) => {
-  await assertOwnsPipeline(pipelineId)
+const loadTicketsWithTags = async (pipelineId: string) => {
   const response = await db.ticket.findMany({
     where: {
       Lane: {
@@ -1002,6 +1001,19 @@ export const getTicketsWithTags = async (pipelineId: string) => {
     ...ticket,
     value: ticket.value?.toNumber() ?? null,
   }))
+}
+
+// Authenticated dashboard read — verifies the caller's org owns the pipeline.
+export const getTicketsWithTags = async (pipelineId: string) => {
+  await assertOwnsPipeline(pipelineId)
+  return loadTicketsWithTags(pipelineId)
+}
+
+// Unguarded read for the service-authed GET /api/internal/pipelines/[id]/tickets
+// route, which verifies pipeline→business ownership itself. Do NOT call from
+// interactive dashboard code — use getTicketsWithTags.
+export const getTicketsWithTagsUnchecked = async (pipelineId: string) => {
+  return loadTicketsWithTags(pipelineId)
 }
 
 export const getTagsForSubaccount = async (subaccountId: string) => {
@@ -1101,8 +1113,7 @@ export const sendInvitation = async (
   return response
 }
 
-export const getPipelines = async (subaccountId: string) => {
-  await assertOwnsSubAccount(subaccountId)
+const loadPipelines = async (subaccountId: string) => {
   const response = await db.pipeline.findMany({
     where: { subAccountId: subaccountId },
     include: {
@@ -1122,6 +1133,19 @@ export const getPipelines = async (subaccountId: string) => {
       })),
     })),
   }))
+}
+
+// Authenticated dashboard read — verifies the caller's org owns the sub-account.
+export const getPipelines = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
+  return loadPipelines(subaccountId)
+}
+
+// Unguarded read for the service-authed GET /api/internal/pipelines route, which
+// verifies sub-account→business ownership itself via validateSubAccountForBusiness.
+// Do NOT call from interactive dashboard code — use getPipelines.
+export const getPipelinesUnchecked = async (subaccountId: string) => {
+  return loadPipelines(subaccountId)
 }
 
 export const upsertLane = async (lane: Prisma.LaneUncheckedCreateInput) => {
