@@ -20,6 +20,7 @@ import { z } from 'zod'
 import { getAuthAdmin, getCurrentUser } from './auth'
 import {
   assertOwnsBusiness,
+  assertOwnsFunnel,
   assertOwnsFunnelPage,
   assertOwnsLane,
   assertOwnsMedia,
@@ -502,13 +503,25 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
   return response
 }
 
-export const getSubaccountDetails = async (subaccountId: string) => {
-  const response = await db.subAccount.findUnique({
+const loadSubaccountDetails = async (subaccountId: string) => {
+  return db.subAccount.findUnique({
     where: {
       id: subaccountId,
     },
   })
-  return response
+}
+
+// Authenticated dashboard read — verifies the caller's org owns the sub-account.
+export const getSubaccountDetails = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
+  return loadSubaccountDetails(subaccountId)
+}
+
+// Unauthenticated read for the PUBLIC live-funnel render path (funnel checkout),
+// where there is no session. Do NOT call from dashboard/server-component code —
+// use getSubaccountDetails there so the ownership guard applies.
+export const getSubaccountDetailsPublic = async (subaccountId: string) => {
+  return loadSubaccountDetails(subaccountId)
 }
 
 export const deleteSubAccount = async (subaccountId: string) => {
@@ -651,8 +664,8 @@ export const getFunnels = async (subacountId: string) => {
   return funnels
 }
 
-export const getFunnel = async (funnelId: string) => {
-  const funnel = await db.funnel.findUnique({
+const loadFunnel = async (funnelId: string) => {
+  return db.funnel.findUnique({
     where: { id: funnelId },
     include: {
       FunnelPages: {
@@ -662,8 +675,19 @@ export const getFunnel = async (funnelId: string) => {
       },
     },
   })
+}
 
-  return funnel
+// Authenticated dashboard read — verifies the caller's org owns the funnel.
+export const getFunnel = async (funnelId: string) => {
+  await assertOwnsFunnel(funnelId)
+  return loadFunnel(funnelId)
+}
+
+// Unauthenticated read for the PUBLIC live-funnel render path (funnel checkout /
+// contact-form elements), where there is no session. Do NOT call from
+// dashboard code — use getFunnel there so the ownership guard applies.
+export const getFunnelPublic = async (funnelId: string) => {
+  return loadFunnel(funnelId)
 }
 
 export const getProfiles = async (subacountId: string) => {
@@ -1266,14 +1290,25 @@ export const deleteFunnelePage = async (funnelPageId: string) => {
   }
 }
 
-export const getFunnelPageDetails = async (funnelPageId: string) => {
-  const response = await db.funnelPage.findUnique({
+const loadFunnelPageDetails = async (funnelPageId: string) => {
+  return db.funnelPage.findUnique({
     where: {
       id: funnelPageId,
     },
   })
+}
 
-  return response
+// Authenticated editor read — verifies the caller's org owns the funnel page.
+export const getFunnelPageDetails = async (funnelPageId: string) => {
+  await assertOwnsFunnelPage(funnelPageId)
+  return loadFunnelPageDetails(funnelPageId)
+}
+
+// Unauthenticated read for the PUBLIC live-funnel render path. The funnel editor
+// component fetches page content in both edit and live mode; live mode has no
+// session, so it calls this variant. Do NOT call from authenticated code paths.
+export const getFunnelPageDetailsPublic = async (funnelPageId: string) => {
+  return loadFunnelPageDetails(funnelPageId)
 }
 
 export const upsertFunnelPage = async (

@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { EyeOff } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { getFunnelPageDetails } from '@/lib/queries'
+import { getFunnelPageDetails, getFunnelPageDetailsPublic } from '@/lib/queries'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
 
 import Recursive from './funnel-editor-components/recursive'
@@ -30,7 +30,7 @@ const cloneElementWithNewIds = (element: EditorElement): EditorElement => {
   }
 
   if (Array.isArray(element.content)) {
-    clonedElement.content = element.content.map((child) =>
+    clonedElement.content = element.content.map(child =>
       cloneElementWithNewIds(child)
     )
   } else {
@@ -168,7 +168,11 @@ const FunnelEditor = ({ funnelPageId, liveMode }: Props) => {
   //CHALLENGE: make this more performant
   useEffect(() => {
     const fetchData = async () => {
-      const response = await getFunnelPageDetails(funnelPageId)
+      // Live mode renders on the public [domain] path with no session, so it
+      // must use the unguarded read; the editor (authenticated) uses the guarded one.
+      const response = liveMode
+        ? await getFunnelPageDetailsPublic(funnelPageId)
+        : await getFunnelPageDetails(funnelPageId)
       if (!response) return
 
       dispatch({
@@ -196,9 +200,9 @@ const FunnelEditor = ({ funnelPageId, liveMode }: Props) => {
   return (
     <div
       className={clsx(
-        'use-automation-zoom-in h-full overflow-scroll mr-[385px] bg-background transition-all rounded-md',
+        'use-automation-zoom-in mr-[385px] h-full overflow-scroll rounded-md bg-background transition-all',
         {
-          '!p-0 !mr-0':
+          '!mr-0 !p-0':
             state.editor.previewMode === true || state.editor.liveMode === true,
           '!w-[850px]': state.editor.device === 'Tablet',
           '!w-[420px]': state.editor.device === 'Mobile',
@@ -211,18 +215,15 @@ const FunnelEditor = ({ funnelPageId, liveMode }: Props) => {
         <Button
           variant={'ghost'}
           size={'icon'}
-          className="w-6 h-6 bg-slate-600 p-[2px] fixed top-0 left-0 z-[100]"
+          className="fixed left-0 top-0 z-[100] h-6 w-6 bg-slate-600 p-[2px]"
           onClick={handleUnpreview}
         >
           <EyeOff />
         </Button>
       )}
       {Array.isArray(state.editor.elements) &&
-        state.editor.elements.map((childElement) => (
-          <Recursive
-            key={childElement.id}
-            element={childElement}
-          />
+        state.editor.elements.map(childElement => (
+          <Recursive key={childElement.id} element={childElement} />
         ))}
     </div>
   )
