@@ -1399,16 +1399,31 @@ export const updateFunnelProducts = async (
   return data
 }
 
-export const upsertContact = async (
-  contact: Prisma.ContactUncheckedCreateInput
-) => {
-  await assertOwnsSubAccount(contact.subAccountId)
-  const response = await db.contact.upsert({
+const persistContact = async (contact: Prisma.ContactUncheckedCreateInput) => {
+  return db.contact.upsert({
     where: { id: contact.id || v4() },
     update: contact,
     create: contact,
   })
-  return response
+}
+
+// Authenticated dashboard write — verifies the caller's org owns the sub-account.
+export const upsertContact = async (
+  contact: Prisma.ContactUncheckedCreateInput
+) => {
+  await assertOwnsSubAccount(contact.subAccountId)
+  return persistContact(contact)
+}
+
+// Unguarded write for callers that authorize by other means: the public live
+// funnel contact form (no session — lead capture) and the service-authed
+// /api/internal/contacts route (validateInternalAuth + validateSubAccountForBusiness).
+// Do NOT call from interactive dashboard code — use upsertContact so the
+// session ownership guard applies.
+export const upsertContactUnchecked = async (
+  contact: Prisma.ContactUncheckedCreateInput
+) => {
+  return persistContact(contact)
 }
 
 export const searchContacts = async (
@@ -1440,11 +1455,10 @@ export const getSubAccountContacts = async (subaccountId: string) => {
   return response
 }
 
-export const upsertTicket = async (
+const persistTicket = async (
   ticket: Prisma.TicketUncheckedCreateInput,
   tags: Tag[]
 ) => {
-  await assertOwnsLane(ticket.laneId)
   let order: number
   if (!ticket.order) {
     const tickets = await db.ticket.findMany({
@@ -1474,6 +1488,25 @@ export const upsertTicket = async (
     ...response,
     value: response.value?.toNumber() ?? null,
   }
+}
+
+// Authenticated dashboard write — verifies the caller's org owns the lane.
+export const upsertTicket = async (
+  ticket: Prisma.TicketUncheckedCreateInput,
+  tags: Tag[]
+) => {
+  await assertOwnsLane(ticket.laneId)
+  return persistTicket(ticket, tags)
+}
+
+// Unguarded write for the service-authed /api/internal/tickets route, which
+// already verifies lane→sub-account→business ownership itself. Do NOT call from
+// interactive dashboard code — use upsertTicket so the session guard applies.
+export const upsertTicketUnchecked = async (
+  ticket: Prisma.TicketUncheckedCreateInput,
+  tags: Tag[]
+) => {
+  return persistTicket(ticket, tags)
 }
 
 export const deleteTicket = async (ticketId: string) => {

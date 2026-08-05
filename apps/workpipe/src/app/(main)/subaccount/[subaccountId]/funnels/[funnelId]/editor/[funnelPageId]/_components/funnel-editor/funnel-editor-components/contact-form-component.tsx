@@ -13,7 +13,7 @@ import { EditorBtns } from '@/lib/constants'
 import {
   getFunnelPublic,
   saveActivityLogsNotification,
-  upsertContact,
+  upsertContactUnchecked,
 } from '@/lib/queries'
 import { ContactUserFormSchema } from '@/lib/types'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
@@ -71,7 +71,7 @@ const ContactFormComponent = (props: Props) => {
     if (!state.editor.liveMode) return
 
     try {
-      const response = await upsertContact({
+      const response = await upsertContactUnchecked({
         ...values,
         subAccountId: subaccountId,
       })
