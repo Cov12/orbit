@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { getPipelines } from '@/lib/queries'
+import { getPipelinesUnchecked } from '@/lib/queries'
 import {
   validateInternalAuth,
   validateSubAccountForBusiness,
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
     await validateSubAccountForBusiness(subAccountId, businessId)
 
-    const pipelines = await getPipelines(subAccountId)
+    const pipelines = await getPipelinesUnchecked(subAccountId)
 
     return NextResponse.json({ pipelines })
   } catch (err) {

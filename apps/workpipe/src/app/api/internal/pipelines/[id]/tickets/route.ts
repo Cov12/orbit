@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
 import { validateInternalAuth } from '@/lib/internal-auth'
-import { getTicketsWithTags } from '@/lib/queries'
+import { getTicketsWithTagsUnchecked } from '@/lib/queries'
 
 const errorResponse = (error: string, code: string, status: number) =>
   NextResponse.json({ error, code }, { status })
@@ -32,7 +32,7 @@ export async function GET(
       return errorResponse('Forbidden', 'UNAUTHORIZED', 403)
     }
 
-    const tickets = await getTicketsWithTags(id)
+    const tickets = await getTicketsWithTagsUnchecked(id)
 
     return NextResponse.json({ tickets })
   } catch (err) {
