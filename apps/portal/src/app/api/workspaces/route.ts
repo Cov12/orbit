@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { isLicenseActive } from "@/lib/license";
 
 /**
  * GET /api/workspaces
@@ -38,7 +39,11 @@ export async function GET() {
     // onboarding wizard (enforced in the portal layout). Return an empty list so
     // the client can detect the no-workspace state.
     if (memberships.length === 0) {
-      return NextResponse.json({ workspaces: [], current: null });
+      return NextResponse.json({
+        workspaces: [],
+        current: null,
+        licensed: isLicenseActive(),
+      });
     }
 
     const workspaces = memberships.map((m: any) => ({
@@ -61,6 +66,9 @@ export async function GET() {
     return NextResponse.json({
       workspaces,
       current,
+      // License mode: when active the whole ecosystem is entitled with no Stripe
+      // subscription, so the UI hides all billing/subscription surfaces.
+      licensed: isLicenseActive(),
     });
   } catch (error) {
     console.error("[Workspaces]", error);
