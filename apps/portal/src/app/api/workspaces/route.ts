@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
-import { isLicenseActive } from "@/lib/license";
+import { isOrgLicensed } from "@/lib/license";
 
 /**
  * GET /api/workspaces
@@ -42,7 +42,7 @@ export async function GET() {
       return NextResponse.json({
         workspaces: [],
         current: null,
-        licensed: isLicenseActive(),
+        licensed: isOrgLicensed(null),
       });
     }
 
@@ -63,12 +63,16 @@ export async function GET() {
       }
     }
 
+    // License applies to the *current* workspace: the global env switch OR that
+    // org's per-org `licensed` flag. When active the UI hides all
+    // billing/subscription surfaces.
+    const currentOrg =
+      memberships.find((m: any) => m.org.id === current.id)?.org ?? null;
+
     return NextResponse.json({
       workspaces,
       current,
-      // License mode: when active the whole ecosystem is entitled with no Stripe
-      // subscription, so the UI hides all billing/subscription surfaces.
-      licensed: isLicenseActive(),
+      licensed: isOrgLicensed(currentOrg),
     });
   } catch (error) {
     console.error("[Workspaces]", error);

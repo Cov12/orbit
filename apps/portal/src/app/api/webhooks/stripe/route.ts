@@ -6,7 +6,18 @@ import type { AppType, Plan, SubStatus } from "@prisma/client";
 import Stripe from "stripe";
 import { isSubscriptionActive } from "@/lib/entitlements";
 import { postConductorEntitlements } from "@/lib/conductor-entitlements";
-import { isLicenseActive } from "@/lib/license";
+import { isOrgLicensed } from "@/lib/license";
+
+// Effective license for the org this webhook event targets: the global env
+// switch OR the org's per-org `licensed` flag. Under either, a subscription
+// event must never revoke app access.
+async function orgIsLicensed(orgId: string): Promise<boolean> {
+  const org = await db.organization.findUnique({
+    where: { id: orgId },
+    select: { licensed: true },
+  });
+  return isOrgLicensed(org);
+}
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -117,7 +128,8 @@ export async function POST(req: Request) {
           // Conductor rides on Atrium — flip CONDUCTOR AppAccess to mirror parent.
           // Under a term license, keep it enabled regardless of Stripe status.
           if (existing.app === "ATRIUM") {
-            const conductorEnabled = isLicenseActive() || isSubscriptionActive(nextStatus);
+            const conductorEnabled =
+              (await orgIsLicensed(existing.orgId)) || isSubscriptionActive(nextStatus);
             await db.appAccess.upsert({
               where: { orgId_app: { orgId: existing.orgId, app: "CONDUCTOR" } },
               create: { orgId: existing.orgId, app: "CONDUCTOR", enabled: conductorEnabled },
@@ -156,7 +168,7 @@ export async function POST(req: Request) {
 
           // Under a term license, entitlement is granted by the license, not by
           // Stripe — never disable app access in response to a subscription event.
-          if (!isLicenseActive()) {
+          if (!(await orgIsLicensed(existing.orgId))) {
             // Disable app access
             await db.appAccess.updateMany({
               where: { orgId: existing.orgId, app: existing.app },

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { signOrbitToken } from "@/lib/jwt";
 import { getEffectiveAppAccess } from "@/lib/entitlements";
-import { isLicenseActive } from "@/lib/license";
+import { isOrgLicensed } from "@/lib/license";
 import { resolveActiveSubAccountId } from "@/lib/subaccount";
 import { logEntitlementDecision, logTokenExchange } from "@/lib/audit";
 
@@ -137,7 +137,7 @@ export async function GET(req: Request) {
     // Platform admins (OWNER/ADMIN) get access to all apps regardless of subscription
     const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
     // License mode (on-prem/term license) grants full entitlement to every app.
-    const licensed = isLicenseActive();
+    const licensed = isOrgLicensed(org);
     const appAccess = getEffectiveAppAccess(org, isPlatformAdmin, licensed);
 
     if (derivedAud === "conductor" && !appAccess.includes("CONDUCTOR")) {

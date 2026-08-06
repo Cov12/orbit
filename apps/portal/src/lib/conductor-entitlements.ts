@@ -1,10 +1,11 @@
 import { db } from "@/lib/db";
 import { getEffectiveAppAccessEntries } from "@/lib/entitlements";
-import { isLicenseActive } from "@/lib/license";
+import { isOrgLicensed } from "@/lib/license";
 import type { AppType, SubStatus } from "@prisma/client";
 
 type OrgEntitlementSnapshot = {
   id: string;
+  licensed: boolean;
   subscriptions: Array<{ app: AppType; status: SubStatus }>;
   appAccess: Array<{ app: AppType; enabled: boolean }>;
 };
@@ -14,6 +15,7 @@ async function loadOrgEntitlementSnapshot(orgId: string): Promise<OrgEntitlement
     where: { id: orgId },
     select: {
       id: true,
+      licensed: true,
       subscriptions: { select: { app: true, status: true } },
       appAccess: { select: { app: true, enabled: true } },
     },
@@ -39,7 +41,7 @@ export async function postConductorEntitlements(orgId: string): Promise<void> {
     return;
   }
 
-  const appAccess = getEffectiveAppAccessEntries(org, isLicenseActive());
+  const appAccess = getEffectiveAppAccessEntries(org, isOrgLicensed(org));
   if (appAccess.length === 0) {
     console.warn(`[Entitlements Sync] Skipped: effective appAccess empty for ${orgId}`);
     return;

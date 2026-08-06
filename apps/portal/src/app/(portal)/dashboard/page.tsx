@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
 import { getAppEntitlementMap } from "@/lib/entitlements";
-import { isLicenseActive } from "@/lib/license";
+import { isOrgLicensed } from "@/lib/license";
 
 interface DashboardData {
   workspaceName: string;
@@ -71,7 +71,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
 
   const org = member.org;
   const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
-  const licensed = isLicenseActive();
+  const licensed = isOrgLicensed(org);
   // Per-app status from the single unified selector — identical to what the JWT
   // grants (getEffectiveAppAccess). No local subscription/free heuristics here;
   // appAccess.enabled is already kept in sync with subscription state by the
