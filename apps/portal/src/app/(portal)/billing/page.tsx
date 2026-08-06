@@ -129,13 +129,15 @@ export default function BillingPage() {
   const [interval, setInterval] = useState<Interval>("monthly");
   const [workspace, setWorkspace] = useState<CurrentWorkspace | null>(null);
   const [loadingWorkspace, setLoadingWorkspace] = useState(true);
+  const [licensed, setLicensed] = useState(false);
 
-  // Fetch current workspace to check role
+  // Fetch current workspace to check role + license state
   useEffect(() => {
     fetch("/api/workspaces")
       .then((r) => r.json())
       .then((data) => {
         setWorkspace(data.current || null);
+        setLicensed(!!data.licensed);
         setLoadingWorkspace(false);
       })
       .catch(() => setLoadingWorkspace(false));
@@ -169,6 +171,29 @@ export default function BillingPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-[#2B2FFF] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  // License mode: no Stripe subscriptions to manage — show a licensed state
+  // instead of the plans, for every role.
+  if (licensed) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-[#1a1a1f] rounded-xl border border-white/10 p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-[#20B2AA]/10 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-[#20B2AA]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-white mb-2">Licensed</h1>
+          <p className="text-gray-400 mb-2">
+            <span className="text-white font-medium">{workspace?.name || "This workspace"}</span> is fully licensed — every app is included, with no subscription required.
+          </p>
+          <p className="text-gray-500 text-sm">
+            There&apos;s nothing to manage here. Reach out to your administrator with any questions about your license.
+          </p>
         </div>
       </div>
     );

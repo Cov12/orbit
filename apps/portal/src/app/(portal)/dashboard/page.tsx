@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
 import { getAppEntitlementMap } from "@/lib/entitlements";
+import { isLicenseActive } from "@/lib/license";
 
 interface DashboardData {
   workspaceName: string;
@@ -70,11 +71,13 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
 
   const org = member.org;
   const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
+  const licensed = isLicenseActive();
   // Per-app status from the single unified selector — identical to what the JWT
   // grants (getEffectiveAppAccess). No local subscription/free heuristics here;
   // appAccess.enabled is already kept in sync with subscription state by the
-  // Stripe webhook, so deriving from it is what keeps the UI honest.
-  const appStatuses = getAppEntitlementMap(org, isPlatformAdmin);
+  // Stripe webhook, so deriving from it is what keeps the UI honest. `licensed`
+  // must be threaded so the display matches the token under license mode.
+  const appStatuses = getAppEntitlementMap(org, isPlatformAdmin, licensed);
   const conductorOn = appStatuses.CONDUCTOR;
 
   // Find the highest-tier plan name
@@ -93,10 +96,12 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
   return {
     workspaceName: org.name,
     workspaceRole: member.role,
-    plan: bestSub
+    plan: licensed
+      ? "Licensed"
+      : bestSub
       ? `${bestSub.app === "ATRIUM" ? "Atrium" : bestSub.app === "DRIVE" ? "Drive" : "WorkPipe"} ${bestSub.plan.charAt(0) + bestSub.plan.slice(1).toLowerCase()}`
       : "Free",
-    planStatus: trialingSub ? "trialing" : bestSub ? "active" : "none",
+    planStatus: licensed ? "active" : trialingSub ? "trialing" : bestSub ? "active" : "none",
     trialEndsAt: trialingSub?.currentPeriodEnd || null,
     teamCount: org.members.length,
     activeApps: Object.values(appStatuses).filter(Boolean).length,

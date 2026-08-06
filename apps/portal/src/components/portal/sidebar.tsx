@@ -12,13 +12,15 @@ interface NavItem {
   label: string;
   icon: string;
   ownerOnly?: boolean;
+  // Hidden while license mode is active (no subscriptions to manage).
+  licenseHidden?: boolean;
 }
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "◆" },
   { href: "/apps", label: "Apps", icon: "⊞" },
   { href: "/settings/team", label: "Team", icon: "◎" },
-  { href: "/billing", label: "Billing", icon: "◈", ownerOnly: true },
+  { href: "/billing", label: "Billing", icon: "◈", ownerOnly: true, licenseHidden: true },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];
 
@@ -26,20 +28,26 @@ export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [workspaceRole, setWorkspaceRole] = useState<string | null>(null);
+  const [licensed, setLicensed] = useState(false);
 
-  // Fetch current workspace role
+  // Fetch current workspace role + license state
   useEffect(() => {
     fetch("/api/workspaces")
       .then((r) => r.json())
       .then((data) => {
         setWorkspaceRole(data.current?.role || null);
+        setLicensed(!!data.licensed);
       })
       .catch(() => {});
   }, []);
 
   // Filter nav items based on role (OWNER/ADMIN see all, MEMBER sees filtered)
+  // and license mode (hide billing/subscription surfaces when licensed).
   const isOwnerOrAdmin = workspaceRole === "OWNER" || workspaceRole === "ADMIN";
-  const filteredNavItems = navItems.filter((item) => !item.ownerOnly || isOwnerOrAdmin);
+  const filteredNavItems = navItems.filter(
+    (item) =>
+      (!item.ownerOnly || isOwnerOrAdmin) && !(item.licenseHidden && licensed)
+  );
 
   return (
     <aside
