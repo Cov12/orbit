@@ -20,6 +20,7 @@ import { z } from 'zod'
 import { getAuthAdmin, getCurrentUser } from './auth'
 import {
   assertOwnsBusiness,
+  assertOwnsFunnel,
   assertOwnsFunnelPage,
   assertOwnsLane,
   assertOwnsMedia,
@@ -502,13 +503,25 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
   return response
 }
 
-export const getSubaccountDetails = async (subaccountId: string) => {
-  const response = await db.subAccount.findUnique({
+const loadSubaccountDetails = async (subaccountId: string) => {
+  return db.subAccount.findUnique({
     where: {
       id: subaccountId,
     },
   })
-  return response
+}
+
+// Authenticated dashboard read — verifies the caller's org owns the sub-account.
+export const getSubaccountDetails = async (subaccountId: string) => {
+  await assertOwnsSubAccount(subaccountId)
+  return loadSubaccountDetails(subaccountId)
+}
+
+// Unauthenticated read for the PUBLIC live-funnel render path (funnel checkout),
+// where there is no session. Do NOT call from dashboard/server-component code —
+// use getSubaccountDetails there so the ownership guard applies.
+export const getSubaccountDetailsPublic = async (subaccountId: string) => {
+  return loadSubaccountDetails(subaccountId)
 }
 
 export const deleteSubAccount = async (subaccountId: string) => {
@@ -651,8 +664,8 @@ export const getFunnels = async (subacountId: string) => {
   return funnels
 }
 
-export const getFunnel = async (funnelId: string) => {
-  const funnel = await db.funnel.findUnique({
+const loadFunnel = async (funnelId: string) => {
+  return db.funnel.findUnique({
     where: { id: funnelId },
     include: {
       FunnelPages: {
@@ -662,8 +675,19 @@ export const getFunnel = async (funnelId: string) => {
       },
     },
   })
+}
 
-  return funnel
+// Authenticated dashboard read — verifies the caller's org owns the funnel.
+export const getFunnel = async (funnelId: string) => {
+  await assertOwnsFunnel(funnelId)
+  return loadFunnel(funnelId)
+}
+
+// Unauthenticated read for the PUBLIC live-funnel render path (funnel checkout /
+// contact-form elements), where there is no session. Do NOT call from
+// dashboard code — use getFunnel there so the ownership guard applies.
+export const getFunnelPublic = async (funnelId: string) => {
+  return loadFunnel(funnelId)
 }
 
 export const getProfiles = async (subacountId: string) => {
@@ -1266,14 +1290,25 @@ export const deleteFunnelePage = async (funnelPageId: string) => {
   }
 }
 
-export const getFunnelPageDetails = async (funnelPageId: string) => {
-  const response = await db.funnelPage.findUnique({
+const loadFunnelPageDetails = async (funnelPageId: string) => {
+  return db.funnelPage.findUnique({
     where: {
       id: funnelPageId,
     },
   })
+}
 
-  return response
+// Authenticated editor read — verifies the caller's org owns the funnel page.
+export const getFunnelPageDetails = async (funnelPageId: string) => {
+  await assertOwnsFunnelPage(funnelPageId)
+  return loadFunnelPageDetails(funnelPageId)
+}
+
+// Unauthenticated read for the PUBLIC live-funnel render path. The funnel editor
+// component fetches page content in both edit and live mode; live mode has no
+// session, so it calls this variant. Do NOT call from authenticated code paths.
+export const getFunnelPageDetailsPublic = async (funnelPageId: string) => {
+  return loadFunnelPageDetails(funnelPageId)
 }
 
 export const upsertFunnelPage = async (
@@ -1364,16 +1399,31 @@ export const updateFunnelProducts = async (
   return data
 }
 
-export const upsertContact = async (
-  contact: Prisma.ContactUncheckedCreateInput
-) => {
-  await assertOwnsSubAccount(contact.subAccountId)
-  const response = await db.contact.upsert({
+const persistContact = async (contact: Prisma.ContactUncheckedCreateInput) => {
+  return db.contact.upsert({
     where: { id: contact.id || v4() },
     update: contact,
     create: contact,
   })
-  return response
+}
+
+// Authenticated dashboard write — verifies the caller's org owns the sub-account.
+export const upsertContact = async (
+  contact: Prisma.ContactUncheckedCreateInput
+) => {
+  await assertOwnsSubAccount(contact.subAccountId)
+  return persistContact(contact)
+}
+
+// Unguarded write for callers that authorize by other means: the public live
+// funnel contact form (no session — lead capture) and the service-authed
+// /api/internal/contacts route (validateInternalAuth + validateSubAccountForBusiness).
+// Do NOT call from interactive dashboard code — use upsertContact so the
+// session ownership guard applies.
+export const upsertContactUnchecked = async (
+  contact: Prisma.ContactUncheckedCreateInput
+) => {
+  return persistContact(contact)
 }
 
 export const searchContacts = async (
@@ -1405,11 +1455,10 @@ export const getSubAccountContacts = async (subaccountId: string) => {
   return response
 }
 
-export const upsertTicket = async (
+const persistTicket = async (
   ticket: Prisma.TicketUncheckedCreateInput,
   tags: Tag[]
 ) => {
-  await assertOwnsLane(ticket.laneId)
   let order: number
   if (!ticket.order) {
     const tickets = await db.ticket.findMany({
@@ -1439,6 +1488,25 @@ export const upsertTicket = async (
     ...response,
     value: response.value?.toNumber() ?? null,
   }
+}
+
+// Authenticated dashboard write — verifies the caller's org owns the lane.
+export const upsertTicket = async (
+  ticket: Prisma.TicketUncheckedCreateInput,
+  tags: Tag[]
+) => {
+  await assertOwnsLane(ticket.laneId)
+  return persistTicket(ticket, tags)
+}
+
+// Unguarded write for the service-authed /api/internal/tickets route, which
+// already verifies lane→sub-account→business ownership itself. Do NOT call from
+// interactive dashboard code — use upsertTicket so the session guard applies.
+export const upsertTicketUnchecked = async (
+  ticket: Prisma.TicketUncheckedCreateInput,
+  tags: Tag[]
+) => {
+  return persistTicket(ticket, tags)
 }
 
 export const deleteTicket = async (ticketId: string) => {

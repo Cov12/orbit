@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
-import { upsertContact } from '@/lib/queries'
+import { upsertContactUnchecked } from '@/lib/queries'
 import {
   validateInternalAuth,
   validateSubAccountForBusiness,
@@ -24,8 +24,17 @@ export async function GET(request: Request) {
       return errorResponse('subAccountId is required', 'VALIDATION_ERROR', 422)
     }
 
-    if (!Number.isFinite(limit) || !Number.isFinite(offset) || limit < 1 || offset < 0) {
-      return errorResponse('Invalid pagination parameters', 'VALIDATION_ERROR', 422)
+    if (
+      !Number.isFinite(limit) ||
+      !Number.isFinite(offset) ||
+      limit < 1 ||
+      offset < 0
+    ) {
+      return errorResponse(
+        'Invalid pagination parameters',
+        'VALIDATION_ERROR',
+        422
+      )
     }
 
     await validateSubAccountForBusiness(subAccountId, businessId)
@@ -75,7 +84,8 @@ export async function POST(request: Request) {
     const { businessId } = await validateInternalAuth(request)
     const body = await request.json()
 
-    const subAccountId = typeof body.subAccountId === 'string' ? body.subAccountId : ''
+    const subAccountId =
+      typeof body.subAccountId === 'string' ? body.subAccountId : ''
     const name = typeof body.name === 'string' ? body.name.trim() : ''
     const email = typeof body.email === 'string' ? body.email.trim() : ''
 
@@ -89,7 +99,7 @@ export async function POST(request: Request) {
 
     await validateSubAccountForBusiness(subAccountId, businessId)
 
-    const contact = await upsertContact({
+    const contact = await upsertContactUnchecked({
       subAccountId,
       name,
       email,

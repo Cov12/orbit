@@ -11,9 +11,9 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
 import { EditorBtns } from '@/lib/constants'
 import {
-    getFunnel,
-    saveActivityLogsNotification,
-    upsertContact,
+  getFunnelPublic,
+  saveActivityLogsNotification,
+  upsertContactUnchecked,
 } from '@/lib/queries'
 import { ContactUserFormSchema } from '@/lib/types'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
@@ -45,11 +45,11 @@ const ContactFormComponent = (props: Props) => {
 
   const goToNextPage = async () => {
     if (!state.editor.liveMode) return
-    const funnelPages = await getFunnel(funnelId)
+    const funnelPages = await getFunnelPublic(funnelId)
     if (!funnelPages || !pageDetails) return
     if (funnelPages.FunnelPages.length > pageDetails.order + 1) {
       const nextPage = funnelPages.FunnelPages.find(
-        (page) => page.order === pageDetails.order + 1
+        page => page.order === pageDetails.order + 1
       )
       if (!nextPage) return
       router.replace(
@@ -71,7 +71,7 @@ const ContactFormComponent = (props: Props) => {
     if (!state.editor.liveMode) return
 
     try {
-      const response = await upsertContact({
+      const response = await upsertContactUnchecked({
         ...values,
         subAccountId: subaccountId,
       })
@@ -99,22 +99,22 @@ const ContactFormComponent = (props: Props) => {
     <div
       style={styles}
       draggable
-      onDragStart={(e) => handleDragStart(e, 'contactForm')}
+      onDragStart={e => handleDragStart(e, 'contactForm')}
       onClick={handleOnClickBody}
       className={clsx(
-        'p-[2px] w-full m-[5px] relative text-[16px] transition-all flex items-center justify-center',
+        'relative m-[5px] flex w-full items-center justify-center p-[2px] text-[16px] transition-all',
         {
           '!border-blue-500':
             state.editor.selectedElement.id === props.element.id,
 
           '!border-solid': state.editor.selectedElement.id === props.element.id,
-          'border-dashed border-[1px] border-slate-300': !state.editor.liveMode,
+          'border-[1px] border-dashed border-slate-300': !state.editor.liveMode,
         }
       )}
     >
       {state.editor.selectedElement.id === props.element.id &&
         !state.editor.liveMode && (
-          <Badge className="absolute -top-[23px] -left-[1px] rounded-none rounded-t-lg ">
+          <Badge className="absolute -left-[1px] -top-[23px] rounded-none rounded-t-lg">
             {state.editor.selectedElement.name}
           </Badge>
         )}
@@ -125,7 +125,7 @@ const ContactFormComponent = (props: Props) => {
       />
       {state.editor.selectedElement.id === props.element.id &&
         !state.editor.liveMode && (
-          <div className="absolute bg-primary px-2.5 py-1 text-xs font-bold  -top-[25px] -right-[1px] rounded-none rounded-t-lg !text-white">
+          <div className="absolute -right-[1px] -top-[25px] rounded-none rounded-t-lg bg-primary px-2.5 py-1 text-xs font-bold !text-white">
             <Trash
               className="cursor-pointer"
               size={16}

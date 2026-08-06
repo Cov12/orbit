@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
 import { validateInternalAuth } from '@/lib/internal-auth'
-import { upsertTicket } from '@/lib/queries'
+import { upsertTicketUnchecked } from '@/lib/queries'
 
 const errorResponse = (error: string, code: string, status: number) =>
   NextResponse.json({ error, code }, { status })
@@ -17,7 +17,11 @@ export async function POST(request: Request) {
     const name = typeof body.name === 'string' ? body.name.trim() : ''
 
     if (!laneId || !name) {
-      return errorResponse('laneId and name are required', 'VALIDATION_ERROR', 422)
+      return errorResponse(
+        'laneId and name are required',
+        'VALIDATION_ERROR',
+        422
+      )
     }
 
     const lane = await db.lane.findUnique({
@@ -42,7 +46,10 @@ export async function POST(request: Request) {
     }
 
     const tagNames = Array.isArray(body.tags)
-      ? body.tags.filter((t: unknown): t is string => typeof t === 'string' && t.trim().length > 0)
+      ? body.tags.filter(
+          (t: unknown): t is string =>
+            typeof t === 'string' && t.trim().length > 0
+        )
       : []
 
     const tags: Tag[] = tagNames.length
@@ -54,7 +61,7 @@ export async function POST(request: Request) {
         })
       : []
 
-    const ticket = await upsertTicket(
+    const ticket = await upsertTicketUnchecked(
       {
         laneId,
         name,
@@ -67,7 +74,9 @@ export async function POST(request: Request) {
         customerId:
           typeof body.customerId === 'string' ? body.customerId : undefined,
         assignedUserId:
-          typeof body.assignedUserId === 'string' ? body.assignedUserId : undefined,
+          typeof body.assignedUserId === 'string'
+            ? body.assignedUserId
+            : undefined,
       },
       tags
     )
