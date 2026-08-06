@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { getAppEntitlementMap, type AppEntitlementMap } from "@/lib/entitlements";
-import { isLicenseActive } from "@/lib/license";
+import { isOrgLicensed } from "@/lib/license";
 import type { AppType, SubStatus } from "@prisma/client";
 
 export interface CurrentOrgEntitlements {
@@ -64,7 +64,7 @@ export async function getCurrentOrgEntitlements(): Promise<CurrentOrgEntitlement
     orgName: member.org.name,
     role: member.role,
     isPlatformAdmin,
-    appStatus: getAppEntitlementMap(member.org, isPlatformAdmin, isLicenseActive()),
+    appStatus: getAppEntitlementMap(member.org, isPlatformAdmin, isOrgLicensed(member.org)),
     subscriptions: member.org.subscriptions.map((s) => ({
       app: s.app,
       plan: s.plan,

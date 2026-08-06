@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { AdminLogoutButton } from "@/components/admin/logout-button";
 import { AppAccessToggles } from "@/components/admin/app-access-toggles";
+import { LicenseToggle } from "@/components/admin/license-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,7 @@ export default async function AdminDashboardPage() {
               <th className="px-4 py-3 font-medium">Organization</th>
               <th className="px-4 py-3 font-medium">Members</th>
               <th className="px-4 py-3 font-medium">App access</th>
+              <th className="px-4 py-3 font-medium">License</th>
               <th className="px-4 py-3 font-medium">Subscriptions</th>
             </tr>
           </thead>
@@ -69,6 +71,9 @@ export default async function AdminDashboardPage() {
                     }
                   />
                 </td>
+                <td className="px-4 py-3">
+                  <LicenseToggle orgId={org.id} initial={org.licensed} />
+                </td>
                 <td className="px-4 py-3 text-neutral-300">
                   {org.subscriptions.length === 0 ? (
                     <span className="text-neutral-600">Free</span>
@@ -90,7 +95,7 @@ export default async function AdminDashboardPage() {
             {orgs.length === 0 && (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="px-4 py-8 text-center text-neutral-500"
                 >
                   No organizations yet.
@@ -102,8 +107,9 @@ export default async function AdminDashboardPage() {
       </div>
 
       <p className="mt-4 text-xs text-neutral-600">
-        Click an app to toggle access for that org. Changes apply on the org&apos;s
-        next load and are pushed to Conductor immediately.
+        Click an app to toggle access, or toggle License to entitle an org to
+        everything with no subscription. Changes apply on the org&apos;s next load
+        and are pushed to Conductor immediately.
       </p>
     </div>
   );

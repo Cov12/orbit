@@ -42,3 +42,19 @@ export function isLicenseActive(now: Date = new Date()): boolean {
 
   return true;
 }
+
+/**
+ * Effective license for a specific org: the instance-wide env switch
+ * (`isLicenseActive()`, used for standalone/VPS deployments where the whole
+ * instance is licensed) OR the org's own `licensed` flag (super-admin toggle in
+ * shared cloud). Either path fully entitles the org with no subscription.
+ *
+ * Accepts a partial org so callers can pass whatever they've loaded; a missing
+ * `licensed` field degrades safely to the global switch only.
+ */
+export function isOrgLicensed(
+  org: { licensed?: boolean | null } | null | undefined,
+  now: Date = new Date()
+): boolean {
+  return isLicenseActive(now) || !!org?.licensed;
+}

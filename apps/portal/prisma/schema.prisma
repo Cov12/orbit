@@ -12,6 +12,11 @@ model Organization {
   slug          String         @unique
   clerkOrgId    String?        @unique
   logoUrl       String?
+  // Per-org license grant (super-admin toggle). Effective license =
+  // this OR the global ORBIT_LICENSE_MODE env (see lib/license.ts). Lets a
+  // shared-cloud org be licensed without a subscription, independent of the
+  // instance-wide env switch used for standalone/VPS deployments.
+  licensed      Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   members       Member[]
