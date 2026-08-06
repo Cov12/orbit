@@ -13,7 +13,7 @@ import Loading from '@/components/global/loading'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
 import { EditorBtns } from '@/lib/constants'
-import { getFunnel, getSubaccountDetails } from '@/lib/queries'
+import { getFunnelPublic, getSubaccountDetailsPublic } from '@/lib/queries'
 import { getStripe } from '@/lib/stripe/stripe-client'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
 
@@ -33,7 +33,7 @@ const Checkout = (props: Props) => {
   useEffect(() => {
     if (!subaccountId) return
     const fetchData = async () => {
-      const subaccountDetails = await getSubaccountDetails(subaccountId)
+      const subaccountDetails = await getSubaccountDetailsPublic(subaccountId)
       if (subaccountDetails) {
         if (!subaccountDetails.connectAccountId) return
         setSubAccountConnectAccId(subaccountDetails.connectAccountId)
@@ -45,7 +45,7 @@ const Checkout = (props: Props) => {
   useEffect(() => {
     if (funnelId) {
       const fetchData = async () => {
-        const funnelData = await getFunnel(funnelId)
+        const funnelData = await getFunnelPublic(funnelId)
         setLivePrices(JSON.parse(funnelData?.liveProducts || '[]'))
       }
       fetchData()
@@ -111,7 +111,7 @@ const Checkout = (props: Props) => {
 
   const goToNextPage = async () => {
     if (!state.editor.liveMode) return
-    const funnelPages = await getFunnel(funnelId)
+    const funnelPages = await getFunnelPublic(funnelId)
     if (!funnelPages || !pageDetails) return
     if (funnelPages.FunnelPages.length > pageDetails.order + 1) {
       console.log(funnelPages.FunnelPages.length, pageDetails.order + 1)

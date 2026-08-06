@@ -109,6 +109,15 @@ export async function assertOwnsInvoice(invoiceId: string): Promise<void> {
   await assertOwnsSubAccount(inv.subAccountId)
 }
 
+export async function assertOwnsFunnel(funnelId: string): Promise<void> {
+  const f = await db.funnel.findUnique({
+    where: { id: funnelId },
+    select: { subAccountId: true },
+  })
+  if (!f) throw new ForbiddenError()
+  await assertOwnsSubAccount(f.subAccountId)
+}
+
 export async function assertOwnsFunnelPage(
   funnelPageId: string
 ): Promise<void> {
