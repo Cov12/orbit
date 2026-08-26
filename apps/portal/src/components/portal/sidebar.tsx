@@ -20,6 +20,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "◆" },
   { href: "/apps", label: "Apps", icon: "⊞" },
   { href: "/settings/team", label: "Team", icon: "◎" },
+  { href: "/settings/subaccounts", label: "Sub-accounts", icon: "⧉" },
   { href: "/billing", label: "Billing", icon: "◈", ownerOnly: true, licenseHidden: true },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];
