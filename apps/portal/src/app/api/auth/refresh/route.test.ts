@@ -110,6 +110,17 @@ describe('GET /api/auth/refresh — aud derivation from redirect_uri origin', ()
     expect(res.status).toBe(400);
   });
 
+  it('malformed redirect_uri → 400 Invalid redirect_uri, not a 500', async () => {
+    // Regression: `new URL(redirectUri)` used to run outside the try/catch, so a
+    // syntactically invalid redirect_uri surfaced as an unhandled 500 instead of
+    // a plain 400. Parsing now happens inside its own try.
+    const { GET } = await import('./route');
+    const res = await GET(makeReq('http://[bad'));
+
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toEqual({ error: 'Invalid redirect_uri' });
+  });
+
   it('allowlisted ATRIUM origin → JWT does NOT carry aud=conductor', async () => {
     const { GET } = await import('./route');
     const res = await GET(makeReq(`${ATRIUM_URL}/atrium/auth/callback`));
