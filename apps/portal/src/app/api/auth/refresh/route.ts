@@ -7,6 +7,7 @@ import { getEffectiveAppAccess } from "@/lib/entitlements";
 import { isOrgLicensed } from "@/lib/license";
 import { resolveActiveSubAccountId } from "@/lib/subaccount";
 import { logEntitlementDecision, logTokenExchange } from "@/lib/audit";
+import { ALLOWED_ORIGINS } from "@/lib/return-to";
 
 /**
  * GET /api/auth/refresh?redirect_uri=<url>
@@ -33,19 +34,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Missing redirect_uri" }, { status: 400 });
   }
 
-  // Validate redirect_uri is a known app domain (security: prevent open redirect)
-  const allowedOrigins = [
-    process.env.NEXT_PUBLIC_WORKPIPE_URL,
-    process.env.NEXT_PUBLIC_DRIVE_URL,
-    process.env.NEXT_PUBLIC_ATRIUM_URL,
-    process.env.NEXT_PUBLIC_CONDUCTOR_URL,
-    process.env.NEXT_PUBLIC_APP_URL,
-  ].filter((u): u is string => Boolean(u)).map((u) => new URL(u).origin);
+  // Validate redirect_uri is a known app domain (security: prevent open redirect).
+  // ALLOWED_ORIGINS is the shared source of truth — see src/lib/return-to.ts.
+  // Parsing stays inside a try so a malformed redirect_uri is a 400, not a 500.
+  let redirectOrigin: string;
+  try {
+    redirectOrigin = new URL(redirectUri).origin;
+  } catch {
+    return NextResponse.json({ error: "Invalid redirect_uri" }, { status: 400 });
+  }
 
-  const redirectOrigin = new URL(redirectUri).origin;
-  const isAllowed = allowedOrigins.includes(redirectOrigin);
-
-  if (!isAllowed) {
+  if (!ALLOWED_ORIGINS.includes(redirectOrigin)) {
     return NextResponse.json({ error: "Invalid redirect_uri" }, { status: 400 });
   }
 
