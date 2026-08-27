@@ -6,7 +6,8 @@ import BlurPage from '@/components/global/blur-page'
 import InfoBar from '@/components/global/infobar'
 import Sidebar from '@/components/sidebar'
 import Unauthorized from '@/components/unauthorized'
-import { requireAuth } from '@/lib/auth'
+import { getAuthContext, requireAuth } from '@/lib/auth'
+import { ForbiddenError } from '@/lib/authz'
 import {
   getAuthUserDetails,
   getNotificationAndUser,
@@ -42,8 +43,31 @@ const layout = async ({ children, params }: Props) => {
     return <Unauthorized />
 
   let allNoti: any = []
-  const notifications = await getNotificationAndUser(businessId)
-  if (notifications) allNoti = notifications
+  try {
+    const notifications = await getNotificationAndUser(businessId)
+    if (notifications) allNoti = notifications
+  } catch (error) {
+    // `getNotificationAndUser` runs `assertOwnsBusiness`, which throws when the
+    // session's org differs from the business this page resolved to (a stale
+    // link, or a workspace just switched in Portal). That's an expected state,
+    // not a crash — handle it here, server-side, where the error is still
+    // typed. Next.js scrubs error messages in production, so a client
+    // `error.tsx` could never tell this case apart from a real bug.
+    // `instanceof` plus the `name` discriminant so bundling can't defeat it.
+    const isForbidden =
+      error instanceof ForbiddenError ||
+      (error as Error | null)?.name === 'ForbiddenError'
+    if (!isForbidden) throw error
+
+    // Send them to their own active business — but only when that actually
+    // moves them somewhere else, otherwise we'd redirect to this same URL and
+    // loop.
+    const { orgId } = await getAuthContext()
+    if (orgId && orgId !== businessIdParam) {
+      return redirect(`/business/${orgId}`)
+    }
+    return <Unauthorized />
+  }
 
   return (
     <div className="h-screen overflow-hidden">
