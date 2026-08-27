@@ -46,7 +46,24 @@ async function provisionBusinessFromPortal(
       where: { id: orgId },
       select: { id: true },
     })
-    if (existing) return
+
+    if (existing) {
+      // Attach the user to the org whose token they just authenticated with.
+      // `User.businessId` is a single nullable FK (no membership table), so it
+      // *is* the user's active workspace. Provisioning used to early-return
+      // here, leaving businessId pinned to whichever org's Business row was
+      // created last, while the JWT `org_id` follows Portal's active
+      // workspace — the two diverged and `assertOwnsBusiness` 500'd the
+      // business page. Re-pointing it on every callback makes re-launching
+      // WorkPipe from Portal switch the active workspace. The business was
+      // seeded with its SidebarOptions when created, and the sidebar reads
+      // `user.Business.SidebarOption`, so the links follow automatically.
+      await db.user.update({
+        where: { email },
+        data: { businessId: orgId },
+      })
+      return
+    }
 
     const portalUrl =
       process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'
@@ -62,6 +79,7 @@ async function provisionBusinessFromPortal(
         state: '',
         zipCode: '',
         country: '',
+        // Also points User.businessId at this org (the active-workspace FK).
         users: { connect: { email } },
         SidebarOption: {
           create: [
