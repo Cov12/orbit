@@ -13,6 +13,7 @@ import {
   getNotificationAndUser,
   verifyAndAcceptInvitation,
 } from '@/lib/queries'
+import { syncSubAccountsFromPortal } from '@/lib/subaccount-sync'
 
 // Force dynamic rendering to support Clerk's headers access in Next.js 15
 export const dynamic = 'force-dynamic'
@@ -26,6 +27,11 @@ const layout = async ({ children, params }: Props) => {
   const { businessId: businessIdParam } = await params
   const businessId = await verifyAndAcceptInvitation()
   const user = await requireAuth().catch(() => null)
+  // Re-pull Portal sub-accounts before reading the user's business, so ones
+  // created in Portal after this session started show up in the Sidebar
+  // switcher (which renders off `userDetails`) without clearing the cookie.
+  // Throttled + deduped, so this is a no-op on most loads.
+  await syncSubAccountsFromPortal()
   const userDetails = await getAuthUserDetails()
 
   if (!user) {
