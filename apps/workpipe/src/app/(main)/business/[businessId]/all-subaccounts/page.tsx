@@ -23,6 +23,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { getAuthUserDetails } from '@/lib/queries'
+import { syncSubAccountsFromPortal } from '@/lib/subaccount-sync'
 
 import CreateSubaccountButton from './_components/create-subaccount-btn'
 import DeleteButton from './_components/delete-button'
@@ -33,6 +34,10 @@ type Props = {
 
 const AllSubaccountsPage = async ({ params }: Props) => {
   const { businessId } = await params
+  // Same re-pull as the layout — repeated here so the list below is guaranteed
+  // to query `user.Business.SubAccount` after the sync, not alongside it. The
+  // TTL + in-flight dedupe makes the second call free.
+  await syncSubAccountsFromPortal()
   const user = await getAuthUserDetails()
   if (!user) return
 
