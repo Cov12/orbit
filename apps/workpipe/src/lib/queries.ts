@@ -695,6 +695,7 @@ export const getFunnelPublic = async (funnelId: string) => {
 }
 
 export const getProfiles = async (subacountId: string) => {
+  await assertOwnsSubAccount(subacountId)
   const profiles = await db.profile.findMany({
     where: { subAccountId: subacountId },
     include: { ProfilePages: true },
@@ -718,6 +719,7 @@ export const createMedia = async (
   subaccountId: string,
   mediaFile: CreateMediaType
 ) => {
+  await assertOwnsSubAccount(subaccountId)
   const response = await db.media.create({
     data: {
       link: mediaFile.link,
@@ -891,6 +893,7 @@ export const markInvoiceSent = async (
   subaccountId: string,
   invoiceId: string
 ) => {
+  await assertOwnsSubAccount(subaccountId)
   const existing = await db.invoice.findFirst({
     where: { id: invoiceId, subAccountId: subaccountId },
     select: { id: true, link: true, status: true },
@@ -937,6 +940,7 @@ export const sendInvoiceEmail = async (
   invoiceId: string,
   recipientEmail: string
 ) => {
+  await assertOwnsSubAccount(subaccountId)
   const to = recipientEmail.trim()
   if (!EMAIL_RE.test(to)) throw new Error('INVALID_EMAIL')
 
@@ -1074,6 +1078,7 @@ export const sendInvitation = async (
   email: string,
   businessId: string
 ) => {
+  await assertOwnsBusiness(businessId)
   // First, check if there's an existing invitation in our database
   const existingInvitation = await db.invitation.findUnique({
     where: { email },
@@ -1429,6 +1434,7 @@ export const updateFunnelProducts = async (
   products: string,
   funnelId: string
 ) => {
+  await assertOwnsFunnel(funnelId)
   const data = await db.funnel.update({
     where: { id: funnelId },
     data: { liveProducts: products },
@@ -1467,6 +1473,7 @@ export const searchContacts = async (
   subAccountId: string,
   searchTerms = ''
 ) => {
+  await assertOwnsSubAccount(subAccountId)
   try {
     const response = await db.contact.findMany({
       where: {
