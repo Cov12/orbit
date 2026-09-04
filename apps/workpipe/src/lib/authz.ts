@@ -1,5 +1,7 @@
 import 'server-only'
 
+import type { Role } from '@prisma/client'
+
 import { getAuthContext } from './auth'
 import { db } from './db'
 
@@ -127,4 +129,103 @@ export async function assertOwnsFunnelPage(
   })
   if (!fp) throw new ForbiddenError()
   await assertOwnsSubAccount(fp.Funnel.subAccountId)
+}
+
+// ---------------------------------------------------------------------------
+// User-management guards (#44 PR-B).
+//
+// User administration is privileged: the caller must be an owner/admin of the
+// business (the Portal role claim), and the target must belong to that same
+// business. The Portal role claim is OWNER/ADMIN/MEMBER; the WorkPipe User.role
+// is a separate enum (BUSINESS_OWNER/…).
+// ---------------------------------------------------------------------------
+
+/** The caller's business id, requiring an owner/admin role, or throw. */
+async function requireBusinessAdmin(): Promise<string> {
+  const { orgId, role } = await getAuthContext()
+  if (!orgId) throw new ForbiddenError('Not authenticated')
+  if (role !== 'OWNER' && role !== 'ADMIN') {
+    throw new ForbiddenError('Requires business owner or admin')
+  }
+  return orgId
+}
+
+/** Assert the caller (owner/admin) manages the target user's business. */
+export async function assertManagesUser(userId: string): Promise<void> {
+  const orgId = await requireBusinessAdmin()
+  const u = await db.user.findUnique({
+    where: { id: userId },
+    select: { businessId: true },
+  })
+  if (!u || u.businessId !== orgId) throw new ForbiddenError()
+}
+
+/**
+ * Authorize an updateUser call. A user may edit their OWN record; editing any
+ * other user requires admin. A role change requires admin, and promotion to
+ * BUSINESS_OWNER requires the caller to be an owner. `nextRole` is the role in
+ * the update payload (undefined if unchanged/absent); it only gates when it
+ * actually differs from the target's current role.
+ */
+export async function assertCanUpdateUser(
+  targetEmail: string,
+  nextRole: Role | undefined
+): Promise<void> {
+  const { userId, orgId, role } = await getAuthContext()
+  if (!orgId) throw new ForbiddenError('Not authenticated')
+  const target = await db.user.findUnique({
+    where: { email: targetEmail },
+    select: { id: true, businessId: true, role: true },
+  })
+  if (!target || target.businessId !== orgId) throw new ForbiddenError()
+
+  const isAdmin = role === 'OWNER' || role === 'ADMIN'
+  const isSelf = target.id === userId
+  if (!isSelf && !isAdmin) throw new ForbiddenError()
+
+  if (nextRole !== undefined && nextRole !== target.role) {
+    if (!isAdmin) throw new ForbiddenError('Only an admin can change a role')
+    if (nextRole === 'BUSINESS_OWNER' && role !== 'OWNER') {
+      throw new ForbiddenError('Only an owner can grant owner')
+    }
+  }
+}
+
+/**
+ * Authorize a sub-account permission grant (owner/admin only). Guards the
+ * sub-account being granted, and — on the update path — the existing row's
+ * sub-account too, so a foreign permission row can't be flipped by id.
+ */
+export async function assertCanManagePermissions(
+  subAccountId: string,
+  permissionId?: string
+): Promise<void> {
+  await requireBusinessAdmin()
+  await assertOwnsSubAccount(subAccountId)
+  if (permissionId) {
+    const p = await db.permissions.findUnique({
+      where: { id: permissionId },
+      select: { subAccountId: true },
+    })
+    if (p) await assertOwnsSubAccount(p.subAccountId)
+  }
+}
+
+/**
+ * Authorize an upsertSubAccount call: the caller must own the target business,
+ * and if a sub-account with this id already exists it must already belong to
+ * that business (no cross-business hijack/move by reusing an id).
+ */
+export async function assertCanUpsertSubAccount(
+  subAccountId: string,
+  businessId: string
+): Promise<void> {
+  await assertOwnsBusiness(businessId)
+  const existing = await db.subAccount.findUnique({
+    where: { id: subAccountId },
+    select: { businessId: true },
+  })
+  if (existing && existing.businessId !== businessId) {
+    throw new ForbiddenError()
+  }
 }

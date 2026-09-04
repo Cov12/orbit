@@ -7,7 +7,7 @@ vi.mock('./auth', () => ({
   getAuthContext: vi.fn().mockResolvedValue({
     orgId: 'biz-A',
     userId: 'user-1',
-    role: 'BUSINESS_OWNER',
+    role: 'ADMIN',
   }),
   getAuthAdmin: vi.fn(),
   getCurrentUser: vi.fn(),
@@ -18,6 +18,16 @@ vi.mock('./db', () => ({
       findUnique: vi.fn().mockResolvedValue({ businessId: 'biz-B' }),
     },
     funnel: { findUnique: vi.fn().mockResolvedValue({ subAccountId: 'sa-1' }) },
+    user: {
+      findUnique: vi.fn().mockResolvedValue({
+        id: 'u-other',
+        businessId: 'biz-B',
+        role: 'SUBACCOUNT_USER',
+      }),
+    },
+    permissions: {
+      findUnique: vi.fn().mockResolvedValue({ subAccountId: 'sa-foreign' }),
+    },
   },
 }))
 vi.mock('./mailer', () => ({ sendMail: vi.fn() }))
@@ -28,13 +38,19 @@ vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
 
 import { ForbiddenError } from './authz'
 import {
+  changeUserPermissions,
   createMedia,
+  deleteUser,
   getProfiles,
+  getUser,
+  getUserPermissions,
   markInvoiceSent,
   searchContacts,
   sendInvitation,
   sendInvoiceEmail,
   updateFunnelProducts,
+  updateUser,
+  upsertSubAccount,
 } from './queries'
 
 const rejectsForbidden = (p: Promise<unknown>) =>
@@ -65,5 +81,29 @@ describe('PR-A ownership guards — foreign id is rejected', () => {
   it('sendInvitation', () =>
     rejectsForbidden(
       sendInvitation('BUSINESS_ADMIN' as never, 'a@b.com', 'biz-B')
+    ))
+})
+
+describe('PR-B user-management guards — foreign/unauthorized is rejected', () => {
+  it('getUser', () => rejectsForbidden(getUser('u-foreign')))
+
+  it('getUserPermissions', () =>
+    rejectsForbidden(getUserPermissions('u-foreign')))
+
+  it('deleteUser', () => rejectsForbidden(deleteUser('u-foreign')))
+
+  it('updateUser (foreign-business target)', () =>
+    rejectsForbidden(
+      updateUser({ email: 'foreign@x.com', name: 'x' } as never)
+    ))
+
+  it('changeUserPermissions', () =>
+    rejectsForbidden(
+      changeUserPermissions(undefined, 'u@x.com', 'sa-foreign', true)
+    ))
+
+  it('upsertSubAccount', () =>
+    rejectsForbidden(
+      upsertSubAccount({ id: 'sa-1', businessId: 'biz-B' } as never)
     ))
 })
