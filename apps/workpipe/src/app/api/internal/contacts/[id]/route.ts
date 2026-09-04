@@ -92,8 +92,10 @@ export async function PATCH(
       updateData.name = body.name.trim()
     }
 
+    // Normalize the same way persistContact does, so the dedupe match key
+    // (subAccountId + lower-cased email) stays consistent across write paths.
     if (typeof body.email === 'string' && body.email.trim()) {
-      updateData.email = body.email.trim()
+      updateData.email = body.email.trim().toLowerCase()
     }
 
     if (!Object.keys(updateData).length) {

@@ -1460,12 +1460,52 @@ export const updateFunnelProducts = async (
   return data
 }
 
+/**
+ * Canonical form of a contact email for matching and storage: trimmed and
+ * lower-cased, with a blank value collapsed to `undefined`.
+ */
+const normalizeEmail = (email?: string | null): string | undefined => {
+  const normalized = email?.trim().toLowerCase()
+  return normalized ? normalized : undefined
+}
+
+/**
+ * Shared contact write path.
+ *
+ * `Contact` has no unique key on (subAccountId, email) — and prod may already
+ * hold duplicates — so dedupe happens here in application code: with no id
+ * supplied we look for an existing contact in the same sub-account whose email
+ * matches case-insensitively and update that one in place, instead of the old
+ * `where: { id: contact.id || v4() }` upsert which always created a new row.
+ */
 const persistContact = async (contact: Prisma.ContactUncheckedCreateInput) => {
-  return db.contact.upsert({
-    where: { id: contact.id || v4() },
-    update: contact,
-    create: contact,
-  })
+  const email = normalizeEmail(contact.email)
+  const data = { ...contact, ...(email !== undefined && { email }) }
+
+  // Explicit id: caller knows the row it means — keep upsert-by-id behaviour.
+  if (contact.id) {
+    return db.contact.upsert({
+      where: { id: contact.id },
+      update: data,
+      create: data,
+    })
+  }
+
+  if (email) {
+    const existing = await db.contact.findFirst({
+      where: {
+        subAccountId: contact.subAccountId,
+        email: { equals: email, mode: 'insensitive' },
+      },
+      select: { id: true },
+    })
+
+    if (existing) {
+      return db.contact.update({ where: { id: existing.id }, data })
+    }
+  }
+
+  return db.contact.create({ data })
 }
 
 // Authenticated dashboard write — verifies the caller's org owns the sub-account.
