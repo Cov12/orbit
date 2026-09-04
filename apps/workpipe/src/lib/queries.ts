@@ -19,6 +19,10 @@ import { z } from 'zod'
 
 import { getAuthAdmin, getCurrentUser } from './auth'
 import {
+  assertCanManagePermissions,
+  assertCanUpdateUser,
+  assertCanUpsertSubAccount,
+  assertManagesUser,
   assertOwnsBusiness,
   assertOwnsFunnel,
   assertOwnsFunnelPage,
@@ -97,7 +101,11 @@ export const initUser = async (newUser: Partial<User>) => {
   return userData
 }
 
-export const createTeamUser = async (businessId: string, user: User) => {
+// Internal only — NOT a server action. The single caller is
+// verifyAndAcceptInvitation, which runs as the invited user (not a business
+// owner), so this must stay unguarded; exposing it would let anyone mint a user
+// into any business (#44).
+const createTeamUserUnchecked = async (businessId: string, user: User) => {
   if (user.role === 'BUSINESS_OWNER') return null
   const response = await db.user.create({ data: { ...user } })
   return response
@@ -123,16 +131,19 @@ export const verifyAndAcceptInvitation = async () => {
   })
 
   if (invitationExists) {
-    const userDetails = await createTeamUser(invitationExists.businessId, {
-      email: invitationExists.email,
-      businessId: invitationExists.businessId,
-      avatarUrl: user.avatar,
-      id: user.id,
-      name: user.name,
-      role: invitationExists.role,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
+    const userDetails = await createTeamUserUnchecked(
+      invitationExists.businessId,
+      {
+        email: invitationExists.email,
+        businessId: invitationExists.businessId,
+        avatarUrl: user.avatar,
+        id: user.id,
+        name: user.name,
+        role: invitationExists.role,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    )
     await saveActivityLogsNotification({
       businessId: invitationExists?.businessId,
       description: `Joined`,
@@ -388,6 +399,7 @@ export const mintPortalSubAccountId = async (name: string): Promise<string> => {
 }
 
 export const upsertSubAccount = async (subAccount: SubAccount) => {
+  await assertCanUpsertSubAccount(subAccount.id, subAccount.businessId)
   if (!subAccount.companyEmail) {
     console.error(
       '[upsertSubAccount] missing companyEmail for subaccount',
@@ -560,6 +572,7 @@ export const getSubAccountTeamMembers = async (subaccountId: string) => {
 }
 
 export const getUserPermissions = async (userId: string) => {
+  await assertManagesUser(userId)
   const response = await db.user.findUnique({
     where: { id: userId },
     select: { Permissions: { include: { SubAccount: true } } },
@@ -569,6 +582,7 @@ export const getUserPermissions = async (userId: string) => {
 }
 
 export const getUser = async (id: string) => {
+  await assertManagesUser(id)
   const user = await db.user.findUnique({
     where: {
       id,
@@ -579,6 +593,7 @@ export const getUser = async (id: string) => {
 }
 
 export const deleteUser = async (userId: string) => {
+  await assertManagesUser(userId)
   const client = await getAuthAdmin()
   await client.users.updateUserMetadata(userId, {
     privateMetadata: {
@@ -595,6 +610,8 @@ export const updateUser = async (user: Partial<User>) => {
     console.error('[updateUser] missing email in payload — skipping', user)
     return null
   }
+
+  await assertCanUpdateUser(user.email, user.role)
 
   // Only touch the columns this form owns — never spread id/timestamps/FKs.
   // Guards against the empty-payload 500 (`update({ where:{email:undefined},
@@ -629,6 +646,7 @@ export const changeUserPermissions = async (
   subAccountId: string,
   permission: boolean
 ) => {
+  await assertCanManagePermissions(subAccountId, permissionId)
   try {
     const response = await db.permissions.upsert({
       where: { id: permissionId },
