@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Contact } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -30,15 +31,20 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { toast } from '../ui/use-toast'
 
-
-
 interface ContactUserFormProps {
   subaccountId: string
+  /** Existing contact when editing; falls back to the modal payload. */
+  contact?: Contact
 }
 
-const ContactUserForm: React.FC<ContactUserFormProps> = ({ subaccountId }) => {
+const ContactUserForm: React.FC<ContactUserFormProps> = ({
+  subaccountId,
+  contact,
+}) => {
   const { setClose, data } = useModal()
   const router = useRouter()
+  // The contact being edited, if any — passed as a prop or via the modal.
+  const existingContact = contact ?? data.contact
   const form = useForm<z.infer<typeof ContactUserFormSchema>>({
     mode: 'onChange',
     resolver: zodResolver(ContactUserFormSchema),
@@ -49,10 +55,10 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({ subaccountId }) => {
   })
 
   useEffect(() => {
-    if (data.contact) {
-      form.reset(data.contact)
+    if (existingContact) {
+      form.reset(existingContact)
     }
-  }, [data, form.reset])
+  }, [existingContact, form.reset])
 
   const isLoading = form.formState.isLoading
 
@@ -61,6 +67,9 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({ subaccountId }) => {
   ) => {
     try {
       const response = await upsertContact({
+        // Carry the id when editing, otherwise the save would create a
+        // second contact instead of updating this one.
+        ...(existingContact?.id && { id: existingContact.id }),
         email: values.email,
         subAccountId: subaccountId,
         name: values.name,
@@ -86,7 +95,7 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({ subaccountId }) => {
   }
 
   return (
-    <Card className=" w-full">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Contact Info</CardTitle>
         <CardDescription>
@@ -108,10 +117,7 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({ subaccountId }) => {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Name"
-                      {...field}
-                    />
+                    <Input placeholder="Name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -125,22 +131,14 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({ subaccountId }) => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="Email"
-                      {...field}
-                    />
+                    <Input type="email" placeholder="Email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <Button
-              className="mt-4"
-              disabled={isLoading}
-              type="submit"
-            >
+            <Button className="mt-4" disabled={isLoading} type="submit">
               {form.formState.isSubmitting ? (
                 <Loading />
               ) : (
