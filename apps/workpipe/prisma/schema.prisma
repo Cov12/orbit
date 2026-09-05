@@ -127,6 +127,7 @@ model SubAccount {
   Profiles         Profile[]
   Media            Media[]
   Contact          Contact[]
+  ContactSubmission ContactSubmission[]
   Trigger          Trigger[]
   Automation       Automation[]
   Pipeline         Pipeline[]
@@ -153,6 +154,7 @@ model Tag {
 
   SubAccount SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
   Ticket     Ticket[]
+  Contact    Contact[]
 
   @@index([subAccountId])
 }
@@ -292,9 +294,54 @@ model Contact {
   updatedAt    DateTime @updatedAt
   subAccountId String
 
-  Subaccount      SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
-  Ticket          Ticket[]
-  CalendarEvent   CalendarEvent[]
+  // Identity (additive, nullable)
+  firstName   String?
+  lastName    String?
+  phone       String?
+  companyName String?
+
+  // Address / locale
+  address1   String?
+  address2   String?
+  city       String?
+  state      String?
+  postalCode String?
+  country    String?
+  timezone   String?
+  website    String?
+
+  // CRM / ownership (loose strings for now; formalize later)
+  assignedUserId String?
+  status         String?
+  source         String?
+  sourceType     String?
+
+  // Current attribution snapshot
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmTerm        String?
+  utmContent     String?
+  referrerUrl    String?
+  landingPageUrl String?
+  sourceFormId   String?
+  sourceFormName String?
+
+  // Activity / operational context
+  firstSeenAt     DateTime?
+  lastSeenAt      DateTime?
+  lastSubmittedAt DateTime?
+  ipAddress       String?
+  userAgent       String?
+
+  // Flexible extension
+  customFields Json?
+
+  Subaccount    SubAccount          @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+  Ticket        Ticket[]
+  CalendarEvent CalendarEvent[]
+  Submissions   ContactSubmission[]
+  Tags          Tag[]
 
   @@index([subAccountId])
 }
@@ -642,4 +689,32 @@ model CalendarEvent {
   @@index([contactId])
   @@index([start, end])
   @@index([externalId, provider])
+}
+
+model ContactSubmission {
+  id             String   @id @default(uuid())
+  contactId      String
+  subAccountId   String
+  formId         String?
+  formName       String?
+  submissionType String?
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmTerm        String?
+  utmContent     String?
+  referrerUrl    String?
+  landingPageUrl String?
+  ipAddress      String?
+  userAgent      String?
+  rawPayload     Json?
+  isFirstTouch   Boolean  @default(false)
+  isLastTouch    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  Contact    Contact    @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  SubAccount SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([subAccountId])
 }
