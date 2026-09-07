@@ -1,5 +1,7 @@
 'use server'
 
+import { randomBytes } from 'crypto'
+
 import {
   Business,
   Lane,
@@ -34,6 +36,7 @@ import {
   assertOwnsTag,
   assertOwnsTicket,
 } from './authz'
+import { normalizeEmail } from './contact-normalize'
 import { db } from './db'
 import { computeInvoiceTotals } from './invoice-totals'
 import { sendMail } from './mailer'
@@ -1461,15 +1464,6 @@ export const updateFunnelProducts = async (
 }
 
 /**
- * Canonical form of a contact email for matching and storage: trimmed and
- * lower-cased, with a blank value collapsed to `undefined`.
- */
-const normalizeEmail = (email?: string | null): string | undefined => {
-  const normalized = email?.trim().toLowerCase()
-  return normalized ? normalized : undefined
-}
-
-/**
  * Shared contact write path.
  *
  * `Contact` has no unique key on (subAccountId, email) — and prod may already
@@ -1556,6 +1550,31 @@ export const getSubAccountContacts = async (subaccountId: string) => {
   })
 
   return response
+}
+
+/**
+ * Mint a public lead-capture form for a sub-account (issue #54 phase 3).
+ *
+ * The returned `key` is the opaque handle in /api/forms/[formKey]/submit — it
+ * is the only thing a public form embeds, and the ingest endpoint resolves the
+ * owning sub-account from the row rather than trusting the request body. There
+ * is no form-builder UI yet; this action is how forms are minted for now.
+ */
+export const createLeadForm = async (
+  subAccountId: string,
+  name: string,
+  funnelId?: string
+) => {
+  await assertOwnsSubAccount(subAccountId)
+
+  return db.leadForm.create({
+    data: {
+      key: randomBytes(24).toString('base64url'),
+      name,
+      subAccountId,
+      ...(funnelId ? { funnelId } : {}),
+    },
+  })
 }
 
 const persistTicket = async (
