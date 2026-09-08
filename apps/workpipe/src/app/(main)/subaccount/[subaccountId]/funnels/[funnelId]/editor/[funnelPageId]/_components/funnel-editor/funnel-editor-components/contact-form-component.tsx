@@ -23,7 +23,8 @@ type Props = {
 }
 
 const ContactFormComponent = (props: Props) => {
-  const { dispatch, state, subaccountId, funnelId, pageDetails } = useEditor()
+  const { dispatch, state, subaccountId, funnelId, pageDetails, leadFormKey } =
+    useEditor()
   const router = useRouter()
 
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
@@ -66,11 +67,72 @@ const ContactFormComponent = (props: Props) => {
   }
 
   const onFormSubmit = async (
-    values: z.infer<typeof ContactUserFormSchema>
+    values: z.infer<typeof ContactUserFormSchema>,
+    honeypot?: string
   ) => {
     if (!state.editor.liveMode) return
 
+    // Read attribution inside the handler, not at render — `window` and
+    // `document` do not exist while this component is server-rendered.
+    const sp = new URLSearchParams(window.location.search)
+    const utm = {
+      source: sp.get('utm_source') || undefined,
+      medium: sp.get('utm_medium') || undefined,
+      campaign: sp.get('utm_campaign') || undefined,
+      term: sp.get('utm_term') || undefined,
+      content: sp.get('utm_content') || undefined,
+    }
+    const referrerUrl = document.referrer || undefined
+    const landingPageUrl = window.location.href
+
     try {
+      if (leadFormKey) {
+        // Public ingest path (issue #54 phase 4a): the endpoint resolves the
+        // sub-account from the form key, so nothing here is trusted.
+        const res = await fetch(`/api/forms/${leadFormKey}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: values.name,
+            email: values.email,
+            utm,
+            referrerUrl,
+            landingPageUrl,
+            website_url: honeypot,
+          }),
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+          toast({
+            variant: 'destructive',
+            title: 'Failed',
+            description: 'Could not save your information',
+          })
+          return
+        }
+
+        toast({
+          title: 'Success',
+          description: 'Successfully Saved your info',
+        })
+        await saveActivityLogsNotification({
+          businessId: undefined,
+          description: `A New contact signed up | ${values.name}`,
+          subaccountId: subaccountId,
+        })
+
+        // A form-level redirect wins over the funnel's next page.
+        if (data?.redirectUrl) {
+          router.replace(data.redirectUrl)
+        } else {
+          await goToNextPage()
+        }
+        return
+      }
+
+      // Provisioning failed (leadFormKey is null) — keep the funnel form
+      // working via the legacy direct contact write.
       const response = await upsertContactUnchecked({
         ...values,
         subAccountId: subaccountId,
