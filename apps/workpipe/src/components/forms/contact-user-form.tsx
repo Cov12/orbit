@@ -29,6 +29,7 @@ import { useModal } from '@/providers/modal-provider'
 import Loading from '../global/loading'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
+import { Textarea } from '../ui/textarea'
 import { toast } from '../ui/use-toast'
 
 interface ContactUserFormProps {
@@ -51,12 +52,25 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({
     defaultValues: {
       name: '',
       email: '',
+      phone: '',
+      companyName: '',
+      message: '',
     },
   })
 
   useEffect(() => {
     if (existingContact) {
-      form.reset(existingContact)
+      // Mapped field by field rather than spread: the Contact row stores the
+      // optional columns as null, which the form's string fields reject.
+      // `message` lives in customFields, so it starts blank on every edit and
+      // is only written when the user actually types one.
+      form.reset({
+        name: existingContact.name,
+        email: existingContact.email,
+        phone: existingContact.phone ?? '',
+        companyName: existingContact.companyName ?? '',
+        message: '',
+      })
     }
   }, [existingContact, form.reset])
 
@@ -73,6 +87,10 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({
         email: values.email,
         subAccountId: subaccountId,
         name: values.name,
+        phone: values.phone || undefined,
+        companyName: values.companyName || undefined,
+        // No `message` column — it rides along in the customFields Json.
+        customFields: values.message ? { message: values.message } : undefined,
       })
       await saveActivityLogsNotification({
         businessId: undefined,
@@ -132,6 +150,52 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="Email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              disabled={isLoading}
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="tel"
+                      placeholder="Phone (optional)"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              disabled={isLoading}
+              control={form.control}
+              name="companyName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Company (optional)" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              disabled={isLoading}
+              control={form.control}
+              name="message"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Message</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Message (optional)" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

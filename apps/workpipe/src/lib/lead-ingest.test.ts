@@ -182,6 +182,47 @@ describe('contact dedupe', () => {
   })
 })
 
+describe('richer capture fields (issue #54 phase 4b)', () => {
+  it('persists phone, companyName and the message customField onto the contact', async () => {
+    const result = await ingest({
+      name: 'Lead',
+      email: 'lead@example.com',
+      phone: '555-0100',
+      companyName: 'Acme Inc',
+      customFields: { message: 'Please call me back' },
+    })
+
+    expect(result.ok).toBe(true)
+    expect(contact.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        phone: '555-0100',
+        companyName: 'Acme Inc',
+        customFields: { message: 'Please call me back' },
+      }),
+    })
+  })
+
+  it('merges them onto an existing contact too', async () => {
+    contact.findFirst.mockResolvedValue({ id: 'contact-existing' })
+
+    await ingest({
+      email: 'lead@example.com',
+      phone: '555-0100',
+      companyName: 'Acme Inc',
+      customFields: { message: 'Please call me back' },
+    })
+
+    expect(contact.update).toHaveBeenCalledWith({
+      where: { id: 'contact-existing' },
+      data: expect.objectContaining({
+        phone: '555-0100',
+        companyName: 'Acme Inc',
+        customFields: { message: 'Please call me back' },
+      }),
+    })
+  })
+})
+
 describe('submission touch flags', () => {
   it('marks isFirstTouch for a brand new contact and clears prior last touch', async () => {
     await ingest({ email: 'brand-new@example.com' })

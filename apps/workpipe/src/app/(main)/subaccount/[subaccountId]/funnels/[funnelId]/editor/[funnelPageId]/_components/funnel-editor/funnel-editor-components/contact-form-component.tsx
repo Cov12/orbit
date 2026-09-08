@@ -95,6 +95,12 @@ const ContactFormComponent = (props: Props) => {
           body: JSON.stringify({
             name: values.name,
             email: values.email,
+            phone: values.phone || undefined,
+            companyName: values.companyName || undefined,
+            // No `message` column — the endpoint stores it in customFields.
+            customFields: values.message
+              ? { message: values.message }
+              : undefined,
             utm,
             referrerUrl,
             landingPageUrl,
@@ -134,7 +140,11 @@ const ContactFormComponent = (props: Props) => {
       // Provisioning failed (leadFormKey is null) — keep the funnel form
       // working via the legacy direct contact write.
       const response = await upsertContactUnchecked({
-        ...values,
+        name: values.name,
+        email: values.email,
+        phone: values.phone || undefined,
+        companyName: values.companyName || undefined,
+        customFields: values.message ? { message: values.message } : undefined,
         subAccountId: subaccountId,
       })
       //WIP Call trigger endpoint

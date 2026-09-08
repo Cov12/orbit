@@ -138,9 +138,15 @@ export type TicketDetails = Prisma.PromiseReturnType<
   typeof _getTicketsWithAllRelations
 >
 
+// Capture fields shared by the funnel form and the dashboard form. Only name
+// and email are required — every richer field is optional so a lead is never
+// lost to a blank box. `message` has no column; it rides in `customFields`.
 export const ContactUserFormSchema = z.object({
   name: z.string().min(1, 'Required'),
   email: z.string().email(),
+  phone: z.string().optional(),
+  companyName: z.string().optional(),
+  message: z.string().optional(),
 })
 
 export type Address = {

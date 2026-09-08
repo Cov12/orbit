@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from '../ui/form'
 import { Input } from '../ui/input'
+import { Textarea } from '../ui/textarea'
 
 type Props = {
   title: string
@@ -49,6 +50,9 @@ const ContactForm = ({ apiCall, subTitle, title }: Props) => {
     defaultValues: {
       name: '',
       email: '',
+      phone: '',
+      companyName: '',
+      message: '',
     },
   })
   const isLoading = form.formState.isLoading
@@ -114,6 +118,55 @@ const ContactForm = ({ apiCall, subTitle, title }: Props) => {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="Email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              disabled={isLoading}
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="tel"
+                      placeholder="Phone (optional)"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              disabled={isLoading}
+              control={form.control}
+              name="companyName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Company (optional)" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              disabled={isLoading}
+              control={form.control}
+              name="message"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Message</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="How can we help? (optional)"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
