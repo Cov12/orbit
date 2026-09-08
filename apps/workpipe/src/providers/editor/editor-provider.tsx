@@ -463,12 +463,19 @@ export const EditorContext = createContext<{
   subaccountId: string
   funnelId: string
   pageDetails: FunnelPage | null
+  /**
+   * Public form key for this funnel's lead capture (issue #54 phase 4a).
+   * Only the live site provisions one; the dashboard editor leaves it null,
+   * and consumers fall back to the legacy contact write when it is absent.
+   */
+  leadFormKey: string | null
 }>({
   state: initialState,
   dispatch: () => undefined,
   subaccountId: '',
   funnelId: '',
   pageDetails: null,
+  leadFormKey: null,
 })
 
 type EditorProps = {
@@ -476,6 +483,7 @@ type EditorProps = {
   subaccountId: string
   funnelId: string
   pageDetails: FunnelPage
+  leadFormKey?: string | null
 }
 
 const EditorProvider = (props: EditorProps) => {
@@ -489,6 +497,7 @@ const EditorProvider = (props: EditorProps) => {
         subaccountId: props.subaccountId,
         funnelId: props.funnelId,
         pageDetails: props.pageDetails,
+        leadFormKey: props.leadFormKey ?? null,
       }}
     >
       {props.children}

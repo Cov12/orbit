@@ -3,6 +3,7 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 
 import { db } from '@/lib/db'
+import { ensureFunnelLeadForm } from '@/lib/lead-form'
 import { getDomainContent } from '@/lib/queries'
 import EditorProvider from '@/providers/editor/editor-provider'
 
@@ -30,11 +31,20 @@ const Page = async ({ params }: { params: Promise<{ domain: string }> }) => {
     },
   })
 
+  // Mint (once) the public form key this funnel's contact form posts to.
+  // Null when provisioning fails — the form then falls back to the legacy path.
+  const leadFormKey = await ensureFunnelLeadForm({
+    id: domainData.id,
+    subAccountId: domainData.subAccountId,
+    name: domainData.name,
+  })
+
   return (
     <EditorProvider
       subaccountId={domainData.subAccountId}
       pageDetails={pageData}
       funnelId={domainData.id}
+      leadFormKey={leadFormKey}
     >
       <FunnelEditor funnelPageId={pageData.id} liveMode={true} />
     </EditorProvider>
