@@ -138,6 +138,7 @@ model SubAccount {
   Invoices         Invoice[]
   Payments         Payment[]
   CalendarEvent    CalendarEvent[]
+  LeadForm         LeadForm[]
 
   Business         Business                    @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
@@ -716,5 +717,25 @@ model ContactSubmission {
   SubAccount SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
 
   @@index([contactId])
+  @@index([subAccountId])
+}
+
+/// A public lead-capture form. `key` is the opaque url-safe handle in
+/// /api/forms/[formKey]/submit — the sub-account a submission lands in is
+/// resolved from this row, never from the request body.
+model LeadForm {
+  id           String   @id @default(uuid())
+  key          String   @unique
+  name         String
+  subAccountId String
+  funnelId     String?
+  isActive     Boolean  @default(true)
+  redirectUrl  String?
+  defaultTags  String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  SubAccount SubAccount @relation(fields: [subAccountId], references: [id], onDelete: Cascade)
+
   @@index([subAccountId])
 }

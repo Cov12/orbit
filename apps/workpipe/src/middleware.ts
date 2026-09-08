@@ -21,6 +21,9 @@ const PUBLIC_PATHS = new Set(['/auth/callback', '/api/health'])
 const PUBLIC_PREFIXES = [
   '/api/internal/',
   '/api/stripe/',
+  // Public lead-capture endpoint: anonymous forms post here from other sites,
+  // so it must never be bounced to Portal.
+  '/api/forms/',
   '/site',
   '/_next',
   // Customer-facing invoice pay/view pages are token-authorized, not logged in.
@@ -91,7 +94,9 @@ export default function middleware(req: NextRequest) {
     ? hostname.split(domain).filter(Boolean)[0]
     : null
 
-  if (customSubDomain) {
+  // API routes are never subdomain-rewritten: /api/forms/... on a custom
+  // domain must still hit the API handler, not /<subdomain>/api/forms/....
+  if (customSubDomain && !url.pathname.startsWith('/api')) {
     return NextResponse.rewrite(
       new URL(`/${customSubDomain}${pathWithSearchParams}`, req.url)
     )
