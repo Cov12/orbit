@@ -26,6 +26,7 @@ import {
   assertCanUpsertSubAccount,
   assertManagesUser,
   assertOwnsBusiness,
+  assertOwnsContact,
   assertOwnsFunnel,
   assertOwnsFunnelPage,
   assertOwnsInvoice,
@@ -1542,14 +1543,57 @@ export const searchContacts = async (
   }
 }
 
-export const getSubAccountContacts = async (subaccountId: string) => {
+/**
+ * Contacts for the sub-account contacts list (issue #54 phase 5).
+ *
+ * `tagIds` narrows to contacts carrying at least one of those tags (the `tags`
+ * URL param on the contacts page); omitted/empty means no tag filter. `Tags`
+ * feeds the per-row chips, `Ticket.value` the Active badge and Total Value
+ * column.
+ */
+export const getSubAccountContacts = async (
+  subaccountId: string,
+  tagIds?: string[]
+) => {
   await assertOwnsSubAccount(subaccountId)
-  const response = await db.subAccount.findMany({
-    where: { id: subaccountId },
-    select: { Contact: true },
+  return db.contact.findMany({
+    where: {
+      subAccountId: subaccountId,
+      ...(tagIds && tagIds.length
+        ? { Tags: { some: { id: { in: tagIds } } } }
+        : {}),
+    },
+    include: { Tags: true, Ticket: { select: { value: true } } },
+    orderBy: { createdAt: 'asc' },
   })
+}
 
-  return response
+/**
+ * Attach an existing sub-account tag to a contact (issue #54 phase 5).
+ *
+ * Both ids come from the client, so both are guarded: the caller can neither
+ * tag a foreign contact nor connect a foreign tag onto their own.
+ */
+export const addTagToContact = async (contactId: string, tagId: string) => {
+  await assertOwnsContact(contactId)
+  await assertOwnsTag(tagId)
+  return db.contact.update({
+    where: { id: contactId },
+    data: { Tags: { connect: { id: tagId } } },
+  })
+}
+
+/** Detach a tag from a contact. Guards both resources, as addTagToContact. */
+export const removeTagFromContact = async (
+  contactId: string,
+  tagId: string
+) => {
+  await assertOwnsContact(contactId)
+  await assertOwnsTag(tagId)
+  return db.contact.update({
+    where: { id: contactId },
+    data: { Tags: { disconnect: { id: tagId } } },
+  })
 }
 
 /**

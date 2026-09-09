@@ -28,6 +28,11 @@ vi.mock('./db', () => ({
     permissions: {
       findUnique: vi.fn().mockResolvedValue({ subAccountId: 'sa-foreign' }),
     },
+    contact: {
+      findUnique: vi.fn().mockResolvedValue({ subAccountId: 'sa-1' }),
+      update: vi.fn().mockResolvedValue({ id: 'c-1' }),
+    },
+    tag: { findUnique: vi.fn().mockResolvedValue({ subAccountId: 'sa-1' }) },
   },
 }))
 vi.mock('./mailer', () => ({ sendMail: vi.fn() }))
@@ -37,14 +42,18 @@ vi.mock('next/headers', () => ({ cookies: vi.fn() }))
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
 
 import { ForbiddenError } from './authz'
+import { db } from './db'
 import {
+  addTagToContact,
   changeUserPermissions,
   createMedia,
   deleteUser,
   getProfiles,
+  getSubAccountContacts,
   getUser,
   getUserPermissions,
   markInvoiceSent,
+  removeTagFromContact,
   searchContacts,
   sendInvitation,
   sendInvoiceEmail,
@@ -52,6 +61,8 @@ import {
   updateUser,
   upsertSubAccount,
 } from './queries'
+
+const asMock = (fn: unknown) => fn as ReturnType<typeof vi.fn>
 
 const rejectsForbidden = (p: Promise<unknown>) =>
   expect(p).rejects.toBeInstanceOf(ForbiddenError)
@@ -106,4 +117,60 @@ describe('PR-B user-management guards — foreign/unauthorized is rejected', () 
     rejectsForbidden(
       upsertSubAccount({ id: 'sa-1', businessId: 'biz-B' } as never)
     ))
+})
+
+// Phase 5 (#54): the contact-tag actions take two client-supplied ids, so each
+// must guard BOTH — a foreign contact and a foreign tag are equally rejected,
+// and neither may reach the write.
+describe('phase 5 contact-tag guards', () => {
+  // The default sub-account mock resolves to biz-B (foreign). Queue owned
+  // answers with `Once` so nothing leaks into the next test.
+  const ownedOnce = (times: number) => {
+    const m = asMock(db.subAccount.findUnique)
+    for (let i = 0; i < times; i++)
+      m.mockResolvedValueOnce({ businessId: 'biz-A' })
+  }
+
+  it('getSubAccountContacts rejects a foreign sub-account', () =>
+    rejectsForbidden(getSubAccountContacts('sa-foreign', ['tag-1'])))
+
+  it('addTagToContact rejects a foreign contact', async () => {
+    await rejectsForbidden(addTagToContact('c-foreign', 'tag-1'))
+    expect(db.contact.update).not.toHaveBeenCalled()
+  })
+
+  it('addTagToContact rejects a foreign tag on an owned contact', async () => {
+    ownedOnce(1) // contact resolves to the caller's business; the tag does not
+    await rejectsForbidden(addTagToContact('c-1', 'tag-foreign'))
+    expect(db.contact.update).not.toHaveBeenCalled()
+  })
+
+  it('addTagToContact connects the tag when both are owned', async () => {
+    ownedOnce(2)
+    await addTagToContact('c-1', 'tag-1')
+    expect(db.contact.update).toHaveBeenCalledWith({
+      where: { id: 'c-1' },
+      data: { Tags: { connect: { id: 'tag-1' } } },
+    })
+  })
+
+  it('removeTagFromContact rejects a foreign contact', async () => {
+    await rejectsForbidden(removeTagFromContact('c-foreign', 'tag-1'))
+    expect(db.contact.update).not.toHaveBeenCalled()
+  })
+
+  it('removeTagFromContact rejects a foreign tag on an owned contact', async () => {
+    ownedOnce(1)
+    await rejectsForbidden(removeTagFromContact('c-1', 'tag-foreign'))
+    expect(db.contact.update).not.toHaveBeenCalled()
+  })
+
+  it('removeTagFromContact disconnects the tag when both are owned', async () => {
+    ownedOnce(2)
+    await removeTagFromContact('c-1', 'tag-1')
+    expect(db.contact.update).toHaveBeenCalledWith({
+      where: { id: 'c-1' },
+      data: { Tags: { disconnect: { id: 'tag-1' } } },
+    })
+  })
 })
