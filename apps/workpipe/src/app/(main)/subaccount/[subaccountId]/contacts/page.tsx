@@ -1,9 +1,10 @@
 import React from 'react'
 
-import { Contact, SubAccount, Ticket } from '@prisma/client'
 import { format } from 'date-fns/format'
 
 import BlurPage from '@/components/global/blur-page'
+import ContactTagFilter from '@/components/global/contact-tag-filter'
+import TagComponent from '@/components/global/tag'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -14,44 +15,32 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { db } from '@/lib/db'
+import { getSubAccountContacts } from '@/lib/queries'
 
 import CraeteContactButton from './_components/create-contact-btn'
+import EditContactTagsButton from './_components/edit-contact-tags-btn'
 
 type Props = {
   params: Promise<{ subaccountId: string }>
+  searchParams: Promise<{ tags?: string }>
 }
 
-const ContactPage = async ({ params }: Props) => {
+type ContactWithTags = Awaited<ReturnType<typeof getSubAccountContacts>>[number]
+
+const ContactPage = async ({ params, searchParams }: Props) => {
   const { subaccountId } = await params
-  type SubAccountWithContacts = SubAccount & {
-    Contact: (Contact & { Ticket: Ticket[] })[]
-  }
+  const { tags } = await searchParams
 
-  const contacts = (await db.subAccount.findUnique({
-    where: {
-      id: subaccountId,
-    },
+  // `?tags=id1,id2` narrows the list to contacts carrying at least one of them.
+  const tagIds = tags
+    ?.split(',')
+    .map(id => id.trim())
+    .filter(Boolean)
+  const selectedTagIds = tagIds?.length ? tagIds : undefined
 
-    include: {
-      Contact: {
-        include: {
-          Ticket: {
-            select: {
-              value: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
-      },
-    },
-  })) as SubAccountWithContacts
+  const allContacts = await getSubAccountContacts(subaccountId, selectedTagIds)
 
-  const allContacts = contacts.Contact
-
-  const formatTotal = (tickets: Ticket[]) => {
+  const formatTotal = (tickets: ContactWithTags['Ticket']) => {
     if (!tickets || !tickets.length) return '$0.00'
     const amt = new Intl.NumberFormat(undefined, {
       style: 'currency',
@@ -69,14 +58,20 @@ const ContactPage = async ({ params }: Props) => {
     <BlurPage>
       <h1 className="p-4 text-4xl">Contacts</h1>
       <CraeteContactButton subaccountId={subaccountId} />
+      <ContactTagFilter
+        subAccountId={subaccountId}
+        selectedTagIds={selectedTagIds ?? []}
+      />
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[200px]">Name</TableHead>
             <TableHead className="w-[300px]">Email</TableHead>
+            <TableHead className="w-[250px]">Tags</TableHead>
             <TableHead className="w-[200px]">Active</TableHead>
             <TableHead>Created Date</TableHead>
             <TableHead className="text-right">Total Value</TableHead>
+            <TableHead className="w-[60px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="truncate font-medium">
@@ -92,6 +87,17 @@ const ContactPage = async ({ params }: Props) => {
               </TableCell>
               <TableCell>{contact.email}</TableCell>
               <TableCell>
+                <div className="flex flex-wrap gap-1">
+                  {contact.Tags.map(tag => (
+                    <TagComponent
+                      key={tag.id}
+                      title={tag.name}
+                      colorName={tag.color}
+                    />
+                  ))}
+                </div>
+              </TableCell>
+              <TableCell>
                 {formatTotal(contact.Ticket) === '$0.00' ? (
                   <Badge variant={'destructive'}>Inactive</Badge>
                 ) : (
@@ -101,6 +107,14 @@ const ContactPage = async ({ params }: Props) => {
               <TableCell>{format(contact.createdAt, 'MM/dd/yyyy')}</TableCell>
               <TableCell className="text-right">
                 {formatTotal(contact.Ticket)}
+              </TableCell>
+              <TableCell className="text-right">
+                <EditContactTagsButton
+                  contactId={contact.id}
+                  contactName={contact.name}
+                  subaccountId={subaccountId}
+                  contactTags={contact.Tags}
+                />
               </TableCell>
             </TableRow>
           ))}

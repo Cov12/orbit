@@ -8,6 +8,7 @@ vi.mock('./db', () => ({
     funnel: { findUnique: vi.fn() },
     user: { findUnique: vi.fn() },
     permissions: { findUnique: vi.fn() },
+    contact: { findUnique: vi.fn() },
   },
 }))
 
@@ -19,6 +20,7 @@ import {
   assertCanUpsertSubAccount,
   assertManagesUser,
   assertOwnsBusiness,
+  assertOwnsContact,
   assertOwnsFunnel,
   assertOwnsSubAccount,
 } from './authz'
@@ -97,6 +99,32 @@ describe('assertOwnsFunnel', () => {
     asCaller('biz-A')
     asMock(db.funnel.findUnique).mockResolvedValue(null)
     await expect(assertOwnsFunnel('f-x')).rejects.toBeInstanceOf(ForbiddenError)
+  })
+})
+
+describe('assertOwnsContact', () => {
+  it('passes when contact -> sub-account -> caller org', async () => {
+    asCaller('biz-A')
+    asMock(db.contact.findUnique).mockResolvedValue({ subAccountId: 'sa-1' })
+    asMock(db.subAccount.findUnique).mockResolvedValue({ businessId: 'biz-A' })
+    await expect(assertOwnsContact('c-1')).resolves.toBeUndefined()
+  })
+
+  it('throws for a contact owned by another business', async () => {
+    asCaller('biz-A')
+    asMock(db.contact.findUnique).mockResolvedValue({ subAccountId: 'sa-1' })
+    asMock(db.subAccount.findUnique).mockResolvedValue({ businessId: 'biz-B' })
+    await expect(assertOwnsContact('c-1')).rejects.toBeInstanceOf(
+      ForbiddenError
+    )
+  })
+
+  it('throws when the contact does not exist', async () => {
+    asCaller('biz-A')
+    asMock(db.contact.findUnique).mockResolvedValue(null)
+    await expect(assertOwnsContact('c-x')).rejects.toBeInstanceOf(
+      ForbiddenError
+    )
   })
 })
 
