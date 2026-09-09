@@ -17,7 +17,11 @@ vi.mock('./db', () => ({
     subAccount: {
       findUnique: vi.fn().mockResolvedValue({ businessId: 'biz-B' }),
     },
-    funnel: { findUnique: vi.fn().mockResolvedValue({ subAccountId: 'sa-1' }) },
+    funnel: {
+      findUnique: vi.fn().mockResolvedValue({ subAccountId: 'sa-1' }),
+      delete: vi.fn().mockResolvedValue({ id: 'funnel-1', name: 'F' }),
+    },
+    leadForm: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
     user: {
       findUnique: vi.fn().mockResolvedValue({
         id: 'u-other',
@@ -48,6 +52,7 @@ import {
   addTagToContact,
   changeUserPermissions,
   createMedia,
+  deleteFunnel,
   deleteUser,
   getProfiles,
   getSubAccountContacts,
@@ -172,6 +177,30 @@ describe('phase 5 contact-tag guards', () => {
     expect(db.contact.update).toHaveBeenCalledWith({
       where: { id: 'c-1' },
       data: { Tags: { disconnect: { id: 'tag-1' } } },
+    })
+  })
+})
+
+// #21: deleteFunnel guards ownership before any write, and cascades the
+// funnel's lead forms (Payment rows are deliberately kept).
+describe('deleteFunnel ownership guard (#21)', () => {
+  it('rejects a foreign funnel and writes nothing', async () => {
+    await rejectsForbidden(deleteFunnel('funnel-foreign'))
+    expect(db.funnel.delete).not.toHaveBeenCalled()
+    expect(db.leadForm.deleteMany).not.toHaveBeenCalled()
+  })
+
+  it('deletes an owned funnel and cascades its lead forms', async () => {
+    // The funnel resolves to sa-1; make that sub-account owned by the caller.
+    asMock(db.subAccount.findUnique).mockResolvedValueOnce({
+      businessId: 'biz-A',
+    })
+    await deleteFunnel('funnel-1')
+    expect(db.leadForm.deleteMany).toHaveBeenCalledWith({
+      where: { funnelId: 'funnel-1' },
+    })
+    expect(db.funnel.delete).toHaveBeenCalledWith({
+      where: { id: 'funnel-1' },
     })
   })
 })

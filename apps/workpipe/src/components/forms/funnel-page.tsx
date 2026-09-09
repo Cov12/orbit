@@ -10,10 +10,10 @@ import { v4 } from 'uuid'
 import { z } from 'zod'
 
 import {
-    deleteFunnelePage,
-    getFunnels,
-    saveActivityLogsNotification,
-    upsertFunnelPage,
+  deleteFunnelPage,
+  getFunnels,
+  saveActivityLogsNotification,
+  upsertFunnelPage,
 } from '@/lib/queries'
 import { FunnelPageSchema } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
@@ -21,19 +21,19 @@ import { useModal } from '@/providers/modal-provider'
 import Loading from '../global/loading'
 import { Button } from '../ui/button'
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '../ui/card'
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '../ui/form'
 import { Input } from '../ui/input'
 import { useToast } from '../ui/use-toast'
@@ -110,7 +110,10 @@ const CreateFunnelPage: React.FC<CreateFunnelPageProps> = ({
       toast({
         variant: 'destructive',
         title: 'Oops!',
-        description: error instanceof Error ? error.message : 'Could not save funnel page details',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Could not save funnel page details',
       })
     }
   }
@@ -181,7 +184,7 @@ const CreateFunnelPage: React.FC<CreateFunnelPageProps> = ({
                   disabled={form.formState.isSubmitting}
                   type="button"
                   onClick={async () => {
-                    const response = await deleteFunnelePage(defaultData.id)
+                    const response = await deleteFunnelPage(defaultData.id)
                     await saveActivityLogsNotification({
                       businessId: undefined,
                       description: `Deleted a funnel page | ${response?.name}`,
@@ -202,7 +205,7 @@ const CreateFunnelPage: React.FC<CreateFunnelPageProps> = ({
                   onClick={async () => {
                     const response = await getFunnels(subaccountId)
                     const lastFunnelPage = response.find(
-                      (funnel) => funnel.id === funnelId
+                      funnel => funnel.id === funnelId
                     )?.FunnelPages.length
 
                     await upsertFunnelPage(
