@@ -44,6 +44,14 @@ const ContactFormComponent = (props: Props) => {
 
   const styles = props.element.styles
 
+  // Pages saved before the form became configurable still carry `content: []`;
+  // treat those (and anything else non-object) as "no config" so every value
+  // below falls back to the defaults the form used to hardcode.
+  const c =
+    props.element.content && !Array.isArray(props.element.content)
+      ? props.element.content
+      : {}
+
   const goToNextPage = async () => {
     if (!state.editor.liveMode) return
     const funnelPages = await getFunnelPublic(funnelId)
@@ -191,8 +199,10 @@ const ContactFormComponent = (props: Props) => {
           </Badge>
         )}
       <ContactForm
-        subTitle="Contact Us"
-        title="Want a free quote? We can help you"
+        subTitle={c.subTitle ?? 'Contact Us'}
+        title={c.title ?? 'Want a free quote? We can help you'}
+        submitText={c.submitText ?? 'Get a free quote!'}
+        optionalFields={Array.isArray(c.fields) ? c.fields : undefined}
         apiCall={onFormSubmit}
       />
       {state.editor.selectedElement.id === props.element.id &&

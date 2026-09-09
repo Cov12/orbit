@@ -30,6 +30,7 @@ vi.mock('./db', () => ({
     },
     contact: {
       findUnique: vi.fn().mockResolvedValue({ subAccountId: 'sa-1' }),
+      findMany: vi.fn().mockResolvedValue([]),
       update: vi.fn().mockResolvedValue({ id: 'c-1' }),
     },
     tag: { findUnique: vi.fn().mockResolvedValue({ subAccountId: 'sa-1' }) },
@@ -172,5 +173,53 @@ describe('phase 5 contact-tag guards', () => {
       where: { id: 'c-1' },
       data: { Tags: { disconnect: { id: 'tag-1' } } },
     })
+  })
+})
+
+// The tag filter's match mode shapes the `where` clause: 'any' can be one
+// `some ... in`, but 'all' needs a `some` per tag — a single `in` is satisfied
+// by a contact carrying just one of the selected tags.
+describe('getSubAccountContacts tag match mode', () => {
+  const owned = () =>
+    asMock(db.subAccount.findUnique).mockResolvedValueOnce({
+      businessId: 'biz-A',
+    })
+
+  const whereOf = () => asMock(db.contact.findMany).mock.calls[0][0].where
+
+  it("matchMode 'all' requires every tag via AND", async () => {
+    owned()
+    await getSubAccountContacts('sa-1', ['tag-1', 'tag-2'], 'all')
+    expect(whereOf()).toMatchObject({
+      subAccountId: 'sa-1',
+      AND: [
+        { Tags: { some: { id: 'tag-1' } } },
+        { Tags: { some: { id: 'tag-2' } } },
+      ],
+    })
+  })
+
+  it("matchMode 'any' matches at least one tag", async () => {
+    owned()
+    await getSubAccountContacts('sa-1', ['tag-1', 'tag-2'], 'any')
+    expect(whereOf()).toMatchObject({
+      Tags: { some: { id: { in: ['tag-1', 'tag-2'] } } },
+    })
+  })
+
+  it('defaults to any when no mode is given', async () => {
+    owned()
+    await getSubAccountContacts('sa-1', ['tag-1', 'tag-2'])
+    const where = whereOf()
+    expect(where).toMatchObject({
+      Tags: { some: { id: { in: ['tag-1', 'tag-2'] } } },
+    })
+    expect(where.AND).toBeUndefined()
+  })
+
+  it('applies no tag filter when tagIds is empty', async () => {
+    owned()
+    await getSubAccountContacts('sa-1', [])
+    expect(whereOf()).toEqual({ subAccountId: 'sa-1' })
   })
 })

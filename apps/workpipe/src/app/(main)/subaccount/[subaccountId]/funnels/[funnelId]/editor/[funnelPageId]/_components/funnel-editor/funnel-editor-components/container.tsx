@@ -99,7 +99,15 @@ const Container = ({ element }: Props) => {
           payload: {
             containerId: id,
             elementDetails: {
-              content: [],
+              // Seeded as an object (not []) so the settings panel has somewhere
+              // to write: these are the copy the live form used to hardcode,
+              // plus every optional field shown by default.
+              content: {
+                title: 'Want a free quote? We can help you',
+                subTitle: 'Contact Us',
+                submitText: 'Get a free quote!',
+                fields: ['phone', 'companyName', 'message'],
+              },
               id: v4(),
               name: 'Contact Form',
               styles: {},
