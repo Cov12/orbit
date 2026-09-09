@@ -22,23 +22,29 @@ import EditContactTagsButton from './_components/edit-contact-tags-btn'
 
 type Props = {
   params: Promise<{ subaccountId: string }>
-  searchParams: Promise<{ tags?: string }>
+  searchParams: Promise<{ tags?: string; tagMode?: string }>
 }
 
 type ContactWithTags = Awaited<ReturnType<typeof getSubAccountContacts>>[number]
 
 const ContactPage = async ({ params, searchParams }: Props) => {
   const { subaccountId } = await params
-  const { tags } = await searchParams
+  const { tags, tagMode } = await searchParams
 
-  // `?tags=id1,id2` narrows the list to contacts carrying at least one of them.
+  // `?tags=id1,id2` narrows the list by tag; `?tagMode=all` requires every
+  // selected tag rather than any one of them.
   const tagIds = tags
     ?.split(',')
     .map(id => id.trim())
     .filter(Boolean)
   const selectedTagIds = tagIds?.length ? tagIds : undefined
+  const selectedMode = tagMode === 'all' ? 'all' : 'any'
 
-  const allContacts = await getSubAccountContacts(subaccountId, selectedTagIds)
+  const allContacts = await getSubAccountContacts(
+    subaccountId,
+    selectedTagIds,
+    selectedMode
+  )
 
   const formatTotal = (tickets: ContactWithTags['Ticket']) => {
     if (!tickets || !tickets.length) return '$0.00'
@@ -61,6 +67,7 @@ const ContactPage = async ({ params, searchParams }: Props) => {
       <ContactTagFilter
         subAccountId={subaccountId}
         selectedTagIds={selectedTagIds ?? []}
+        selectedMode={selectedMode}
       />
       <Table>
         <TableHeader>

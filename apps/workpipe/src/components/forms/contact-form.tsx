@@ -40,9 +40,27 @@ type Props = {
     values: z.infer<typeof ContactUserFormSchema>,
     honeypot?: string
   ) => any
+  /** Submit button label. Defaults to the original copy. */
+  submitText?: string
+  /**
+   * Which OPTIONAL fields to render (`phone`, `companyName`, `message`). Name
+   * and email are required by the schema and always shown. Undefined means
+   * "unconfigured" — show all of them, which keeps pre-config funnel pages
+   * rendering exactly as before.
+   */
+  optionalFields?: string[]
 }
 
-const ContactForm = ({ apiCall, subTitle, title }: Props) => {
+const ContactForm = ({
+  apiCall,
+  subTitle,
+  title,
+  submitText,
+  optionalFields,
+}: Props) => {
+  const showsField = (name: string) =>
+    optionalFields === undefined || optionalFields.includes(name)
+
   const honeypotRef = useRef<HTMLInputElement>(null)
   const form = useForm<z.infer<typeof ContactUserFormSchema>>({
     mode: 'onChange',
@@ -123,57 +141,67 @@ const ContactForm = ({ apiCall, subTitle, title }: Props) => {
                 </FormItem>
               )}
             />
-            <FormField
-              disabled={isLoading}
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="tel"
-                      placeholder="Phone (optional)"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              disabled={isLoading}
-              control={form.control}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Company (optional)" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              disabled={isLoading}
-              control={form.control}
-              name="message"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Message</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="How can we help? (optional)"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {showsField('phone') && (
+              <FormField
+                disabled={isLoading}
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="tel"
+                        placeholder="Phone (optional)"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            {showsField('companyName') && (
+              <FormField
+                disabled={isLoading}
+                control={form.control}
+                name="companyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Company (optional)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            {showsField('message') && (
+              <FormField
+                disabled={isLoading}
+                control={form.control}
+                name="message"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Message</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="How can we help? (optional)"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <Button className="mt-4" disabled={isLoading} type="submit">
-              {form.formState.isSubmitting ? <Loading /> : 'Get a free quote!'}
+              {form.formState.isSubmitting ? (
+                <Loading />
+              ) : (
+                (submitText ?? 'Get a free quote!')
+              )}
             </Button>
           </form>
         </Form>

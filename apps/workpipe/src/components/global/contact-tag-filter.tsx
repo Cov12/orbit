@@ -9,20 +9,27 @@ import { getTagsForSubaccount } from '@/lib/queries'
 
 import TagComponent from './tag'
 
+type TagMatchMode = 'any' | 'all'
+
 type Props = {
   subAccountId: string
   selectedTagIds: string[]
+  selectedMode: TagMatchMode
 }
 
 /**
  * Tag filter bar for the contacts list (issue #54 phase 5).
  *
- * The selection lives in the URL (`?tags=id1,id2`) so the server page can read
- * it and query filtered. `selectedTagIds` is passed down from that server read
- * rather than pulled from useSearchParams, which would force this subtree into
- * a Suspense boundary.
+ * The selection lives in the URL (`?tags=id1,id2&tagMode=any|all`) so the
+ * server page can read it and query filtered. `selectedTagIds`/`selectedMode`
+ * are passed down from that server read rather than pulled from
+ * useSearchParams, which would force this subtree into a Suspense boundary.
  */
-const ContactTagFilter = ({ subAccountId, selectedTagIds }: Props) => {
+const ContactTagFilter = ({
+  subAccountId,
+  selectedTagIds,
+  selectedMode,
+}: Props) => {
   const [tags, setTags] = useState<Tag[]>([])
   const router = useRouter()
   const pathname = usePathname()
@@ -35,11 +42,18 @@ const ContactTagFilter = ({ subAccountId, selectedTagIds }: Props) => {
     fetchData()
   }, [subAccountId])
 
-  const pushSelection = (next: string[]) => {
-    router.replace(
-      next.length ? `${pathname}?tags=${next.join(',')}` : pathname
-    )
+  // Both params are written together so a tag toggle keeps the current mode
+  // and a mode switch keeps the current tags. `any` is the page's default, so
+  // it stays out of the URL.
+  const push = (next: string[], mode: TagMatchMode) => {
+    const params = new URLSearchParams()
+    if (next.length) params.set('tags', next.join(','))
+    if (mode !== 'any') params.set('tagMode', mode)
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname)
   }
+
+  const pushSelection = (next: string[]) => push(next, selectedMode)
 
   const toggleTag = (tagId: string) => {
     pushSelection(
@@ -54,6 +68,20 @@ const ContactTagFilter = ({ subAccountId, selectedTagIds }: Props) => {
   return (
     <div className="flex flex-wrap items-center gap-2 px-4 pb-4">
       <span className="text-sm text-muted-foreground">Filter by tag:</span>
+      <div className="flex items-center overflow-hidden rounded-md border">
+        {(['any', 'all'] as TagMatchMode[]).map(mode => (
+          <Button
+            key={mode}
+            type="button"
+            variant={selectedMode === mode ? 'secondary' : 'ghost'}
+            size="sm"
+            className="h-7 rounded-none px-2 text-xs capitalize"
+            onClick={() => push(selectedTagIds, mode)}
+          >
+            {mode}
+          </Button>
+        ))}
+      </div>
       {tags.map(tag => (
         <div
           key={tag.id}

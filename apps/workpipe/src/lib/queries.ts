@@ -1546,21 +1546,27 @@ export const searchContacts = async (
 /**
  * Contacts for the sub-account contacts list (issue #54 phase 5).
  *
- * `tagIds` narrows to contacts carrying at least one of those tags (the `tags`
- * URL param on the contacts page); omitted/empty means no tag filter. `Tags`
+ * `tagIds` narrows by tag (the `tags` URL param on the contacts page);
+ * omitted/empty means no tag filter. `matchMode` picks how they combine: 'any'
+ * (default) keeps contacts carrying at least one of the tags, 'all' requires
+ * every one of them — which needs a separate `some` per tag, since a single
+ * `some: { id: { in: [...] } }` can be satisfied by one tag alone. `Tags`
  * feeds the per-row chips, `Ticket.value` the Active badge and Total Value
  * column.
  */
 export const getSubAccountContacts = async (
   subaccountId: string,
-  tagIds?: string[]
+  tagIds?: string[],
+  matchMode: 'any' | 'all' = 'any'
 ) => {
   await assertOwnsSubAccount(subaccountId)
   return db.contact.findMany({
     where: {
       subAccountId: subaccountId,
       ...(tagIds && tagIds.length
-        ? { Tags: { some: { id: { in: tagIds } } } }
+        ? matchMode === 'all'
+          ? { AND: tagIds.map(id => ({ Tags: { some: { id } } })) }
+          : { Tags: { some: { id: { in: tagIds } } } }
         : {}),
     },
     include: { Tags: true, Ticket: { select: { value: true } } },

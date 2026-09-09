@@ -40,6 +40,13 @@ import { Slider } from '@/components/ui/slider'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useEditor } from '@/providers/editor/editor-provider'
 
+/** Optional contact-form fields the funnel editor can show or hide. */
+const CONTACT_FORM_OPTIONAL_FIELDS = [
+  { id: 'phone', label: 'Phone' },
+  { id: 'companyName', label: 'Company' },
+  { id: 'message', label: 'Message' },
+]
+
 type Props = Record<string, never>
 
 const SettingsTab = (props: Props) => {
@@ -583,6 +590,86 @@ const SettingsTab = (props: Props) => {
               </div>
             )}
 
+          {/* Contact Form Settings */}
+          {state.editor.selectedElement.type === 'contactForm' &&
+            !Array.isArray(state.editor.selectedElement.content) && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Title</Label>
+                  <Input
+                    id="title"
+                    placeholder="Want a free quote? We can help you"
+                    onChange={handleChangeCustomValues}
+                    value={
+                      (state.editor.selectedElement.content as any)?.title || ''
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Subtitle</Label>
+                  <Input
+                    id="subTitle"
+                    placeholder="Contact Us"
+                    onChange={handleChangeCustomValues}
+                    value={
+                      (state.editor.selectedElement.content as any)?.subTitle ||
+                      ''
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">Submit Button</Label>
+                  <Input
+                    id="submitText"
+                    placeholder="Get a free quote!"
+                    onChange={handleChangeCustomValues}
+                    value={
+                      (state.editor.selectedElement.content as any)
+                        ?.submitText || ''
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-muted-foreground">
+                    Optional Fields
+                  </Label>
+                  {/* Name and email are required by the contact schema, so only
+                      the optional fields are toggleable here. */}
+                  {CONTACT_FORM_OPTIONAL_FIELDS.map(({ id, label }) => {
+                    const fields = (state.editor.selectedElement.content as any)
+                      ?.fields as string[] | undefined
+                    const checked = fields?.includes(id) ?? false
+                    return (
+                      <div key={id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`contactField-${id}`}
+                          checked={checked}
+                          onCheckedChange={isChecked =>
+                            handleChangeCustomValues({
+                              target: {
+                                id: 'fields',
+                                value: isChecked
+                                  ? [...(fields ?? []), id]
+                                  : (fields ?? []).filter(
+                                      field => field !== id
+                                    ),
+                              },
+                            })
+                          }
+                        />
+                        <Label
+                          htmlFor={`contactField-${id}`}
+                          className="text-muted-foreground"
+                        >
+                          {label}
+                        </Label>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
           {/* No custom settings message */}
           {![
             'link',
@@ -593,6 +680,7 @@ const SettingsTab = (props: Props) => {
             'divider',
             'spacer',
             'video',
+            'contactForm',
           ].includes(state.editor.selectedElement.type ?? '') && (
             <p className="text-sm text-muted-foreground">
               No custom settings for this element. Use the style panels below.
