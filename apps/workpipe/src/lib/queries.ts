@@ -464,16 +464,10 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
             link: `/subaccount/${subAccount.id}/funnels`,
           },
           {
-            name: 'Media',
+            name: 'Files',
             icon: 'database',
-            link: `/subaccount/${subAccount.id}/media`,
+            link: `/subaccount/${subAccount.id}/files`,
           },
-          //cleanup
-          // {
-          //   name: 'File Manager',
-          //   icon: 'database',
-          //   link: `/subaccount/${subAccount.id}/files`,
-          // },
           {
             name: 'Automations',
             icon: 'chip',
@@ -503,11 +497,6 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
             name: 'Invoices',
             icon: 'receipt',
             link: `/subaccount/${subAccount.id}/invoices`,
-          },
-          {
-            name: 'Documents',
-            icon: 'database',
-            link: `/subaccount/${subAccount.id}/documents`,
           },
           {
             name: 'Dashboard',
