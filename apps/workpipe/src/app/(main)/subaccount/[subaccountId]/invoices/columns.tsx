@@ -201,13 +201,29 @@ export const columns: ColumnDef<InvoiceRow>[] = [
   {
     accessorKey: 'name',
     header: 'Name',
-    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+    cell: ({ row }) => (
+      <div className="flex flex-col">
+        <span className="font-medium">{row.original.name}</span>
+        {row.original.number && (
+          <span className="text-xs text-muted-foreground">
+            #{row.original.number}
+          </span>
+        )}
+      </div>
+    ),
   },
   {
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => {
-      const s = statusMeta[row.original.status]
+      const inv = row.original
+      // A SENT invoice past its due date reads as Overdue at display time. The
+      // stored status stays SENT (no cron flips it); this is a derived badge.
+      const isOverdue =
+        inv.status === 'SENT' &&
+        !!inv.dueDate &&
+        new Date(inv.dueDate) < new Date()
+      const s = isOverdue ? statusMeta.OVERDUE : statusMeta[inv.status]
       return <Badge variant={s.variant}>{s.label}</Badge>
     },
   },
