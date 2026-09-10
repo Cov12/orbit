@@ -1320,13 +1320,19 @@ export const upsertFunnel = async (
   funnelId: string
 ) => {
   await assertOwnsSubAccount(subaccountId)
-  try {
-    // Convert empty subDomainName to null to avoid unique constraint issues
-    const processedFunnel = {
-      ...funnel,
-      subDomainName: funnel.subDomainName?.trim() || null,
-    }
 
+  // Convert empty subDomainName to null to avoid unique constraint issues, and
+  // validate the format up front so the user gets a clear message instead of a
+  // raw DB error.
+  const subDomainName = funnel.subDomainName?.trim() || null
+  if (subDomainName && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(subDomainName)) {
+    throw new Error(
+      'Subdomain may only contain lowercase letters, numbers, and hyphens.'
+    )
+  }
+  const processedFunnel = { ...funnel, subDomainName }
+
+  try {
     const response = await db.funnel.upsert({
       where: { id: funnelId },
       update: processedFunnel,
@@ -1339,12 +1345,20 @@ export const upsertFunnel = async (
 
     return response
   } catch (error) {
+    // A duplicate subdomain trips the @unique on subDomainName (P2002) —
+    // surface it as a friendly, actionable message.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      throw new Error('That subdomain is already taken — choose another.')
+    }
     console.error('Error upserting funnel:', error)
     throw error
   }
 }
 
-export const deleteFunnelePage = async (funnelPageId: string) => {
+export const deleteFunnelPage = async (funnelPageId: string) => {
   await assertOwnsFunnelPage(funnelPageId)
   try {
     // First check if the funnel page exists
@@ -1365,6 +1379,18 @@ export const deleteFunnelePage = async (funnelPageId: string) => {
     console.error('Error deleting funnel page:', error)
     throw error
   }
+}
+
+export const deleteFunnel = async (funnelId: string) => {
+  await assertOwnsFunnel(funnelId)
+  // relationMode = "prisma": FunnelPage and FunnelClassName each carry a Funnel
+  // relation with onDelete: Cascade (emulated on delete), so they go with the
+  // funnel. LeadForm only has a scalar funnelId (no relation), so remove those
+  // explicitly. Payment rows are financial records and are intentionally KEPT
+  // (their funnelId is retained for reporting).
+  await db.leadForm.deleteMany({ where: { funnelId } })
+  const response = await db.funnel.delete({ where: { id: funnelId } })
+  return response
 }
 
 const loadFunnelPageDetails = async (funnelPageId: string) => {

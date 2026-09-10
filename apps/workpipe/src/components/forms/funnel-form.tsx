@@ -1,7 +1,6 @@
 'use client'
 import React, { useEffect } from 'react'
 
-
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Funnel } from '@prisma/client'
 import { useRouter } from 'next/navigation'
@@ -11,14 +10,18 @@ import { z } from 'zod'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form'
-import { saveActivityLogsNotification, upsertFunnel } from '@/lib/queries'
+import {
+  deleteFunnel,
+  saveActivityLogsNotification,
+  upsertFunnel,
+} from '@/lib/queries'
 import { CreateFunnelFormSchema } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
 
@@ -98,10 +101,43 @@ const FunnelForm: React.FC<CreateFunnelProps> = ({
       toast({
         variant: 'destructive',
         title: 'Oops!',
-        description: 'Could not save funnel details. Please try again.',
+        // Surface actionable server messages (e.g. subdomain taken/invalid);
+        // fall back to a generic line for anything unexpected.
+        description:
+          error instanceof Error && error.message
+            ? error.message
+            : 'Could not save funnel details. Please try again.',
       })
     }
   }
+
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const handleDelete = async () => {
+    if (!defaultData?.id) return
+    setIsDeleting(true)
+    try {
+      await deleteFunnel(defaultData.id)
+      await saveActivityLogsNotification({
+        businessId: undefined,
+        description: `Deleted a funnel | ${defaultData.name}`,
+        subaccountId: subAccountId,
+      })
+      toast({ title: 'Deleted', description: 'Funnel deleted' })
+      setClose()
+      router.push(`/subaccount/${subAccountId}/funnels`)
+      router.refresh()
+    } catch (error) {
+      console.error('Error deleting funnel:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Oops!',
+        description: 'Could not delete this funnel. Please try again.',
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <Card className="flex-1">
       <CardHeader>
@@ -121,10 +157,7 @@ const FunnelForm: React.FC<CreateFunnelProps> = ({
                 <FormItem>
                   <FormLabel>Funnel Name</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Name"
-                      {...field}
-                    />
+                    <Input placeholder="Name" {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -153,10 +186,7 @@ const FunnelForm: React.FC<CreateFunnelProps> = ({
                 <FormItem>
                   <FormLabel>Sub domain</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Sub domain for funnel"
-                      {...field}
-                    />
+                    <Input placeholder="Sub domain for funnel" {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -179,13 +209,22 @@ const FunnelForm: React.FC<CreateFunnelProps> = ({
                 </FormItem>
               )}
             />
-            <Button
-              className="w-20 mt-4"
-              disabled={isLoading}
-              type="submit"
-            >
-              {form.formState.isSubmitting ? <Loading /> : 'Save'}
-            </Button>
+            <div className="mt-4 flex items-center justify-between gap-4">
+              <Button className="w-20" disabled={isLoading} type="submit">
+                {form.formState.isSubmitting ? <Loading /> : 'Save'}
+              </Button>
+              {defaultData?.id && (
+                <Button
+                  variant="outline"
+                  type="button"
+                  disabled={isDeleting}
+                  className="border-destructive text-destructive hover:bg-destructive"
+                  onClick={handleDelete}
+                >
+                  {isDeleting ? <Loading /> : 'Delete Funnel'}
+                </Button>
+              )}
+            </div>
           </form>
         </Form>
       </CardContent>

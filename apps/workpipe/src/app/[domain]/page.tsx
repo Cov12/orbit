@@ -1,5 +1,6 @@
 import React from 'react'
 
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { db } from '@/lib/db'
@@ -8,6 +9,20 @@ import { getDomainContent } from '@/lib/queries'
 import EditorProvider from '@/providers/editor/editor-provider'
 
 import FunnelEditor from '../(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ domain: string }>
+}): Promise<Metadata> {
+  const { domain } = await params
+  const data = await getDomainContent(domain.replace(/\.$/, ''))
+  if (!data) return {}
+  return {
+    title: data.name,
+    icons: data.favicon ? { icon: data.favicon } : undefined,
+  }
+}
 
 const Page = async ({ params }: { params: Promise<{ domain: string }> }) => {
   const { domain } = await params
