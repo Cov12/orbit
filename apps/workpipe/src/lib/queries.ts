@@ -918,18 +918,30 @@ export const markInvoiceSent = async (
   await assertOwnsSubAccount(subaccountId)
   const existing = await db.invoice.findFirst({
     where: { id: invoiceId, subAccountId: subaccountId },
-    select: { id: true, link: true, status: true },
+    select: { id: true, link: true, status: true, number: true },
   })
   if (!existing) throw new Error('NOT_FOUND')
 
   const link = existing.link || v4()
+  // Assign a per-sub-account sequential number the first time an invoice is
+  // sent/shared; drafts stay unnumbered. Count-based, so at very high
+  // concurrency two simultaneous first-sends could collide — acceptable at
+  // current volume (`number` is not uniqueness-constrained).
+  let number = existing.number
+  if (!number) {
+    const priorCount = await db.invoice.count({
+      where: { subAccountId: subaccountId, number: { not: null } },
+    })
+    number = `INV-${String(priorCount + 1).padStart(4, '0')}`
+  }
   const updated = await db.invoice.update({
     where: { id: existing.id },
     data: {
       link,
+      number,
       status: existing.status === 'DRAFT' ? 'SENT' : existing.status,
     },
-    select: { link: true, status: true },
+    select: { link: true, status: true, number: true },
   })
 
   await saveActivityLogsNotification({
@@ -972,8 +984,9 @@ export const sendInvoiceEmail = async (
   })
   if (!invoice) throw new Error('NOT_FOUND')
 
-  // Ensure the public pay link exists and mark the invoice SENT.
-  const { link } = await markInvoiceSent(subaccountId, invoiceId)
+  // Ensure the public pay link exists and mark the invoice SENT. This also
+  // assigns the invoice number on first send, so use the returned value.
+  const { link, number } = await markInvoiceSent(subaccountId, invoiceId)
 
   const base = (process.env.NEXT_PUBLIC_URL || '').replace(/\/$/, '')
   const payUrl = `${base}/invoice/${link}`
@@ -994,7 +1007,7 @@ export const sendInvoiceEmail = async (
   const html = `
   <div style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111;">
     <h2 style="margin: 0 0 4px;">${businessName}</h2>
-    <p style="color: #555; margin: 0 0 20px;">You have a new invoice${invoice.number ? ` #${invoice.number}` : ''}.</p>
+    <p style="color: #555; margin: 0 0 20px;">You have a new invoice${number ? ` #${number}` : ''}.</p>
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
       <tr><td style="padding: 6px 0; color: #555;">Invoice</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${invoice.name}</td></tr>
       <tr><td style="padding: 6px 0; color: #555;">Amount due</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${amount}</td></tr>
