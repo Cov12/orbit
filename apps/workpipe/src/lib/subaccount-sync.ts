@@ -94,9 +94,9 @@ export async function provisionSubAccountsFromPortal(
                   link: `/subaccount/${sa.id}/funnels`,
                 },
                 {
-                  name: 'Media',
+                  name: 'Files',
                   icon: 'database',
-                  link: `/subaccount/${sa.id}/media`,
+                  link: `/subaccount/${sa.id}/files`,
                 },
                 {
                   name: 'Automations',
@@ -127,11 +127,6 @@ export async function provisionSubAccountsFromPortal(
                   name: 'Invoices',
                   icon: 'receipt',
                   link: `/subaccount/${sa.id}/invoices`,
-                },
-                {
-                  name: 'Documents',
-                  icon: 'database',
-                  link: `/subaccount/${sa.id}/documents`,
                 },
                 {
                   name: 'Settings',

@@ -1,27 +1,14 @@
-import BlurPage from '@/components/global/blur-page'
-import FilesBrowser from '@/components/global/files-browser'
+import { redirect } from 'next/navigation'
 
 type Props = {
   params: Promise<{ subaccountId: string }>
 }
 
+// Media + Documents were consolidated into one Files surface (#24). Kept as a
+// redirect so existing sidebar entries and bookmarks pointing here still resolve.
 const MediaPage = async ({ params }: Props) => {
   const { subaccountId } = await params
-
-  return (
-    <BlurPage>
-      <div className="flex flex-col gap-4 pb-6">
-        <div>
-          <h1 className="text-2xl">Media</h1>
-          <p className="text-sm text-muted-foreground">
-            Images, video, and audio for this sub-account, stored securely in
-            Orbit Drive.
-          </p>
-        </div>
-        <FilesBrowser subAccountId={subaccountId} kind="media" />
-      </div>
-    </BlurPage>
-  )
+  redirect(`/subaccount/${subaccountId}/files`)
 }
 
 export default MediaPage
