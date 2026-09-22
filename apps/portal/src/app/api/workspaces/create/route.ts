@@ -90,11 +90,16 @@ export async function POST(req: Request) {
     const cleanLogoUrl =
       typeof logoUrl === "string" && logoUrl.startsWith("https://") ? logoUrl : null;
 
+    // Persist the industry captured in the wizard (previously accepted then dropped).
+    const cleanIndustry =
+      typeof industry === "string" && industry.trim() ? industry.trim() : null;
+
     const org = await db.organization.create({
       data: {
         name: name.trim(),
         slug,
         logoUrl: cleanLogoUrl,
+        industry: cleanIndustry,
         members: {
           create: {
             clerkUserId: userId,
