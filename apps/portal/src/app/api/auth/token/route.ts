@@ -143,6 +143,7 @@ export async function POST(req: Request) {
         org_slug: org.slug,
         org_name: org.name,
         org_logo: org.logoUrl ?? null,
+        org_industry: org.industry ?? null,
         sub_account_id: subAccountId,
         role: member.role,
         subscriptions,

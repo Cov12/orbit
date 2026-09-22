@@ -12,6 +12,9 @@ model Organization {
   slug          String         @unique
   clerkOrgId    String?        @unique
   logoUrl       String?
+  // Captured at signup; consumed by downstream apps (e.g. Atrium onboarding /
+  // Engram seed) via the org_industry JWT claim. Optional — users may skip it.
+  industry      String?
   // Per-org license grant (super-admin toggle). Effective license =
   // this OR the global ORBIT_LICENSE_MODE env (see lib/license.ts). Lets a
   // shared-cloud org be licensed without a subscription, independent of the
