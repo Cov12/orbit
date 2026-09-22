@@ -11,6 +11,8 @@ export interface OrbitJwtPayload {
   /** Org display name + logo (workspace branding), for apps that provision from the JWT. */
   org_name?: string;
   org_logo?: string | null;
+  /** Org industry captured at signup; consumed by downstream onboarding (e.g. Atrium). */
+  org_industry?: string | null;
   /**
    * Active sub-account (sub-workspace) id, scoped to org_id. `null`/absent = business
    * scope (the org as a whole). The shared cross-app key apps use to scope data/memory.
