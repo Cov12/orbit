@@ -1,0 +1,58 @@
+import SubAccountDetails from '@/components/forms/subaccount-details'
+import UserDetails from '@/components/forms/user-details'
+import BlurPage from '@/components/global/blur-page'
+import { getCurrentUser } from '@/lib/auth'
+import { db } from '@/lib/db'
+
+// Force dynamic rendering to support Clerk's headers access in Next.js 15
+export const dynamic = 'force-dynamic'
+
+type Props = {
+  params: Promise<{ subaccountId: string }>
+}
+
+const SubaccountSettingPage = async ({ params }: Props) => {
+  const { subaccountId } = await params
+  const authUser = await getCurrentUser()
+  if (!authUser) return
+  const userDetails = await db.user.findUnique({
+    where: {
+      email: authUser.email,
+    },
+  })
+  if (!userDetails) return
+
+  const subAccount = await db.subAccount.findUnique({
+    where: { id: subaccountId },
+  })
+  if (!subAccount) return
+
+  const businessDetails = await db.business.findUnique({
+    where: { id: subAccount.businessId },
+    include: { SubAccount: true },
+  })
+
+  if (!businessDetails) return
+  const subAccounts = businessDetails.SubAccount
+
+  return (
+    <BlurPage>
+      <div className="flex flex-col gap-4 lg:!flex-row">
+        <SubAccountDetails
+          businessDetails={businessDetails}
+          details={subAccount}
+          userId={userDetails.id}
+          userName={userDetails.name}
+        />
+        <UserDetails
+          type="subaccount"
+          id={subaccountId}
+          subAccounts={subAccounts}
+          userData={userDetails}
+        />
+      </div>
+    </BlurPage>
+  )
+}
+
+export default SubaccountSettingPage
