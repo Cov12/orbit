@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  clerkOrgId    String?        @unique
+  logoUrl       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  members       Member[]
+  subscriptions Subscription[]
+  appAccess     AppAccess[]
+  subAccounts   SubAccount[]
+}
+
+/// Mirror of the Portal-owned SubAccount table (Portal owns the migration that
+/// creates it in this shared DB). Drive reads it to validate the active
+/// sub-account; a null sub-account everywhere = business scope.
+model SubAccount {
+  id        String           @id @default(cuid())
+  orgId     String
+  org       Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  status    SubAccountStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([orgId, slug])
+  @@index([orgId])
+}
+
+enum SubAccountStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model Member {
+  id          String       @id @default(cuid())
+  clerkUserId String
+  email       String?
+  name        String?
+  orgId       String
+  role        MemberRole   @default(MEMBER)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([clerkUserId, orgId])
+  @@index([clerkUserId])
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Subscription {
+  id               String       @id @default(cuid())
+  orgId            String
+  app              AppType
+  stripeCustomerId String?
+  stripeSubId      String?      @unique
+  plan             Plan         @default(FREE)
+  status           SubStatus    @default(ACTIVE)
+  currentPeriodEnd DateTime?
+  org              Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([orgId, app])
+  @@index([orgId])
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  BUSINESS
+  GROWTH
+  ENTERPRISE
+}
+
+enum SubStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+model AppAccess {
+  id      String       @id @default(cuid())
+  orgId   String
+  app     AppType
+  enabled Boolean      @default(true)
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, app])
+  @@index([orgId])
+}
+
+enum AppType {
+  WORKPIPE
+  ATRIUM
+  DRIVE
+}
+
+model DriveFolder {
+  id           String        @id @default(cuid())
+  name         String
+  parentId     String?
+  parent       DriveFolder?  @relation("DriveFolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     DriveFolder[] @relation("DriveFolderTree")
+  orgId        String
+  subAccountId String?
+  createdBy    String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  files        DriveFile[]
+
+  @@index([orgId])
+  @@index([parentId])
+  @@index([orgId, parentId])
+  @@index([orgId, subAccountId])
+}
+
+model DriveFile {
+  id           String          @id @default(cuid())
+  name         String
+  mimeType     String
+  size         BigInt
+  r2Key        String          @unique
+  // Public assets (logos / branding) live in the public R2 bucket and are NOT
+  // envelope-encrypted, so the DEK fields are null for them. isPublic also
+  // selects the public bucket + stable URL on read.
+  isPublic     Boolean         @default(false)
+  encryptedDek String?
+  dekIv        String?
+  dekTag       String?
+  fileIv       String?
+  checksum     String?
+  folderId     String?
+  folder       DriveFolder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  orgId        String
+  subAccountId String?
+  uploadedBy   String
+  status       DriveFileStatus @default(UPLOADING)
+  deletedAt    DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  shares       DriveShare[]
+  auditLogs    DriveAuditLog[]
+
+  @@index([orgId])
+  @@index([folderId])
+  @@index([orgId, folderId])
+  @@index([orgId, status])
+  @@index([orgId, subAccountId])
+}
+
+model DriveShare {
+  id           String    @id @default(cuid())
+  token        String    @unique
+  fileId       String
+  file         DriveFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  orgId        String
+  subAccountId String?
+  createdBy    String
+  expiresAt    DateTime?
+  maxAccesses  Int?
+  accessCount  Int       @default(0)
+  isRevoked    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  @@index([token])
+  @@index([fileId])
+  @@index([orgId])
+  @@index([orgId, subAccountId])
+}
+
+model DriveAuditLog {
+  id           String           @id @default(cuid())
+  orgId        String
+  subAccountId String?
+  userId       String?
+  fileId       String?
+  file         DriveFile?       @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  action       DriveAuditAction
+  metadata     Json?
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime         @default(now())
+
+  @@index([orgId])
+  @@index([fileId])
+  @@index([userId])
+  @@index([action])
+  @@index([orgId, createdAt])
+  @@index([orgId, subAccountId])
+}
+
+model StorageQuota {
+  id         String   @id @default(cuid())
+  orgId      String   @unique
+  quotaBytes BigInt
+  usedBytes  BigInt   @default(0)
+  fileCount  Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@index([orgId])
+}
+
+enum DriveFileStatus {
+  UPLOADING
+  ACTIVE
+  DELETED
+}
+
+enum DriveAuditAction {
+  FILE_UPLOAD
+  FILE_LIST
+  FILE_METADATA
+  FILE_DOWNLOAD
+  FILE_DELETE
+  FOLDER_CREATE
+  FILE_SHARE
+  QUOTA_VIEW
+}
