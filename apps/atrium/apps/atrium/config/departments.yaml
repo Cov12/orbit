@@ -1,0 +1,62 @@
+# Atrium Department Configuration
+# MVP: 3 simplified departments (Sales & Admin, Customer, Back Office)
+
+departments:
+  chief:
+    name: "Chief AI"
+    role: "executive"
+    description: "Cross-department reasoning, strategic summaries, delegation"
+    model_tier: "premium"
+    capabilities:
+      - cross_department_reasoning
+      - strategic_summaries
+      - delegation
+      - escalation_handling
+    restrictions:
+      - cannot_bypass_approval
+
+  sales_admin:
+    name: "Sales & Admin"
+    role: "department_head"
+    description: "Lead prioritization, follow-up generation, pipeline summaries, deal risk detection"
+    model_tier: "mid"
+    knowledge_scope: "sales"
+    capabilities:
+      - lead_prioritization
+      - follow_up_generation
+      - pipeline_summaries
+      - deal_risk_detection
+    workpipe_modules:
+      - contacts
+      - pipelines
+      - deals
+
+  customer:
+    name: "Customer"
+    role: "department_head"
+    description: "Ticket triage, suggested replies, escalation detection, sentiment summaries"
+    model_tier: "mid"
+    knowledge_scope: "customer"
+    capabilities:
+      - ticket_triage
+      - suggested_replies
+      - escalation_detection
+      - sentiment_summaries
+    workpipe_modules:
+      - tickets
+      - contacts
+
+  back_office:
+    name: "Back Office"
+    role: "department_head"
+    description: "Invoice follow-up, operational tasks, financial summaries, internal checklists"
+    model_tier: "mid"
+    knowledge_scope: "operations"
+    capabilities:
+      - invoice_follow_up
+      - operational_automation
+      - financial_summaries
+      - checklist_automation
+    workpipe_modules:
+      - invoices
+      - tasks

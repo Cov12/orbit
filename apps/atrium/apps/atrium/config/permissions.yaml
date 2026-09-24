@@ -1,0 +1,55 @@
+# Atrium Permission Matrix
+# Defines what each role can access and do
+
+roles:
+  executive:
+    description: "Owner/CEO — full access"
+    permissions:
+      - view_all_departments
+      - approve_proposals
+      - reject_proposals
+      - configure_departments
+      - manage_users
+      - view_audit_log
+      - override_delegation
+    department_access: "*"
+
+  department_head:
+    description: "Human department head — scoped to their department"
+    permissions:
+      - view_own_department
+      - approve_proposals
+      - reject_proposals
+      - view_department_knowledge
+      - edit_department_knowledge
+    department_access: "own"
+
+  manager:
+    description: "Future expansion — team lead within a department"
+    permissions:
+      - view_own_department
+      - approve_proposals  # limited scope
+      - view_department_knowledge
+    department_access: "own"
+
+  member:
+    description: "Team member — read + chat access"
+    permissions:
+      - view_own_department
+      - chat_with_department_ai
+      - view_department_knowledge
+    department_access: "own"
+
+# Delegated Mode enforcement
+delegation:
+  # No action executes without human approval
+  require_approval: true
+  # Who can approve (by role)
+  approvers:
+    - executive
+    - department_head
+  # Auto-approve threshold (future — disabled for MVP)
+  auto_approve:
+    enabled: false
+    confidence_threshold: 0.95
+    max_risk_level: "low"

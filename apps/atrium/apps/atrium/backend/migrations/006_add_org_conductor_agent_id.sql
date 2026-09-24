@@ -1,0 +1,11 @@
+-- 006_add_org_conductor_agent_id.sql
+-- Adds atrium_organization.conductor_agent_id — the per-org Conductor assistant agent id,
+-- provisioned lazily by conductor_bridge (which calls the plugin's ensure-agent verb the
+-- first time an org chats, then caches the returned id here). NULL until first chat; the
+-- Orbit default company keeps its pinned ORBIT_AGENT_ID and never needs a row here.
+--
+-- ⚠️ Atrium prod is SQLite; create_all() does not ALTER existing tables, so apply by
+--    hand once from the Atrium service shell (python3 is available; sqlite3 CLI is not):
+--   python3 -c "import sqlite3; c=sqlite3.connect('/app/backend/data/webui.db'); \
+--     c.execute('ALTER TABLE atrium_organization ADD COLUMN conductor_agent_id TEXT'); c.commit()"
+ALTER TABLE atrium_organization ADD COLUMN conductor_agent_id TEXT;
