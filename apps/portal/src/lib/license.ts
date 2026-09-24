@@ -1,32 +1,45 @@
 /**
- * License mode — lets the whole ecosystem run without any Stripe subscription,
- * as if licensed for a fixed term (on-prem / self-hosted / single-tenant cloud).
- * When active, every org is treated as fully entitled to all apps and the
- * billing/subscription gates are bypassed end-to-end (JWT app_access, the
- * subscriptions claim, the entitlement UI, and Conductor-sync).
+ * License mode — this edition of the Portal ships without commercial billing:
+ * every org is licensed for a term (on-prem / self-hosted / single-tenant cloud)
+ * and is fully entitled to every app. License mode is therefore ON by default.
+ * When active, entitlement is granted end-to-end: JWT `app_access`, the
+ * synthesized `subscriptions` claim, the entitlement UI, and Conductor-sync.
  *
- * Controlled entirely by environment — no per-org DB state in v1:
- *   ORBIT_LICENSE_MODE        "1" | "true" | "on" | "yes" to enable
+ * Controlled by environment:
+ *   ORBIT_LICENSE_MODE        unset/empty → ON (the default for this edition).
+ *                             "1" | "true" | "on" | "yes"  → ON.
+ *                             "0" | "false" | "off" | "no" → OFF; entitlement
+ *                             then comes only from per-org `licensed` flags and
+ *                             explicit AppAccess rows.
+ *                             Any other value fails CLOSED (OFF, logged).
  *   ORBIT_LICENSE_EXPIRES_AT  optional ISO date/datetime; once past, the license
- *                            lapses and normal subscription gating resumes.
+ *                             lapses and license-mode entitlement stops.
  *
  * A future per-org `License { orgId, plan, expiresAt }` table can layer on top
  * of this global switch without changing any call site — callers consume the
  * boolean below, not the env vars directly.
  */
 const TRUTHY = new Set(["1", "true", "on", "yes"]);
+const FALSY = new Set(["0", "false", "off", "no"]);
 
 /**
  * Whether license mode is currently active. `now` is injectable for testing.
  *
- * Fails CLOSED: if ORBIT_LICENSE_EXPIRES_AT is set but unparseable, the license
- * is treated as INACTIVE (and logged) so a typo can't silently grant unlimited
- * access. Operators see everything locked and fix the env, rather than the
- * reverse.
+ * Fails CLOSED in two cases, so a typo can never silently grant unlimited access:
+ *   - ORBIT_LICENSE_MODE is set to an unrecognized value, or
+ *   - ORBIT_LICENSE_EXPIRES_AT is set but unparseable.
+ * Both are logged; operators see everything locked and fix the env, rather than
+ * the reverse.
  */
 export function isLicenseActive(now: Date = new Date()): boolean {
   const flag = (process.env.ORBIT_LICENSE_MODE ?? "").trim().toLowerCase();
-  if (!TRUTHY.has(flag)) return false;
+  if (FALSY.has(flag)) return false;
+  if (flag !== "" && !TRUTHY.has(flag)) {
+    console.error(
+      `[license] unrecognized ORBIT_LICENSE_MODE: "${flag}" — treating license as INACTIVE`
+    );
+    return false;
+  }
 
   const expiresRaw = process.env.ORBIT_LICENSE_EXPIRES_AT?.trim();
   if (expiresRaw) {
@@ -45,9 +58,9 @@ export function isLicenseActive(now: Date = new Date()): boolean {
 
 /**
  * Effective license for a specific org: the instance-wide env switch
- * (`isLicenseActive()`, used for standalone/VPS deployments where the whole
- * instance is licensed) OR the org's own `licensed` flag (super-admin toggle in
- * shared cloud). Either path fully entitles the org with no subscription.
+ * (`isLicenseActive()`, on by default) OR the org's own `licensed` flag
+ * (super-admin toggle, which still applies when the instance switch is
+ * explicitly off). Either path fully entitles the org to every app.
  *
  * Accepts a partial org so callers can pass whatever they've loaded; a missing
  * `licensed` field degrades safely to the global switch only.

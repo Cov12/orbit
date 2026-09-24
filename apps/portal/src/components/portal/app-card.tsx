@@ -14,7 +14,7 @@ interface AppCardProps {
 
 const statusBadge = {
   active: { label: "Active", class: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
-  inactive: { label: "Upgrade Required", class: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+  inactive: { label: "Not Enabled", class: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
   coming_soon: { label: "Coming Soon", class: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
   bundled: { label: "Included with Atrium", class: "bg-emerald-400/10 text-emerald-300 border-emerald-400/20 italic" },
   coming_online: { label: "Coming online", class: "bg-amber-400/10 text-amber-300 border-amber-400/30" },

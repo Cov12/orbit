@@ -26,13 +26,7 @@ export async function GET() {
     // Find all workspaces this user is a member of
     const memberships = await db.member.findMany({
       where: { clerkUserId: userId },
-      include: {
-        org: {
-          include: {
-            subscriptions: { where: { status: { in: ["ACTIVE", "TRIALING"] } } },
-          },
-        },
-      },
+      include: { org: true },
     });
 
     // No auto-create: a user with no workspace is routed to the mandatory
@@ -46,12 +40,11 @@ export async function GET() {
       });
     }
 
-    const workspaces = memberships.map((m: any) => ({
+    const workspaces = memberships.map((m) => ({
       id: m.org.id,
       name: m.org.name,
       slug: m.org.slug,
       role: m.role,
-      plan: m.org.subscriptions[0]?.plan || "FREE",
     }));
 
     // Find the selected workspace, or default to first
@@ -63,11 +56,10 @@ export async function GET() {
       }
     }
 
-    // License applies to the *current* workspace: the global env switch OR that
-    // org's per-org `licensed` flag. When active the UI hides all
-    // billing/subscription surfaces.
+    // License applies to the *current* workspace: the global env switch (on by
+    // default) OR that org's per-org `licensed` flag.
     const currentOrg =
-      memberships.find((m: any) => m.org.id === current.id)?.org ?? null;
+      memberships.find((m) => m.org.id === current.id)?.org ?? null;
 
     return NextResponse.json({
       workspaces,

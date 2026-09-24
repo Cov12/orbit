@@ -1,7 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
-import { getAppEntitlementMap, type AppEntitlementMap } from "@/lib/entitlements";
+import {
+  ACTIVE_SUBSCRIPTION_STATUSES,
+  getAppEntitlementMap,
+  type AppEntitlementMap,
+} from "@/lib/entitlements";
 import { isOrgLicensed } from "@/lib/license";
 import type { AppType, SubStatus } from "@prisma/client";
 
@@ -12,7 +16,7 @@ export interface CurrentOrgEntitlements {
   isPlatformAdmin: boolean;
   /** Per-app entitlement, mirrors exactly what the signed JWT grants. */
   appStatus: AppEntitlementMap;
-  /** Active/trialing subscriptions on the org, for plan-label display. */
+  /** Legacy active subscription rows on the org (none are created in the license edition). */
   subscriptions: Array<{ app: AppType; plan: string; status: SubStatus }>;
 }
 
@@ -37,7 +41,7 @@ export async function getCurrentOrgEntitlements(): Promise<CurrentOrgEntitlement
   const include = {
     appAccess: true,
     subscriptions: {
-      where: { status: { in: ["ACTIVE" as const, "TRIALING" as const] } },
+      where: { status: { in: [...ACTIVE_SUBSCRIPTION_STATUSES] } },
     },
   };
 

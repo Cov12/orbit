@@ -1,22 +1,7 @@
-"use client";
-
-import { useState } from "react";
-import { SubscriptionCard } from "./subscription-card";
-
 interface Feature {
   icon: React.ReactNode;
   title: string;
   description: string;
-}
-
-interface Plan {
-  name: string;
-  description: string;
-  price: number;
-  app: string;
-  plan: string;
-  features: string[];
-  highlighted?: boolean;
 }
 
 interface AppLandingProps {
@@ -30,8 +15,7 @@ interface AppLandingProps {
   launchUrl?: string;
   status: "active" | "inactive" | "coming_soon" | "bundled" | "coming_online";
   features: Feature[];
-  plans?: Plan[];
-  freeNote?: string;
+  includedNote?: string;
   bundledNote?: string;
   callbackPath?: string;
   launchEnabled?: boolean;
@@ -48,34 +32,11 @@ export function AppLanding({
   launchUrl,
   status,
   features,
-  plans,
-  freeNote,
+  includedNote,
   bundledNote,
   callbackPath = "/atrium/auth/callback",
   launchEnabled = true,
 }: AppLandingProps) {
-  const [loading, setLoading] = useState<string | null>(null);
-
-  async function handleSelect(app: string, plan: string) {
-    const key = `${app}-${plan}`;
-    setLoading(key);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ app, plan }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch {
-      // noop
-    } finally {
-      setLoading(null);
-    }
-  }
-
   return (
     <div className="space-y-16 pb-12">
       {/* Hero */}
@@ -164,13 +125,9 @@ export function AppLanding({
                 Launch {name} →
               </a>
             ) : status === "inactive" ? (
-              <a
-                href="#pricing"
-                className="px-8 py-3 rounded-xl font-semibold text-white transition-all hover:scale-105 hover:shadow-lg"
-                style={{ backgroundColor: color }}
-              >
-                View Plans →
-              </a>
+              <div className="px-8 py-3 rounded-xl font-semibold bg-white/10 text-gray-300 cursor-default">
+                Not enabled for this workspace
+              </div>
             ) : status === "coming_online" || ((status === "active" || status === "bundled") && !launchEnabled) ? (
               <div className="px-8 py-3 rounded-xl font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 cursor-default">
                 Coming online
@@ -223,38 +180,14 @@ export function AppLanding({
         </div>
       </section>
 
-      {/* Pricing */}
-      {plans && plans.length > 0 && (
-        <section id="pricing">
-          <h2 className="text-2xl font-bold text-center mb-3">Choose Your Plan</h2>
-          <p className="text-gray-400 text-center mb-10 max-w-lg mx-auto">
-            Start small and scale as you grow. All plans include Orbit Drive storage.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {plans.map((p) => (
-              <SubscriptionCard
-                key={`${p.app}-${p.plan}`}
-                name={p.name}
-                description={p.description}
-                price={p.price}
-                features={p.features}
-                highlighted={p.highlighted}
-                loading={loading === `${p.app}-${p.plan}`}
-                onSelect={() => handleSelect(p.app, p.plan)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Free note for Drive */}
-      {freeNote && (
+      {/* Included-with-license note */}
+      {includedNote && (
         <section className="text-center">
           <div className="glass inline-block px-8 py-6 max-w-lg">
             <p className="text-lg font-semibold mb-1" style={{ color }}>
-              Free with any subscription
+              Included with your license
             </p>
-            <p className="text-gray-400 text-sm leading-relaxed">{freeNote}</p>
+            <p className="text-gray-400 text-sm leading-relaxed">{includedNote}</p>
           </div>
         </section>
       )}

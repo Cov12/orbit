@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 
 import LogoUpload from "@/components/onboarding/logo-upload";
 
-type Step = 1 | 2 | 3 | 4;
-
-interface ProductSelection {
-  app: "WORKPIPE" | "ATRIUM";
-  plan: string;
-}
+type Step = 1 | 2 | 3;
 
 const industries = [
   "Marketing & Advertising",
@@ -25,54 +20,13 @@ const industries = [
   "Other",
 ];
 
-const workpipePlans = [
-  {
-    id: "STARTER",
-    name: "Starter",
-    price: 0,
-    description: "For solo operators getting started",
-    features: ["1 user", "500 contacts", "Basic automations"],
-  },
-  {
-    id: "PRO",
-    name: "Pro",
-    price: 0,
-    description: "For growing teams",
-    features: ["5 users", "5,000 contacts", "Full automations", "API access"],
-    recommended: true,
-  },
-  {
-    id: "BUSINESS",
-    name: "Business",
-    price: 0,
-    description: "For companies that need scale",
-    features: ["25 users", "Unlimited contacts", "Priority support"],
-  },
-];
-
-const atriumPlans = [
-  {
-    id: "STARTER",
-    name: "Starter",
-    price: 0,
-    description: "Try AI-powered departments",
-    features: ["1 user", "3 AI department heads", "— AI interactions/mo"],
-  },
-  {
-    id: "GROWTH",
-    name: "Growth",
-    price: 0,
-    description: "Full AI organization",
-    features: ["5 users", "All 8 AI department heads", "— AI interactions/mo"],
-    recommended: true,
-  },
-  {
-    id: "ENTERPRISE",
-    name: "Enterprise",
-    price: 0,
-    description: "Dedicated AI infrastructure",
-    features: ["Unlimited users", "Unlimited AI interactions", "SSO & SLA"],
-  },
+// Every app is included with the license; shown on the review step so the
+// owner knows what the new workspace gets.
+const includedApps = [
+  { name: "WorkPipe CRM", description: "Pipelines, contacts, invoices, and automations", color: "#2B2FFF" },
+  { name: "Atrium", description: "AI-powered department heads for your business", color: "#20B2AA" },
+  { name: "Conductor", description: "AI back office that plans and delegates work", color: "#A78BFA" },
+  { name: "Orbit Drive", description: "Encrypted file storage for your workspace", color: "#6961ff" },
 ];
 
 export default function NewWorkspaceWizard() {
@@ -86,36 +40,7 @@ export default function NewWorkspaceWizard() {
   const [industry, setIndustry] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
 
-  // Step 2
-  const [selectedProducts, setSelectedProducts] = useState<ProductSelection[]>([]);
-
-  const toggleProduct = (app: "WORKPIPE" | "ATRIUM", plan: string) => {
-    setSelectedProducts((prev) => {
-      const existing = prev.find((p) => p.app === app);
-      if (existing) {
-        if (existing.plan === plan) {
-          // Deselect
-          return prev.filter((p) => p.app !== app);
-        } else {
-          // Change plan
-          return prev.map((p) => (p.app === app ? { ...p, plan } : p));
-        }
-      } else {
-        // Select new
-        return [...prev, { app, plan }];
-      }
-    });
-  };
-
-  const isSelected = (app: "WORKPIPE" | "ATRIUM", plan: string) => {
-    return selectedProducts.some((p) => p.app === app && p.plan === plan);
-  };
-
-  const hasProduct = (app: "WORKPIPE" | "ATRIUM") => {
-    return selectedProducts.some((p) => p.app === app);
-  };
-
-  // Step 3 — optional sub-accounts (sub-workspaces under this org)
+  // Step 2 — optional sub-accounts (sub-workspaces under this org)
   const [subAccounts, setSubAccounts] = useState<string[]>([]);
 
   const addSubAccount = () => setSubAccounts((prev) => [...prev, ""]);
@@ -148,16 +73,9 @@ export default function NewWorkspaceWizard() {
       setError(null);
       setStep(2);
     } else if (step === 2) {
-      if (selectedProducts.length === 0) {
-        setError("Please select at least one product");
-        return;
-      }
-      setError(null);
-      setStep(3);
-    } else if (step === 3) {
       // Sub-accounts are optional — no validation, just advance to review.
       setError(null);
-      setStep(4);
+      setStep(3);
     }
   };
 
@@ -179,7 +97,6 @@ export default function NewWorkspaceWizard() {
           name: workspaceName.trim(),
           industry: industry || undefined,
           logoUrl: logoUrl || undefined,
-          products: selectedProducts,
           subAccounts: cleanedSubAccounts.map((name) => ({ name })),
         }),
       });
@@ -219,7 +136,7 @@ export default function NewWorkspaceWizard() {
           <div className="w-full max-w-lg">
             {/* Progress */}
             <div className="flex items-center gap-2 mb-8">
-              {[1, 2, 3, 4].map((s) => (
+              {[1, 2, 3].map((s) => (
                 <div key={s} className="flex items-center gap-2">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -238,7 +155,7 @@ export default function NewWorkspaceWizard() {
                       s
                     )}
                   </div>
-                  {s < 4 && <div className={`w-12 h-0.5 ${s < step ? "bg-green-500" : "bg-white/10"}`} />}
+                  {s < 3 && <div className={`w-12 h-0.5 ${s < step ? "bg-green-500" : "bg-white/10"}`} />}
                 </div>
               ))}
             </div>
@@ -298,108 +215,8 @@ export default function NewWorkspaceWizard() {
               </div>
             )}
 
-            {/* Step 2: Product Selection */}
+            {/* Step 2: Sub-accounts (optional) */}
             {step === 2 && (
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-white mb-2">Choose your products</h1>
-                  <p className="text-gray-400">
-                    Select the products you want to try. You&apos;ll get a 7-day free trial.
-                  </p>
-                </div>
-
-                {/* WorkPipe CRM */}
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#2B2FFF]/20 flex items-center justify-center">
-                      <svg className="w-4 h-4 text-[#2B2FFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white">WorkPipe CRM</h3>
-                      <p className="text-xs text-gray-400">Full-featured CRM for small businesses</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {workpipePlans.map((plan) => (
-                      <button
-                        key={plan.id}
-                        onClick={() => toggleProduct("WORKPIPE", plan.id)}
-                        className={`relative p-3 rounded-lg border text-left transition-all ${
-                          isSelected("WORKPIPE", plan.id)
-                            ? "border-[#2B2FFF] bg-[#2B2FFF]/10"
-                            : hasProduct("WORKPIPE")
-                            ? "border-white/5 bg-white/2 opacity-50"
-                            : "border-white/10 bg-white/5 hover:border-white/20"
-                        }`}
-                      >
-                        {plan.recommended && (
-                          <span className="absolute -top-2 right-2 px-2 py-0.5 bg-[#2B2FFF] text-white text-[10px] font-bold rounded-full">
-                            POPULAR
-                          </span>
-                        )}
-                        <p className="font-medium text-white text-sm">{plan.name}</p>
-                        <p className="text-lg font-bold text-white">${plan.price}<span className="text-xs text-gray-400">/mo</span></p>
-                        <p className="text-[10px] text-gray-500 mt-1">{plan.features[0]}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Atrium */}
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#20B2AA]/20 flex items-center justify-center">
-                      <svg className="w-4 h-4 text-[#20B2AA]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white">Atrium</h3>
-                      <p className="text-xs text-gray-400">AI-powered department heads for your business</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {atriumPlans.map((plan) => (
-                      <button
-                        key={plan.id}
-                        onClick={() => toggleProduct("ATRIUM", plan.id)}
-                        className={`relative p-3 rounded-lg border text-left transition-all ${
-                          isSelected("ATRIUM", plan.id)
-                            ? "border-[#20B2AA] bg-[#20B2AA]/10"
-                            : hasProduct("ATRIUM")
-                            ? "border-white/5 bg-white/2 opacity-50"
-                            : "border-white/10 bg-white/5 hover:border-white/20"
-                        }`}
-                      >
-                        {plan.recommended && (
-                          <span className="absolute -top-2 right-2 px-2 py-0.5 bg-[#20B2AA] text-white text-[10px] font-bold rounded-full">
-                            POPULAR
-                          </span>
-                        )}
-                        <p className="font-medium text-white text-sm">{plan.name}</p>
-                        <p className="text-lg font-bold text-white">${plan.price}<span className="text-xs text-gray-400">/mo</span></p>
-                        <p className="text-[10px] text-gray-500 mt-1">{plan.features[0]}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Orbit Drive note */}
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#6961ff]/10 border border-[#6961ff]/20">
-                  <svg className="w-5 h-5 text-[#6961ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p className="text-sm text-gray-300">
-                    <span className="font-medium text-white">Orbit Drive</span> is included free with any subscription.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Sub-accounts (optional) */}
-            {step === 3 && (
               <div className="space-y-6">
                 <div>
                   <h1 className="text-2xl font-bold text-white mb-2">Add sub-accounts</h1>
@@ -462,13 +279,13 @@ export default function NewWorkspaceWizard() {
               </div>
             )}
 
-            {/* Step 4: Review */}
-            {step === 4 && (
+            {/* Step 3: Review */}
+            {step === 3 && (
               <div className="space-y-6">
                 <div>
-                  <h1 className="text-2xl font-bold text-white mb-2">Start your free trial</h1>
+                  <h1 className="text-2xl font-bold text-white mb-2">Review your workspace</h1>
                   <p className="text-gray-400">
-                    Review your selections and start your 7-day free trial. No credit card required.
+                    Confirm the details below. Your license includes every Orbit app.
                   </p>
                 </div>
 
@@ -487,55 +304,22 @@ export default function NewWorkspaceWizard() {
                     </svg>
                   </div>
 
-                  {/* Selected Products */}
-                  {selectedProducts.map((product) => {
-                    const plans = product.app === "WORKPIPE" ? workpipePlans : atriumPlans;
-                    const plan = plans.find((p) => p.id === product.plan);
-                    return (
-                      <div key={product.app} className="p-4 flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            product.app === "WORKPIPE" ? "bg-[#2B2FFF]/20" : "bg-[#20B2AA]/20"
-                          }`}
-                        >
-                          {product.app === "WORKPIPE" ? (
-                            <svg className="w-5 h-5 text-[#2B2FFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                          ) : (
-                            <svg className="w-5 h-5 text-[#20B2AA]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                            </svg>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-white">
-                            {product.app === "WORKPIPE" ? "WorkPipe CRM" : "Atrium"} - {plan?.name}
-                          </p>
-                          <p className="text-sm text-gray-400">${plan?.price}/mo after trial</p>
-                        </div>
-                        <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
+                  {/* Included apps */}
+                  {includedApps.map((app) => (
+                    <div key={app.name} className="p-4 flex items-center gap-4">
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center font-bold"
+                        style={{ backgroundColor: `${app.color}33`, color: app.color }}
+                      >
+                        {app.name.charAt(0)}
                       </div>
-                    );
-                  })}
-
-                  {/* Orbit Drive */}
-                  <div className="p-4 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-[#6961ff]/20 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-[#6961ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
+                      <div className="flex-1">
+                        <p className="font-medium text-white">{app.name}</p>
+                        <p className="text-sm text-gray-400">{app.description}</p>
+                      </div>
+                      <span className="text-xs text-green-400">Included</span>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-white">Orbit Drive</p>
-                      <p className="text-sm text-gray-400">Included free</p>
-                    </div>
-                    <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
+                  ))}
 
                   {/* Sub-accounts */}
                   {cleanedSubAccounts.length > 0 && (
@@ -556,16 +340,16 @@ export default function NewWorkspaceWizard() {
                   )}
                 </div>
 
-                {/* Trial info */}
+                {/* License info */}
                 <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                   <div className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-green-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div>
-                      <p className="font-medium text-white">7-day free trial</p>
+                      <p className="font-medium text-white">Licensed — all apps included</p>
                       <p className="text-sm text-gray-400">
-                        No credit card required. You&apos;ll be reminded before your trial ends.
+                        Everyone you invite to this workspace can launch every app.
                       </p>
                     </div>
                   </div>
@@ -594,7 +378,7 @@ export default function NewWorkspaceWizard() {
                 Back
               </button>
 
-              {step < 4 ? (
+              {step < 3 ? (
                 <button
                   onClick={handleNext}
                   className="px-6 py-2.5 rounded-lg bg-[#2B2FFF] text-white font-medium hover:bg-[#2B2FFF]/90 transition-colors"
@@ -613,7 +397,7 @@ export default function NewWorkspaceWizard() {
                       Creating...
                     </>
                   ) : (
-                    "Start Free Trial"
+                    "Create Workspace"
                   )}
                 </button>
               )}

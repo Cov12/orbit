@@ -1,6 +1,6 @@
 # AGENTS.md — Orbit Portal Coding Instructions
 
-You are a coding agent working on the Orbit Portal, a centralized identity/billing platform.
+You are a coding agent working on the Orbit Portal, a centralized identity/entitlement platform (license edition — no billing).
 
 ## Rules
 
@@ -17,7 +17,7 @@ You are a coding agent working on the Orbit Portal, a centralized identity/billi
 - Tailwind CSS
 - Prisma 7 with `@prisma/adapter-pg` (do NOT use bare `new PrismaClient()`)
 - Clerk auth (Portal IS the auth layer — Clerk imports are OK here)
-- Stripe for billing
+- License mode (`src/lib/license.ts`, on by default) for entitlement — no billing
 - JWT issued via `src/lib/jwt.ts` for downstream apps
 
 ## Key Architecture
@@ -26,7 +26,7 @@ You are a coding agent working on the Orbit Portal, a centralized identity/billi
 - Downstream apps (WorkPipe, Drive, Atrium) receive Portal JWTs
 - `/api/auth/token` — issues JWTs for authenticated users
 - `/api/auth/refresh` — silent token refresh for downstream apps
-- Workspace model: Organization + Member + Subscription + AppAccess
+- Workspace model: Organization + Member + AppAccess (Subscription is retained for the JWT `subscriptions` claim but no longer written)
 
 ## Design Tokens
 

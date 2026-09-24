@@ -1,7 +1,8 @@
 import type { SubStatus, AppType } from '@prisma/client';
 
-// Trialing is included because Stripe charges automatically at trial-end —
-// users in trial should have full feature access until canceled.
+// Subscription statuses that still count as entitled. The license edition no
+// longer creates subscriptions, but the Subscription model is retained for
+// existing rows and for the cross-app JWT `subscriptions` claim.
 export const ACTIVE_SUBSCRIPTION_STATUSES: ReadonlyArray<SubStatus> = ['ACTIVE', 'TRIALING'];
 
 const ACTIVE_STATUS_SET: ReadonlySet<SubStatus> = new Set(ACTIVE_SUBSCRIPTION_STATUSES);
@@ -28,7 +29,7 @@ export function isSubscriptionActive(status: SubStatus): boolean {
 
 // The `licensed` parameter reflects license mode (see lib/license.ts): when the
 // deployment runs under a term license, every org is fully entitled to every app
-// and Stripe/subscription gating is bypassed. It is threaded in (rather than read
+// and subscription gating is bypassed. It is threaded in (rather than read
 // from env inside these pure functions) so the selectors stay pure and testable.
 export function conductorActive(org: OrgWithRelations, licensed = false): boolean {
   if (licensed) return true;
@@ -66,7 +67,7 @@ export function getEffectiveAppAccess(
     return [...ALL_APP_TYPES].sort((a, b) => a.localeCompare(b));
   }
   if (isPlatformAdmin) {
-    // Admins get the base apps free; CONDUCTOR still requires real entitlement.
+    // Admins get the base apps without an AppAccess row; CONDUCTOR still requires real entitlement.
     const base: AppType[] = ['ATRIUM', 'DRIVE', 'WORKPIPE'];
     if (conductorActive(org)) base.push('CONDUCTOR');
     return Array.from(new Set(base)).sort((a, b) => a.localeCompare(b));
@@ -81,11 +82,11 @@ export function getEffectiveAppAccess(
  * whether the org/user is entitled to each app, derived EXACTLY from
  * getEffectiveAppAccess — i.e. the same set the signed JWT grants. Every
  * entitlement surface (dashboard, apps grid, per-app landing pages) must derive
- * its "Active / Upgrade Required" status from this, so the UI can never disagree
+ * its "Active / Not Enabled" status from this, so the UI can never disagree
  * with what the token actually authorizes.
  *
  * `true`  => entitled now (app opens; show "Active"/"Included").
- * `false` => not entitled (show "Upgrade Required").
+ * `false` => not entitled (show "Not Enabled").
  */
 export function getAppEntitlementMap(
   org: OrgWithRelations,

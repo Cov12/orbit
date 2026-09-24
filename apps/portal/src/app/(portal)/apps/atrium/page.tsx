@@ -30,65 +30,7 @@ const features = [
   {
     icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
     title: "WorkPipe CRM Included",
-    description: "Every Atrium plan includes full WorkPipe CRM access. Your AI departments execute through the CRM automatically.",
-  },
-];
-
-const plans = [
-  {
-    name: "Starter",
-    description: "Try AI-powered departments for your business.",
-    price: 0,
-    app: "ATRIUM",
-    plan: "STARTER",
-    features: [
-      "1 user",
-      "3 AI department heads",
-      "— AI interactions/mo",
-      "Voice mode (limited)",
-      "WorkPipe CRM included",
-      "Delegated mode",
-      "Knowledge base",
-      "Orbit Drive (5 GB)",
-    ],
-  },
-  {
-    name: "Growth",
-    description: "Full AI organization for teams ready to scale.",
-    price: 0,
-    app: "ATRIUM",
-    plan: "GROWTH",
-    features: [
-      "5 users",
-      "All 8 AI department heads",
-      "— AI interactions/mo",
-      "Full voice mode",
-      "WorkPipe CRM included",
-      "Priority model routing",
-      "Cross-dept reasoning",
-      "Advanced RAG",
-      "Orbit Drive (50 GB)",
-    ],
-    highlighted: true,
-  },
-  {
-    name: "Enterprise",
-    description: "Dedicated AI infrastructure with white-label options.",
-    price: 0,
-    app: "ATRIUM",
-    plan: "ENTERPRISE",
-    features: [
-      "Unlimited users",
-      "All dept heads + custom",
-      "Unlimited AI interactions",
-      "Full voice mode",
-      "WorkPipe CRM included",
-      "Dedicated infrastructure",
-      "SSO & SLA guarantee",
-      "White-label option",
-      "Custom integrations",
-      "Orbit Drive (unlimited)",
-    ],
+    description: "Atrium includes full WorkPipe CRM access. Your AI departments execute through the CRM automatically.",
   },
 ];
 
@@ -103,7 +45,7 @@ export default async function AtriumPage() {
   return (
     <AppLanding
       name="Atrium"
-      tagline="Fortune 500 leverage. Small team price."
+      tagline="Fortune 500 leverage. Small team footprint."
       description="An AI-powered organizational operating system that gives your business dedicated department heads for sales, support, operations, and more — all working 24/7."
       color="#20B2AA"
       icon={
@@ -114,7 +56,6 @@ export default async function AtriumPage() {
       status={status}
       launchUrl={launchUrl}
       features={features}
-      plans={plans}
     />
   );
 }

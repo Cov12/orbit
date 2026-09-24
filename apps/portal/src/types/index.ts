@@ -38,13 +38,3 @@ export interface AppInfo {
   color: string;
   status: 'active' | 'inactive' | 'coming_soon';
 }
-
-export interface PlanInfo {
-  id: Plan;
-  name: string;
-  price: number;
-  interval: 'month' | 'year';
-  features: string[];
-  apps: AppType[];
-  highlighted?: boolean;
-}

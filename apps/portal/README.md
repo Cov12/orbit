@@ -1,14 +1,17 @@
 # Orbit Portal
 
-Centralized identity and billing portal for Orbit (Orbit) products.
+Centralized identity and entitlement portal for Orbit (Orbit) products.
+
+This is the **license edition**: there is no commercial billing. Every organization is licensed and fully entitled to every app (see [License Mode](#license-mode)).
 
 **One login. All of Orbit.**
 
 ## Products
 
 - **WorkPipe CRM** — Pipelines, contacts, invoices, automations
-- **Orbit Drive** — Secure org-scoped file storage (Free with any subscription)
+- **Orbit Drive** — Secure org-scoped file storage
 - **Atrium** — AI-powered department heads for sales, support, and operations
+- **Conductor** — AI back office that plans, delegates, and executes work
 
 ## Tech Stack
 
@@ -16,7 +19,6 @@ Centralized identity and billing portal for Orbit (Orbit) products.
 - **TypeScript** (strict mode)
 - **Clerk** (auth — production instance on `orbit.example`)
 - **Prisma 7** (PostgreSQL via Neon)
-- **Stripe** (billing + per-app subscriptions, test mode)
 - **Tailwind CSS**
 
 ## Architecture
@@ -27,10 +29,10 @@ Portal is the **single auth boundary** for all Orbit apps. Downstream apps have 
 portal.orbit.example (this app)
 ├── Auth (Clerk) — sign-in, sign-up, workspaces
 ├── JWT Issuance — /api/auth/token, /api/auth/refresh
-├── Billing — Stripe per-app subscriptions, annual discount (15%)
-├── App Launcher — launch WorkPipe, Drive, or Atrium
-├── App Landing Pages — /apps/workpipe, /apps/drive, /apps/atrium
-└── Webhooks — Clerk user sync + Stripe subscription events
+├── Entitlements — license mode + per-org AppAccess (lib/license.ts, lib/entitlements.ts)
+├── App Launcher — launch WorkPipe, Drive, Atrium, or Conductor
+├── App Landing Pages — /apps/workpipe, /apps/drive, /apps/atrium, /apps/conductor
+└── Webhooks — Clerk user sync
 
 Downstream apps validate Portal JWTs — they never touch Clerk directly.
 ```
@@ -55,19 +57,32 @@ Session expiry:
 
 ### JWT Payload
 
+See `OrbitJwtPayload` in `src/types/index.ts` for the authoritative shape.
+
 ```typescript
 {
-  sub: string        // User ID
-  email: string      // User email
-  name: string       // User display name
-  org_id: string     // Workspace ID
-  role: string       // OWNER | ADMIN | MEMBER | CLIENT
-  apps: string[]     // ["WORKPIPE", "DRIVE", "ATRIUM"]
-  plan: string       // Current plan
+  sub: string                 // User ID
+  email: string               // User email
+  name: string                // User display name
+  org_id: string              // Workspace ID
+  org_slug: string
+  org_name?: string
+  org_logo?: string | null
+  org_industry?: string | null
+  sub_account_id?: string | null  // null/absent = business scope
+  role: string                // OWNER | ADMIN | MEMBER
+  subscriptions: { plan: string; status: string }[]
+  app_access: string[]        // e.g. ["ATRIUM", "CONDUCTOR", "DRIVE", "WORKPIPE"]
+  aud?: string                // "conductor" for Conductor launches
   iat: number
   exp: number
 }
 ```
+
+`subscriptions` is part of the cross-app contract (downstream apps read it), so
+its shape is kept even though Portal no longer creates subscriptions. For a
+licensed org with no subscription rows, Portal synthesizes
+`[{ plan: "ENTERPRISE", status: "ACTIVE" }]`.
 
 Cookie: `orbit_token` — HTTP-only, Secure, SameSite=Lax, path=/
 
@@ -80,34 +95,37 @@ Cookie: `orbit_token` — HTTP-only, Secure, SameSite=Lax, path=/
 | WorkPipe | `workpipe.orbit.example` (staging) |
 | Atrium | `atrium.orbit.example` (staging) |
 
-## Billing Model
+## License Mode
 
-Per-app subscriptions (not bundled tiers):
+License mode is **on by default** (`ORBIT_LICENSE_MODE` unset). While active,
+every organization is entitled to every app: the JWT `app_access` claim lists
+all apps, the `subscriptions` claim is synthesized, and the dashboard shows
+"Licensed — all apps included".
 
-| App | Starter | Pro/Growth | Business/Enterprise |
-|-----|---------|------------|---------------------|
-| WorkPipe | $—/mo | $—/mo | $—/mo |
-| Atrium | $—/mo | $—/mo | $—/mo |
-| Drive | Free | Free | Free |
+| Variable | Values | Effect |
+|----------|--------|--------|
+| `ORBIT_LICENSE_MODE` | unset/empty, `1`, `true`, `on`, `yes` | License mode on (default) |
+| | `0`, `false`, `off`, `no` | Off — entitlement comes from the per-org `licensed` flag (super-admin toggle) and `AppAccess` rows |
+| | anything else | Fails closed (off), logged |
+| `ORBIT_LICENSE_EXPIRES_AT` | ISO date/datetime | License lapses after this instant; unparseable fails closed |
 
-- Annual billing: discounted
-- Stripe test mode (switch to live before launch)
-- New workspaces get WorkPipe + Drive auto-enabled
+New workspaces get an `AppAccess` row for every app (or for the `apps` passed to
+`POST /api/workspaces/create`). No subscriptions or trials are created.
 
 ## Database
 
 Neon Postgres with Prisma 7 (`@prisma/adapter-pg`).
 
-Key models: Organization (workspace), Member, Subscription (per-app via `@@unique([orgId, app])`), AppAccess, DriveFolder, DriveFile, DriveShare, DriveAuditLog, StorageQuota.
+Key models: Organization (workspace), Member, AppAccess, Subscription (retained for existing rows and the JWT claim; no longer written), DriveFolder, DriveFile, DriveShare, DriveAuditLog, StorageQuota.
 
-Enums: AppType (WORKPIPE, ATRIUM, DRIVE), MemberRole (OWNER, ADMIN, MEMBER), Plan (FREE, STARTER, PRO, BUSINESS, GROWTH, ENTERPRISE).
+Enums: AppType (WORKPIPE, ATRIUM, DRIVE, CONDUCTOR), MemberRole (OWNER, ADMIN, MEMBER), Plan (FREE, STARTER, PRO, BUSINESS, GROWTH, ENTERPRISE).
 
 ## Getting Started
 
 ```bash
 npm install
 cp .env.example .env
-# Fill in Clerk, Stripe, Neon, and JWT credentials
+# Fill in Clerk, database, and JWT credentials
 npx prisma generate
 npx prisma db push
 npm run dev
@@ -119,8 +137,6 @@ npm run dev
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
 CLERK_SECRET_KEY=sk_live_...
 CLERK_WEBHOOK_SECRET=whsec_...
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
 DATABASE_URL=postgresql://...
 JWT_SECRET=<shared across Portal, WorkPipe, Drive>
 NEXT_PUBLIC_WORKPIPE_URL=https://workpipe.orbit.example

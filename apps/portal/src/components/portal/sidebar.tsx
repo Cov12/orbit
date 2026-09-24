@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
@@ -11,9 +11,6 @@ interface NavItem {
   href: string;
   label: string;
   icon: string;
-  ownerOnly?: boolean;
-  // Hidden while license mode is active (no subscriptions to manage).
-  licenseHidden?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -21,34 +18,12 @@ const navItems: NavItem[] = [
   { href: "/apps", label: "Apps", icon: "⊞" },
   { href: "/settings/team", label: "Team", icon: "◎" },
   { href: "/settings/subaccounts", label: "Sub-accounts", icon: "⧉" },
-  { href: "/billing", label: "Billing", icon: "◈", ownerOnly: true, licenseHidden: true },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [workspaceRole, setWorkspaceRole] = useState<string | null>(null);
-  const [licensed, setLicensed] = useState(false);
-
-  // Fetch current workspace role + license state
-  useEffect(() => {
-    fetch("/api/workspaces")
-      .then((r) => r.json())
-      .then((data) => {
-        setWorkspaceRole(data.current?.role || null);
-        setLicensed(!!data.licensed);
-      })
-      .catch(() => {});
-  }, []);
-
-  // Filter nav items based on role (OWNER/ADMIN see all, MEMBER sees filtered)
-  // and license mode (hide billing/subscription surfaces when licensed).
-  const isOwnerOrAdmin = workspaceRole === "OWNER" || workspaceRole === "ADMIN";
-  const filteredNavItems = navItems.filter(
-    (item) =>
-      (!item.ownerOnly || isOwnerOrAdmin) && !(item.licenseHidden && licensed)
-  );
 
   return (
     <aside
@@ -71,7 +46,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {filteredNavItems.map((item) => {
+        {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
             <Link

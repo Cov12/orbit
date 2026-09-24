@@ -163,4 +163,27 @@ describe('GET /api/auth/refresh — aud derivation from redirect_uri origin', ()
     }) as Record<string, unknown>;
     expect(decoded.org_id).toBe('org_1'); // the user's real org, not the stale 'other_org'
   });
+
+  it('default license edition → full app_access and a subscriptions claim of shape [{ plan, status }]', async () => {
+    // Downstream apps read `subscriptions`; Portal no longer creates subscriptions,
+    // so under license mode (on by default) it synthesizes the claim instead.
+    const originalLicenseMode = process.env.ORBIT_LICENSE_MODE;
+    delete process.env.ORBIT_LICENSE_MODE;
+    try {
+      memberFindFirstMock.mockResolvedValue({
+        org: { ...orgWithConductor, licensed: false, subscriptions: [], appAccess: [] },
+      });
+      const { GET } = await import('./route');
+      const res = await GET(makeReq(`${ATRIUM_URL}/atrium/auth/callback`));
+
+      const decoded = jwt.verify(tokenFromRedirect(res), TEST_SECRET, {
+        algorithms: ['HS256'],
+      }) as Record<string, unknown>;
+      expect(decoded.app_access).toEqual(['ATRIUM', 'CONDUCTOR', 'DRIVE', 'WORKPIPE']);
+      expect(decoded.subscriptions).toEqual([{ plan: 'ENTERPRISE', status: 'ACTIVE' }]);
+    } finally {
+      if (originalLicenseMode === undefined) delete process.env.ORBIT_LICENSE_MODE;
+      else process.env.ORBIT_LICENSE_MODE = originalLicenseMode;
+    }
+  });
 });

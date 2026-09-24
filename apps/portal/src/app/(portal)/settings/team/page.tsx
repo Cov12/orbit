@@ -425,9 +425,9 @@ export default function TeamSettingsPage() {
 
       {/* Role Explanation */}
       <div className="text-sm text-gray-500 space-y-1">
-        <p><strong className="text-gray-400">Owner:</strong> Full access, manages billing, cannot be removed</p>
+        <p><strong className="text-gray-400">Owner:</strong> Full access, manages the workspace, cannot be removed</p>
         <p><strong className="text-gray-400">Admin:</strong> Full app access, can invite members</p>
-        <p><strong className="text-gray-400">Member:</strong> Access based on workspace subscriptions</p>
+        <p><strong className="text-gray-400">Member:</strong> Access to the apps enabled for this workspace</p>
       </div>
     </div>
   );

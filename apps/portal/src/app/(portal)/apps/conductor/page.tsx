@@ -2,7 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { AppLanding } from "@/components/portal/app-landing";
-import { conductorActive } from "@/lib/entitlements";
+import { ACTIVE_SUBSCRIPTION_STATUSES, conductorActive } from "@/lib/entitlements";
+import { isOrgLicensed } from "@/lib/license";
 
 async function getConductorStatus(userId: string): Promise<{
   status: "bundled" | "coming_online";
@@ -14,7 +15,7 @@ async function getConductorStatus(userId: string): Promise<{
 
   const include = {
     appAccess: true,
-    subscriptions: { where: { status: { in: ["ACTIVE" as const, "TRIALING" as const] } } },
+    subscriptions: { where: { status: { in: [...ACTIVE_SUBSCRIPTION_STATUSES] } } },
   };
 
   let member;
@@ -36,7 +37,9 @@ async function getConductorStatus(userId: string): Promise<{
   }
 
   const org = member.org;
-  const active = conductorActive(org);
+  // Thread the license through so this page agrees with the JWT, which grants
+  // CONDUCTOR to every licensed org (new orgs have no subscriptions at all).
+  const active = conductorActive(org, isOrgLicensed(org));
 
   if (!active) {
     return { status: "coming_online", launchEnabled: false };
@@ -102,7 +105,7 @@ export default async function ConductorPage() {
       launchEnabled={launchEnabled}
       callbackPath="/conductor/auth/callback"
       features={features}
-      bundledNote="Conductor is part of every Atrium subscription — no separate plan needed."
+      bundledNote="Conductor ships alongside Atrium — no separate setup needed."
     />
   );
 }

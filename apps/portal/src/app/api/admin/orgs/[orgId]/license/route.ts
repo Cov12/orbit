@@ -9,9 +9,10 @@ import { postConductorEntitlements } from "@/lib/conductor-entitlements";
  *
  * Super-admin toggle of an org's per-org license grant. Sets Organization.licensed,
  * which the entitlement core reads via isOrgLicensed() (OR'd with the global
- * ORBIT_LICENSE_MODE env). When licensed, the org is fully entitled with no
- * subscription and its billing UI is hidden — the change reflects in that org's
- * JWT/UI on next load, and is pushed to Conductor immediately.
+ * ORBIT_LICENSE_MODE env, which is on by default). The per-org flag matters when
+ * an operator runs with ORBIT_LICENSE_MODE=off: a licensed org is then fully
+ * entitled with no subscription — the change reflects in that org's JWT/UI on
+ * next load, and is pushed to Conductor immediately.
  */
 export async function POST(
   req: Request,

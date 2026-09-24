@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 
 const authMock = vi.fn();
@@ -60,22 +60,39 @@ function makeRequest(body: unknown): Request {
   });
 }
 
-describe('POST /api/auth/token — aud handling', () => {
+const ORIGINAL_LICENSE_MODE = process.env.ORBIT_LICENSE_MODE;
+
+function restoreLicenseMode() {
+  if (ORIGINAL_LICENSE_MODE === undefined) delete process.env.ORBIT_LICENSE_MODE;
+  else process.env.ORBIT_LICENSE_MODE = ORIGINAL_LICENSE_MODE;
+}
+
+function stubClerkAndCookies() {
+  authMock.mockResolvedValue({ userId: 'user_1' });
+  currentUserMock.mockResolvedValue({
+    emailAddresses: [{ id: 'e1', emailAddress: 'u@example.com' }],
+    primaryEmailAddressId: 'e1',
+    firstName: 'User',
+    lastName: 'One',
+  });
+  cookiesMock.mockResolvedValue({ get: () => undefined });
+  orgFindUniqueMock.mockResolvedValue(null);
+}
+
+// The license edition runs with license mode ON by default. Operators can still
+// set ORBIT_LICENSE_MODE=off, in which case entitlement falls back to per-org
+// flags + AppAccess/subscription rows — this block covers that gated path.
+describe('POST /api/auth/token — aud handling (license mode explicitly off)', () => {
   beforeAll(() => {
     process.env.JWT_SECRET = TEST_SECRET;
+    process.env.ORBIT_LICENSE_MODE = 'off';
   });
+
+  afterAll(restoreLicenseMode);
 
   beforeEach(() => {
     vi.clearAllMocks();
-    authMock.mockResolvedValue({ userId: 'user_1' });
-    currentUserMock.mockResolvedValue({
-      emailAddresses: [{ id: 'e1', emailAddress: 'u@example.com' }],
-      primaryEmailAddressId: 'e1',
-      firstName: 'User',
-      lastName: 'One',
-    });
-    cookiesMock.mockResolvedValue({ get: () => undefined });
-    orgFindUniqueMock.mockResolvedValue(null);
+    stubClerkAndCookies();
   });
 
   it('aud=conductor with active ATRIUM sub + CONDUCTOR enabled → 200 with aud and CONDUCTOR in app_access', async () => {
@@ -153,5 +170,51 @@ describe('POST /api/auth/token — aud handling', () => {
     }) as Record<string, unknown>;
 
     expect(decoded.aud).toBeUndefined();
+  });
+});
+
+// Cross-app JWT contract under the default license edition. Downstream apps read
+// the `subscriptions` claim, so its shape must stay [{ plan, status }] even though
+// Portal no longer creates subscriptions.
+describe('POST /api/auth/token — default license edition', () => {
+  beforeAll(() => {
+    process.env.JWT_SECRET = TEST_SECRET;
+    delete process.env.ORBIT_LICENSE_MODE;
+  });
+
+  afterAll(restoreLicenseMode);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    stubClerkAndCookies();
+  });
+
+  it('entitles a plain MEMBER of an org with no subscriptions to every app', async () => {
+    memberFindFirstMock.mockResolvedValue({
+      org: { ...baseOrgWithConductor, licensed: false, subscriptions: [], appAccess: [] },
+    });
+    const { POST } = await import('./route');
+
+    const res = await POST(makeRequest({}));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const decoded = jwt.verify(body.token, TEST_SECRET, { algorithms: ['HS256'] }) as Record<string, unknown>;
+
+    expect(decoded.app_access).toEqual(['ATRIUM', 'CONDUCTOR', 'DRIVE', 'WORKPIPE']);
+    expect(decoded.subscriptions).toEqual([{ plan: 'ENTERPRISE', status: 'ACTIVE' }]);
+  });
+
+  it('grants aud=conductor without any ATRIUM subscription', async () => {
+    memberFindFirstMock.mockResolvedValue({ org: { ...orgWithoutAtrium, licensed: false } });
+    const { POST } = await import('./route');
+
+    const res = await POST(makeRequest({ aud: 'conductor' }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const decoded = jwt.verify(body.token, TEST_SECRET, {
+      algorithms: ['HS256'],
+      audience: 'conductor',
+    }) as Record<string, unknown>;
+    expect(decoded.app_access).toContain('CONDUCTOR');
   });
 });

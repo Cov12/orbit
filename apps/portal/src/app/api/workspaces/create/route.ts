@@ -1,14 +1,22 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import type { AppType } from "@prisma/client";
 import { db } from "@/lib/db";
+import { ALL_APP_TYPES } from "@/lib/entitlements";
 import { postConductorEntitlements } from "@/lib/conductor-entitlements";
+
+const KNOWN_APPS: ReadonlySet<string> = new Set(ALL_APP_TYPES);
 
 /**
  * POST /api/workspaces/create
  *
- * Creates a new workspace with a 7-day trial subscription.
- * No credit card required upfront.
+ * Creates a new workspace. No subscriptions are created: under the license
+ * edition every org is entitled via license mode (see lib/license.ts). An
+ * AppAccess row is still written for each requested app (default: every app) so
+ * entitlement keeps working when an operator runs with license mode off.
+ *
+ * Body: { name, industry?, logoUrl?, apps?: AppType[], subAccounts?: [{ name }] }
  */
 export async function POST(req: Request) {
   try {
@@ -19,14 +27,11 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, industry, logoUrl, products, subAccounts } = body as {
+    const { name, industry, logoUrl, apps, subAccounts } = body as {
       name: string;
       industry?: string;
       logoUrl?: string;
-      products: Array<{
-        app: "WORKPIPE" | "ATRIUM";
-        plan: string;
-      }>;
+      apps?: unknown;
       subAccounts?: Array<{ name: string }>;
     };
 
@@ -34,9 +39,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Workspace name is required" }, { status: 400 });
     }
 
-    if (!products || products.length === 0) {
-      return NextResponse.json({ error: "At least one product must be selected" }, { status: 400 });
+    // Optional app selection; omitted or empty means every app.
+    if (apps !== undefined && !Array.isArray(apps)) {
+      return NextResponse.json({ error: "apps must be an array" }, { status: 400 });
     }
+    const appList: unknown[] = Array.isArray(apps) ? apps : [];
+    if (appList.some((a) => typeof a !== "string" || !KNOWN_APPS.has(a))) {
+      return NextResponse.json({ error: "Unknown app in apps" }, { status: 400 });
+    }
+    const requestedApps: AppType[] =
+      appList.length > 0 ? Array.from(new Set(appList as AppType[])) : [...ALL_APP_TYPES];
 
     // Generate a unique slug from the name
     const baseSlug = name
@@ -52,10 +64,6 @@ export async function POST(req: Request) {
       slug = `${baseSlug}-${suffix}`;
       suffix++;
     }
-
-    // Calculate trial end date (7 days from now)
-    const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 7);
 
     // Optional initial sub-accounts: slugify + de-dupe within this batch (the org
     // is brand new, so the only possible collisions are between the inputs).
@@ -85,7 +93,6 @@ export async function POST(req: Request) {
     const ownerName =
       [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ").trim() || null;
 
-    // Create the organization with subscriptions
     // Trust only a real https URL from our upload host; ignore anything else.
     const cleanLogoUrl =
       typeof logoUrl === "string" && logoUrl.startsWith("https://") ? logoUrl : null;
@@ -108,44 +115,12 @@ export async function POST(req: Request) {
             role: "OWNER",
           },
         },
-        subscriptions: {
-          create: products.map((p) => ({
-            app: p.app,
-            plan: p.plan as "STARTER" | "PRO" | "BUSINESS" | "GROWTH" | "ENTERPRISE",
-            status: "TRIALING",
-            currentPeriodEnd: trialEndDate,
-          })),
-        },
         appAccess: {
-          create: products.map((p) => ({
-            app: p.app,
-            enabled: true,
-          })),
+          create: requestedApps.map((app) => ({ app, enabled: true })),
         },
         ...(subAccountData.length > 0
           ? { subAccounts: { create: subAccountData } }
           : {}),
-      },
-      include: {
-        subscriptions: true,
-        members: { where: { clerkUserId: userId } },
-      },
-    });
-
-    // Also give Orbit Drive access (free with any subscription)
-    await db.subscription.create({
-      data: {
-        orgId: org.id,
-        app: "DRIVE",
-        plan: "FREE",
-        status: "ACTIVE",
-      },
-    });
-    await db.appAccess.create({
-      data: {
-        orgId: org.id,
-        app: "DRIVE",
-        enabled: true,
       },
     });
 
@@ -171,7 +146,7 @@ export async function POST(req: Request) {
         id: org.id,
         name: org.name,
         slug: org.slug,
-        trialEndsAt: trialEndDate.toISOString(),
+        apps: requestedApps,
       },
     });
   } catch (error) {
