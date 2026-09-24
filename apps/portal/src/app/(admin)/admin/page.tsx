@@ -16,10 +16,6 @@ export default async function AdminDashboardPage() {
     orderBy: { createdAt: "desc" },
     include: {
       appAccess: { orderBy: { app: "asc" } },
-      subscriptions: {
-        where: { status: { in: ["ACTIVE", "TRIALING"] } },
-        select: { app: true, plan: true, status: true },
-      },
       _count: { select: { members: true } },
     },
   });
@@ -44,7 +40,6 @@ export default async function AdminDashboardPage() {
               <th className="px-4 py-3 font-medium">Members</th>
               <th className="px-4 py-3 font-medium">App access</th>
               <th className="px-4 py-3 font-medium">License</th>
-              <th className="px-4 py-3 font-medium">Subscriptions</th>
             </tr>
           </thead>
           <tbody>
@@ -74,28 +69,12 @@ export default async function AdminDashboardPage() {
                 <td className="px-4 py-3">
                   <LicenseToggle orgId={org.id} initial={org.licensed} />
                 </td>
-                <td className="px-4 py-3 text-neutral-300">
-                  {org.subscriptions.length === 0 ? (
-                    <span className="text-neutral-600">Free</span>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5">
-                      {org.subscriptions.map((s) => (
-                        <span
-                          key={s.app}
-                          className="rounded-full bg-neutral-800 px-2 py-0.5 text-xs text-neutral-300"
-                        >
-                          {s.app} {s.plan}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </td>
               </tr>
             ))}
             {orgs.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={4}
                   className="px-4 py-8 text-center text-neutral-500"
                 >
                   No organizations yet.
@@ -108,8 +87,9 @@ export default async function AdminDashboardPage() {
 
       <p className="mt-4 text-xs text-neutral-600">
         Click an app to toggle access, or toggle License to entitle an org to
-        everything with no subscription. Changes apply on the org&apos;s next load
-        and are pushed to Conductor immediately.
+        every app. Per-org settings take effect when instance-wide license mode
+        is off. Changes apply on the org&apos;s next load and are pushed to
+        Conductor immediately.
       </p>
     </div>
   );

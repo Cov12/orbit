@@ -29,8 +29,8 @@ const features = [
   },
   {
     icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
-    title: "Scales With Your Plan",
-    description: "Storage grows as your subscription does — from 1 GB on Starter to unlimited on Enterprise.",
+    title: "Workspace-Scoped",
+    description: "Files are scoped to your workspace and sub-accounts, so each client's data stays separate.",
   },
 ];
 
@@ -54,7 +54,7 @@ export default async function DrivePage() {
     <AppLanding
       name="Orbit Drive"
       tagline="Secure storage for your workspace."
-      description="Banking-grade encrypted file storage that's included free with any Orbit subscription. Upload, organize, and share files with confidence."
+      description="Banking-grade encrypted file storage included with every Orbit workspace. Upload, organize, and share files with confidence."
       color="#6961ff"
       icon={
         <svg className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -66,7 +66,7 @@ export default async function DrivePage() {
       callbackPath="/auth/callback"
       status={status}
       features={features}
-      freeNote="Orbit Drive is included at no extra cost with any WorkPipe or Atrium subscription. Storage limits scale with your plan tier."
+      includedNote="Orbit Drive is included with every licensed workspace, alongside WorkPipe and Atrium."
     />
   );
 }

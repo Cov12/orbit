@@ -49,7 +49,7 @@ export default async function LandingPage() {
 
           <p className="text-xl text-gray-400 max-w-xl mx-auto">
             Access WorkPipe CRM, Atrium AI departments, and every Orbit
-            product from a single portal. Manage your team, billing, and
+            product from a single portal. Manage your team, workspaces, and
             apps in one place.
           </p>
 
@@ -58,7 +58,7 @@ export default async function LandingPage() {
               href="/sign-up"
               className="px-6 py-3 rounded-lg gradient-primary font-medium hover:opacity-90 transition-opacity"
             >
-              Start Free
+              Get Started
             </Link>
             <Link
               href="#features"

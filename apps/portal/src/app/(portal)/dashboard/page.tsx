@@ -2,15 +2,13 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/portal/app-card";
-import { getAppEntitlementMap } from "@/lib/entitlements";
+import { ACTIVE_SUBSCRIPTION_STATUSES, getAppEntitlementMap } from "@/lib/entitlements";
 import { isOrgLicensed } from "@/lib/license";
 
 interface DashboardData {
   workspaceName: string;
   workspaceRole: string;
-  plan: string;
-  planStatus: "active" | "trialing" | "none";
-  trialEndsAt: Date | null;
+  licensed: boolean;
   teamCount: number;
   activeApps: number;
   appStatuses: Record<string, boolean>;
@@ -32,7 +30,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
           include: {
             members: true,
             appAccess: true,
-            subscriptions: { where: { status: { in: ["ACTIVE", "TRIALING"] } } },
+            subscriptions: { where: { status: { in: [...ACTIVE_SUBSCRIPTION_STATUSES] } } },
           },
         },
       },
@@ -48,7 +46,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
           include: {
             members: true,
             appAccess: true,
-            subscriptions: { where: { status: { in: ["ACTIVE", "TRIALING"] } } },
+            subscriptions: { where: { status: { in: [...ACTIVE_SUBSCRIPTION_STATUSES] } } },
           },
         },
       },
@@ -59,9 +57,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
     return {
       workspaceName: "No Workspace",
       workspaceRole: "none",
-      plan: "Free",
-      planStatus: "none",
-      trialEndsAt: null,
+      licensed: false,
       teamCount: 1,
       activeApps: 0,
       appStatuses: {},
@@ -73,40 +69,19 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
   const isPlatformAdmin = member.role === "OWNER" || member.role === "ADMIN";
   const licensed = isOrgLicensed(org);
   // Per-app status from the single unified selector — identical to what the JWT
-  // grants (getEffectiveAppAccess). No local subscription/free heuristics here;
-  // appAccess.enabled is already kept in sync with subscription state by the
-  // Stripe webhook, so deriving from it is what keeps the UI honest. `licensed`
-  // must be threaded so the display matches the token under license mode.
+  // grants (getEffectiveAppAccess). `licensed` must be threaded so the display
+  // matches the token under license mode (on by default in this edition).
   const appStatuses = getAppEntitlementMap(org, isPlatformAdmin, licensed);
-  const conductorOn = appStatuses.CONDUCTOR;
-
-  // Find the highest-tier plan name
-  const planNames: Record<string, number> = { FREE: 0, STARTER: 1, PRO: 2, BUSINESS: 3, GROWTH: 4, ENTERPRISE: 5 };
-  const bestSub = org.subscriptions.reduce(
-    (best, s) => ((planNames[s.plan] || 0) > (planNames[best?.plan || "FREE"] || 0) ? s : best),
-    org.subscriptions[0]
-  );
-
-  // Check if any subscription is trialing
-  const trialingSub = org.subscriptions.find((s) => s.status === "TRIALING");
-
-  // Entitlement-driven (atrium#58): the Conductor card shows only when the org is entitled.
-  const conductorVisible = conductorOn;
 
   return {
     workspaceName: org.name,
     workspaceRole: member.role,
-    plan: licensed
-      ? "Licensed"
-      : bestSub
-      ? `${bestSub.app === "ATRIUM" ? "Atrium" : bestSub.app === "DRIVE" ? "Drive" : "WorkPipe"} ${bestSub.plan.charAt(0) + bestSub.plan.slice(1).toLowerCase()}`
-      : "Free",
-    planStatus: licensed ? "active" : trialingSub ? "trialing" : bestSub ? "active" : "none",
-    trialEndsAt: trialingSub?.currentPeriodEnd || null,
+    licensed,
     teamCount: org.members.length,
     activeApps: Object.values(appStatuses).filter(Boolean).length,
     appStatuses,
-    conductorVisible,
+    // Entitlement-driven (atrium#58): the Conductor card shows only when the org is entitled.
+    conductorVisible: appStatuses.CONDUCTOR,
   };
 }
 
@@ -119,21 +94,14 @@ export default async function DashboardPage() {
     : {
         workspaceName: "No Workspace",
         workspaceRole: "none",
-        plan: "Free",
-        planStatus: "none" as const,
-        trialEndsAt: null,
+        licensed: false,
         teamCount: 1,
         activeApps: 0,
         appStatuses: {},
         conductorVisible: false,
       };
 
-  const { workspaceName, workspaceRole, plan, planStatus, trialEndsAt, teamCount, activeApps, appStatuses, conductorVisible } = data;
-
-  // Calculate days remaining in trial
-  const daysRemaining = trialEndsAt
-    ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 0;
+  const { workspaceName, workspaceRole, licensed, teamCount, activeApps, appStatuses, conductorVisible } = data;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -156,45 +124,17 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Trial Banner */}
-      {planStatus === "trialing" && (
-        <div className="p-4 rounded-xl bg-gradient-to-r from-[#2B2FFF]/20 to-[#20B2AA]/20 border border-[#2B2FFF]/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#2B2FFF]/20 flex items-center justify-center">
-                <svg className="w-5 h-5 text-[#2B2FFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-white">Free Trial Active</p>
-                <p className="text-sm text-gray-400">
-                  {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} remaining · No credit card required
-                </p>
-              </div>
-            </div>
-            <a
-              href="/billing"
-              className="px-4 py-2 rounded-lg bg-[#2B2FFF] text-white text-sm font-medium hover:bg-[#2B2FFF]/90 transition-colors"
-            >
-              Upgrade Now
-            </a>
-          </div>
-        </div>
-      )}
-
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="glass p-5">
-          <p className="text-sm text-gray-400">Current Plan</p>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-xl font-semibold">{plan}</p>
-            {planStatus === "trialing" && (
-              <span className="px-2 py-0.5 rounded-full bg-[#20B2AA]/20 text-[#20B2AA] text-xs font-medium">
-                Trial
-              </span>
-            )}
-          </div>
+          <p className="text-sm text-gray-400">License</p>
+          {licensed ? (
+            <p className="text-xl font-semibold mt-1">
+              Licensed <span className="text-sm font-normal text-gray-400">— all apps included</span>
+            </p>
+          ) : (
+            <p className="text-xl font-semibold mt-1 text-gray-400">Not licensed</p>
+          )}
         </div>
         <div className="glass p-5">
           <p className="text-sm text-gray-400">Team Members</p>

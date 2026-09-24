@@ -34,55 +34,6 @@ const features = [
   },
 ];
 
-const plans = [
-  {
-    name: "Starter",
-    description: "For solo operators getting started with CRM.",
-    price: 0,
-    app: "WORKPIPE",
-    plan: "STARTER",
-    features: [
-      "1 user",
-      "500 contacts",
-      "Pipelines & deals",
-      "Basic automations",
-      "Invoicing",
-      "Orbit Drive (1 GB)",
-    ],
-  },
-  {
-    name: "Pro",
-    description: "For growing teams that need the full CRM toolkit.",
-    price: 0,
-    app: "WORKPIPE",
-    plan: "PRO",
-    features: [
-      "5 users",
-      "5,000 contacts",
-      "Full automations",
-      "Reporting & analytics",
-      "API access",
-      "Orbit Drive (10 GB)",
-    ],
-    highlighted: true,
-  },
-  {
-    name: "Business",
-    description: "For companies that need scale and customization.",
-    price: 0,
-    app: "WORKPIPE",
-    plan: "BUSINESS",
-    features: [
-      "25 users",
-      "Unlimited contacts",
-      "Advanced reporting",
-      "Custom fields",
-      "Priority support",
-      "Orbit Drive (50 GB)",
-    ],
-  },
-];
-
 export default async function WorkPipePage() {
   const entitlements = await getCurrentOrgEntitlements();
   const status = entitlements?.appStatus.WORKPIPE ? "active" : "inactive";
@@ -103,7 +54,6 @@ export default async function WorkPipePage() {
       launchUrl={process.env.NEXT_PUBLIC_WORKPIPE_URL}
       status={status}
       features={features}
-      plans={plans}
     />
   );
 }
