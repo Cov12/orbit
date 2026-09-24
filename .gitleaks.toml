@@ -1,0 +1,19 @@
+# Secret-scan config for the public edition. Extends gitleaks' default rules with a
+# NARROW allowlist of individually verified fakes — exact strings only, no path or rule
+# exemptions, so a real credential in a test file is still caught.
+title = "orbit"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Verified-fake fixtures"
+regexTarget = "match"
+regexes = [
+  # shared test secret used by plugin unit tests
+  '''test-secret-0123456789-abcdefghijklmnop''',
+  # payload of the public jwt.io example token ({"sub":"1234567890"}) used in upstream tests
+  '''eyJzdWIiOiIxMjM0NTY3ODkwI''',
+  # example secret reference ID from the upstream orchestrator's deployment docs
+  '''8f884973-c29b-44e4-8ea3-6413437f8081''',
+]
