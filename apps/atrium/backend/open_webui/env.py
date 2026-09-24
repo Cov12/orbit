@@ -88,8 +88,11 @@ if "cuda_error" in locals():
 SRC_LOG_LEVELS = {}  # Legacy variable, do not remove
 
 WEBUI_NAME = os.environ.get("WEBUI_NAME", "Orbit Atrium")
-# NOTE: upstream Open WebUI force-appends " (Open WebUI)" to any custom name here.
-# Atrium is a white-labeled product, so we use WEBUI_NAME verbatim (no append).
+# Upstream Open WebUI appends its own name to any custom product name. Its license
+# (clause 4) requires that attribution to stay visible, so Atrium keeps the behaviour:
+# the product shows as "Orbit Atrium (Open WebUI)".
+if WEBUI_NAME != "Open WebUI":
+    WEBUI_NAME += " (Open WebUI)"
 
 WEBUI_FAVICON_URL = "https://openwebui.com/favicon.png"
 
