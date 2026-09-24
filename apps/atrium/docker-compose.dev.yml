@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  # Main Atrium application service for local development.
+  # Uses the existing Dockerfile in the repository root.
+  atrium:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      WORKPIPE_API_URL: ${WORKPIPE_API_URL:-http://host.docker.internal:3000}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-dev-secret}
+    volumes:
+      # Mount backend source for hot reload during development.
+      - ./apps/atrium:/app/apps/atrium
+      # Persist backend runtime data across container restarts.
+      - atrium_data:/app/backend/data
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # PostgreSQL database used by Atrium locally.
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: atrium
+      POSTGRES_PASSWORD: atrium_dev
+      POSTGRES_DB: atrium
+    volumes:
+      # Persist database files between runs.
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atrium -d atrium"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # Optional local Ollama service for running AI models.
+  # Enable with: docker compose --profile gpu -f docker-compose.dev.yml up
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      # Persist downloaded models.
+      - ollama_models:/root/.ollama
+    profiles:
+      - gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  ollama_models:
+  atrium_data:
