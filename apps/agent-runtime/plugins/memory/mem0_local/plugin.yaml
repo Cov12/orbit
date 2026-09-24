@@ -1,0 +1,6 @@
+name: mem0_local
+version: 1.0.0
+description: "Mem0 OSS, fully local — Ollama fact extraction + on-disk qdrant. Client memory never leaves the box."
+pip_dependencies:
+  - mem0ai
+  - ollama

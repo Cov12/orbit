@@ -1,0 +1,805 @@
+From cf772bd856e116053a3693ba55558108d3901bfa Mon Sep 17 00:00:00 2001
+From: Hermes (agent) <hermes-agent@orbit.example>
+Date: Tue, 11 Aug 2026 01:12:13 +0000
+Subject: [PATCH 1/2] feat(mcp): inject paperclip tenant context from gateway
+ headers
+
+---
+ gateway/platforms/api_server.py  | 174 ++++++++++++++++++++++++++-----
+ gateway/session_context.py       |  39 +++++++
+ tests/gateway/test_api_server.py | 117 +++++++++++++++++++++
+ tests/tools/test_mcp_tool.py     | 100 ++++++++++++++++++
+ tools/mcp_tool.py                | 110 ++++++++++++++++++-
+ 5 files changed, 508 insertions(+), 32 deletions(-)
+
+diff --git a/gateway/platforms/api_server.py b/gateway/platforms/api_server.py
+index 1c4cb6df72..47a26a8228 100644
+--- a/gateway/platforms/api_server.py
++++ b/gateway/platforms/api_server.py
+@@ -931,6 +931,52 @@ class APIServerAdapter(BasePlatformAdapter):
+ 
+         return raw, None
+ 
++    def _parse_passthrough_header(
++        self,
++        request: "web.Request",
++        header_name: str,
++    ) -> tuple[Optional[str], Optional["web.Response"]]:
++        """Extract an optional Hermes passthrough header with basic validation."""
++        raw = request.headers.get(header_name, "")
++        if raw is None:
++            return None, None
++        value = raw.strip()
++        if not value:
++            return None, None
++        if re.search(r'[\r\n\x00]', value):
++            return None, web.json_response(
++                {"error": {"message": f"Invalid {header_name}", "type": "invalid_request_error"}},
++                status=400,
++            )
++        if len(value) > self._MAX_SESSION_HEADER_LEN:
++            return None, web.json_response(
++                {"error": {"message": f"{header_name} too long", "type": "invalid_request_error"}},
++                status=400,
++            )
++        return value, None
++
++    def _parse_gateway_tool_headers(
++        self,
++        request: "web.Request",
++    ) -> tuple[dict[str, Optional[str]], Optional["web.Response"]]:
++        """Capture request-scoped Hermes tool context headers.
++
++        Missing values stay ``None`` here and are enforced fail-closed later by
++        the Paperclip tool injector so non-tool turns can still complete.
++        """
++        context: dict[str, Optional[str]] = {}
++        header_map = {
++            "run_id": "X-Hermes-Run-Id",
++            "agent_id": "X-Hermes-Agent-Id",
++            "project_id": "X-Hermes-Project-Id",
++        }
++        for field_name, header_name in header_map.items():
++            value, err = self._parse_passthrough_header(request, header_name)
++            if err is not None:
++                return {}, err
++            context[field_name] = value
++        return context, None
++
+     # ------------------------------------------------------------------
+     # Session DB helper
+     # ------------------------------------------------------------------
+@@ -1491,6 +1537,9 @@ class APIServerAdapter(BasePlatformAdapter):
+         gateway_session_key, key_err = self._parse_session_key_header(request)
+         if key_err is not None:
+             return key_err
++        gateway_tool_context, tool_ctx_err = self._parse_gateway_tool_headers(request)
++        if tool_ctx_err is not None:
++            return tool_ctx_err
+         session_id = request.match_info["session_id"]
+         _, err = self._get_existing_session_or_404(session_id)
+         if err:
+@@ -1511,6 +1560,9 @@ class APIServerAdapter(BasePlatformAdapter):
+             ephemeral_system_prompt=system_prompt,
+             session_id=session_id,
+             gateway_session_key=gateway_session_key,
++            gateway_run_id=gateway_tool_context.get("run_id"),
++            gateway_agent_id=gateway_tool_context.get("agent_id"),
++            gateway_project_id=gateway_tool_context.get("project_id"),
+         )
+         effective_session_id = result.get("session_id") if isinstance(result, dict) else session_id
+         final_response = result.get("final_response", "") if isinstance(result, dict) else ""
+@@ -1535,6 +1587,9 @@ class APIServerAdapter(BasePlatformAdapter):
+         gateway_session_key, key_err = self._parse_session_key_header(request)
+         if key_err is not None:
+             return key_err
++        gateway_tool_context, tool_ctx_err = self._parse_gateway_tool_headers(request)
++        if tool_ctx_err is not None:
++            return tool_ctx_err
+         session_id = request.match_info["session_id"]
+         _, err = self._get_existing_session_or_404(session_id)
+         if err:
+@@ -1602,6 +1657,9 @@ class APIServerAdapter(BasePlatformAdapter):
+                     stream_delta_callback=_delta,
+                     tool_progress_callback=_tool_progress,
+                     gateway_session_key=gateway_session_key,
++                    gateway_run_id=gateway_tool_context.get("run_id"),
++                    gateway_agent_id=gateway_tool_context.get("agent_id"),
++                    gateway_project_id=gateway_tool_context.get("project_id"),
+                 )
+                 final_response = result.get("final_response", "") if isinstance(result, dict) else ""
+                 effective_session_id = result.get("session_id", session_id) if isinstance(result, dict) else session_id
+@@ -1732,6 +1790,9 @@ class APIServerAdapter(BasePlatformAdapter):
+         gateway_session_key, key_err = self._parse_session_key_header(request)
+         if key_err is not None:
+             return key_err
++        gateway_tool_context, tool_ctx_err = self._parse_gateway_tool_headers(request)
++        if tool_ctx_err is not None:
++            return tool_ctx_err
+ 
+         # Allow caller to continue an existing session by passing X-Hermes-Session-Id.
+         # When provided, history is loaded from state.db instead of from the request body.
+@@ -1868,6 +1929,9 @@ class APIServerAdapter(BasePlatformAdapter):
+                 tool_complete_callback=_on_tool_complete,
+                 agent_ref=agent_ref,
+                 gateway_session_key=gateway_session_key,
++                gateway_run_id=gateway_tool_context.get("run_id"),
++                gateway_agent_id=gateway_tool_context.get("agent_id"),
++                gateway_project_id=gateway_tool_context.get("project_id"),
+             ))
+             # Ensure SSE drain loops can terminate without relying on polling
+             # agent_task.done(), which can race with queue timeout checks.
+@@ -1887,6 +1951,9 @@ class APIServerAdapter(BasePlatformAdapter):
+                 ephemeral_system_prompt=system_prompt,
+                 session_id=session_id,
+                 gateway_session_key=gateway_session_key,
++                gateway_run_id=gateway_tool_context.get("run_id"),
++                gateway_agent_id=gateway_tool_context.get("agent_id"),
++                gateway_project_id=gateway_tool_context.get("project_id"),
+             )
+ 
+         idempotency_key = request.headers.get("Idempotency-Key")
+@@ -2747,6 +2814,9 @@ class APIServerAdapter(BasePlatformAdapter):
+         gateway_session_key, key_err = self._parse_session_key_header(request)
+         if key_err is not None:
+             return key_err
++        gateway_tool_context, tool_ctx_err = self._parse_gateway_tool_headers(request)
++        if tool_ctx_err is not None:
++            return tool_ctx_err
+ 
+         # Parse request body
+         try:
+@@ -2900,6 +2970,9 @@ class APIServerAdapter(BasePlatformAdapter):
+                 tool_complete_callback=_on_tool_complete,
+                 agent_ref=agent_ref,
+                 gateway_session_key=gateway_session_key,
++                gateway_run_id=gateway_tool_context.get("run_id"),
++                gateway_agent_id=gateway_tool_context.get("agent_id"),
++                gateway_project_id=gateway_tool_context.get("project_id"),
+             ))
+             # Ensure SSE drain loops can terminate without relying on polling
+             # agent_task.done(), which can race with queue timeout checks.
+@@ -2933,6 +3006,9 @@ class APIServerAdapter(BasePlatformAdapter):
+                 ephemeral_system_prompt=instructions,
+                 session_id=session_id,
+                 gateway_session_key=gateway_session_key,
++                gateway_run_id=gateway_tool_context.get("run_id"),
++                gateway_agent_id=gateway_tool_context.get("agent_id"),
++                gateway_project_id=gateway_tool_context.get("project_id"),
+             )
+ 
+         idempotency_key = request.headers.get("Idempotency-Key")
+@@ -3435,6 +3511,9 @@ class APIServerAdapter(BasePlatformAdapter):
+         tool_complete_callback=None,
+         agent_ref: Optional[list] = None,
+         gateway_session_key: Optional[str] = None,
++        gateway_run_id: Optional[str] = None,
++        gateway_agent_id: Optional[str] = None,
++        gateway_project_id: Optional[str] = None,
+     ) -> tuple:
+         """
+         Create an agent and run a conversation in a thread executor.
+@@ -3450,35 +3529,55 @@ class APIServerAdapter(BasePlatformAdapter):
+         loop = asyncio.get_running_loop()
+ 
+         def _run():
+-            agent = self._create_agent(
+-                ephemeral_system_prompt=ephemeral_system_prompt,
+-                session_id=session_id,
+-                stream_delta_callback=stream_delta_callback,
+-                tool_progress_callback=tool_progress_callback,
+-                tool_start_callback=tool_start_callback,
+-                tool_complete_callback=tool_complete_callback,
+-                gateway_session_key=gateway_session_key,
++            from gateway.session_context import (
++                clear_gateway_request_context,
++                clear_session_vars,
++                set_gateway_request_context,
++                set_session_vars,
+             )
+-            if agent_ref is not None:
+-                agent_ref[0] = agent
+-            effective_task_id = session_id or str(uuid.uuid4())
+-            result = agent.run_conversation(
+-                user_message=user_message,
+-                conversation_history=conversation_history,
+-                task_id=effective_task_id,
++
++            session_tokens = set_session_vars(
++                platform="api_server",
++                session_key=gateway_session_key or "",
+             )
+-            usage = {
+-                "input_tokens": getattr(agent, "session_prompt_tokens", 0) or 0,
+-                "output_tokens": getattr(agent, "session_completion_tokens", 0) or 0,
+-                "total_tokens": getattr(agent, "session_total_tokens", 0) or 0,
+-            }
+-            # Include the effective session ID in the result so callers
+-            # (e.g. X-Hermes-Session-Id header) can track compression-
+-            # triggered session rotations. (#16938)
+-            _eff_sid = getattr(agent, "session_id", session_id)
+-            if isinstance(_eff_sid, str) and _eff_sid:
+-                result["session_id"] = _eff_sid
+-            return result, usage
++            request_tokens = set_gateway_request_context(
++                run_id=gateway_run_id or "",
++                agent_id=gateway_agent_id or "",
++                project_id=gateway_project_id or "",
++            )
++            try:
++                agent = self._create_agent(
++                    ephemeral_system_prompt=ephemeral_system_prompt,
++                    session_id=session_id,
++                    stream_delta_callback=stream_delta_callback,
++                    tool_progress_callback=tool_progress_callback,
++                    tool_start_callback=tool_start_callback,
++                    tool_complete_callback=tool_complete_callback,
++                    gateway_session_key=gateway_session_key,
++                )
++                if agent_ref is not None:
++                    agent_ref[0] = agent
++                effective_task_id = session_id or str(uuid.uuid4())
++                result = agent.run_conversation(
++                    user_message=user_message,
++                    conversation_history=conversation_history,
++                    task_id=effective_task_id,
++                )
++                usage = {
++                    "input_tokens": getattr(agent, "session_prompt_tokens", 0) or 0,
++                    "output_tokens": getattr(agent, "session_completion_tokens", 0) or 0,
++                    "total_tokens": getattr(agent, "session_total_tokens", 0) or 0,
++                }
++                # Include the effective session ID in the result so callers
++                # (e.g. X-Hermes-Session-Id header) can track compression-
++                # triggered session rotations. (#16938)
++                _eff_sid = getattr(agent, "session_id", session_id)
++                if isinstance(_eff_sid, str) and _eff_sid:
++                    result["session_id"] = _eff_sid
++                return result, usage
++            finally:
++                clear_gateway_request_context(request_tokens)
++                clear_session_vars(session_tokens)
+ 
+         return await loop.run_in_executor(None, _run)
+ 
+@@ -3561,6 +3660,9 @@ class APIServerAdapter(BasePlatformAdapter):
+         gateway_session_key, key_err = self._parse_session_key_header(request)
+         if key_err is not None:
+             return key_err
++        gateway_tool_context, tool_ctx_err = self._parse_gateway_tool_headers(request)
++        if tool_ctx_err is not None:
++            return tool_ctx_err
+ 
+         # Enforce concurrency limit
+         if len(self._run_streams) >= self._MAX_CONCURRENT_RUNS:
+@@ -3695,7 +3797,12 @@ class APIServerAdapter(BasePlatformAdapter):
+                         pass
+ 
+                 def _run_sync():
+-                    from gateway.session_context import clear_session_vars, set_session_vars
++                    from gateway.session_context import (
++                        clear_gateway_request_context,
++                        clear_session_vars,
++                        set_gateway_request_context,
++                        set_session_vars,
++                    )
+                     from tools.approval import (
+                         register_gateway_notify,
+                         reset_current_session_key,
+@@ -3706,6 +3813,7 @@ class APIServerAdapter(BasePlatformAdapter):
+                     effective_task_id = session_id or run_id
+                     approval_token = None
+                     session_tokens = []
++                    request_tokens = []
+                     try:
+                         # Bind approval/session identity for this API run via
+                         # contextvars so concurrent runs do not share process
+@@ -3715,6 +3823,11 @@ class APIServerAdapter(BasePlatformAdapter):
+                             platform="api_server",
+                             session_key=approval_session_key,
+                         )
++                        request_tokens = set_gateway_request_context(
++                            run_id=gateway_tool_context.get("run_id") or "",
++                            agent_id=gateway_tool_context.get("agent_id") or "",
++                            project_id=gateway_tool_context.get("project_id") or "",
++                        )
+                         register_gateway_notify(approval_session_key, _approval_notify)
+                         r = agent.run_conversation(
+                             user_message=user_message,
+@@ -3730,6 +3843,11 @@ class APIServerAdapter(BasePlatformAdapter):
+                                     reset_current_session_key(approval_token)
+                                 except Exception:
+                                     pass
++                            if request_tokens:
++                                try:
++                                    clear_gateway_request_context(request_tokens)
++                                except Exception:
++                                    pass
+                             if session_tokens:
+                                 try:
+                                     clear_session_vars(session_tokens)
+diff --git a/gateway/session_context.py b/gateway/session_context.py
+index ee43eca0f7..fd5228a74b 100644
+--- a/gateway/session_context.py
++++ b/gateway/session_context.py
+@@ -60,6 +60,9 @@ _SESSION_ID: ContextVar = ContextVar("HERMES_SESSION_ID", default=_UNSET)
+ # so background-process notifications stay inside the originating Telegram
+ # private-chat topic (those lanes route only with thread id + reply anchor).
+ _SESSION_MESSAGE_ID: ContextVar = ContextVar("HERMES_SESSION_MESSAGE_ID", default=_UNSET)
++_GATEWAY_RUN_ID: ContextVar = ContextVar("HERMES_GATEWAY_RUN_ID", default=_UNSET)
++_GATEWAY_AGENT_ID: ContextVar = ContextVar("HERMES_GATEWAY_AGENT_ID", default=_UNSET)
++_GATEWAY_PROJECT_ID: ContextVar = ContextVar("HERMES_GATEWAY_PROJECT_ID", default=_UNSET)
+ 
+ # Cron auto-delivery vars — set per-job in run_job() so concurrent jobs
+ # don't clobber each other's delivery targets.
+@@ -77,6 +80,9 @@ _VAR_MAP = {
+     "HERMES_SESSION_KEY": _SESSION_KEY,
+     "HERMES_SESSION_ID": _SESSION_ID,
+     "HERMES_SESSION_MESSAGE_ID": _SESSION_MESSAGE_ID,
++    "HERMES_GATEWAY_RUN_ID": _GATEWAY_RUN_ID,
++    "HERMES_GATEWAY_AGENT_ID": _GATEWAY_AGENT_ID,
++    "HERMES_GATEWAY_PROJECT_ID": _GATEWAY_PROJECT_ID,
+     "HERMES_CRON_AUTO_DELIVER_PLATFORM": _CRON_AUTO_DELIVER_PLATFORM,
+     "HERMES_CRON_AUTO_DELIVER_CHAT_ID": _CRON_AUTO_DELIVER_CHAT_ID,
+     "HERMES_CRON_AUTO_DELIVER_THREAD_ID": _CRON_AUTO_DELIVER_THREAD_ID,
+@@ -153,6 +159,39 @@ def clear_session_vars(tokens: list) -> None:
+         var.set("")
+ 
+ 
++def set_gateway_request_context(
++    *,
++    run_id: str = "",
++    agent_id: str = "",
++    project_id: str = "",
++) -> list:
++    """Set request-scoped gateway tool context and return reset tokens."""
++    return [
++        _GATEWAY_RUN_ID.set(run_id),
++        _GATEWAY_AGENT_ID.set(agent_id),
++        _GATEWAY_PROJECT_ID.set(project_id),
++    ]
++
++
++def clear_gateway_request_context(tokens: list) -> None:
++    """Explicitly clear gateway tool context without falling back to env."""
++    for var in (
++        _GATEWAY_RUN_ID,
++        _GATEWAY_AGENT_ID,
++        _GATEWAY_PROJECT_ID,
++    ):
++        var.set("")
++
++
++def get_gateway_request_context() -> dict[str, str]:
++    """Return request-scoped gateway tool context for the current task/thread."""
++    return {
++        "run_id": get_session_env("HERMES_GATEWAY_RUN_ID", ""),
++        "agent_id": get_session_env("HERMES_GATEWAY_AGENT_ID", ""),
++        "project_id": get_session_env("HERMES_GATEWAY_PROJECT_ID", ""),
++    }
++
++
+ def get_session_env(name: str, default: str = "") -> str:
+     """Read a session context variable by its legacy ``HERMES_SESSION_*`` name.
+ 
+diff --git a/tests/gateway/test_api_server.py b/tests/gateway/test_api_server.py
+index c042fd556c..d4fbc1f07d 100644
+--- a/tests/gateway/test_api_server.py
++++ b/tests/gateway/test_api_server.py
+@@ -34,6 +34,7 @@ from gateway.platforms.api_server import (
+     cors_middleware,
+     security_headers_middleware,
+ )
++from gateway.session_context import get_gateway_request_context
+ 
+ 
+ # ---------------------------------------------------------------------------
+@@ -465,6 +466,90 @@ class TestAgentExecution:
+             task_id="session-123",
+         )
+ 
++    @pytest.mark.asyncio
++    async def test_run_agent_propagates_gateway_request_context(self, adapter):
++        captured = {}
++
++        class FakeAgent:
++            session_id = "session-ctx"
++            session_prompt_tokens = 1
++            session_completion_tokens = 2
++            session_total_tokens = 3
++
++            def run_conversation(self, **kwargs):
++                captured["context"] = get_gateway_request_context()
++                return {"final_response": "ok"}
++
++        with patch.object(adapter, "_create_agent", return_value=FakeAgent()):
++            result, usage = await adapter._run_agent(
++                user_message="hello",
++                conversation_history=[],
++                session_id="session-123",
++                gateway_session_key="cmp_123:sub_456",
++                gateway_run_id="run_abc",
++                gateway_agent_id="agent_xyz",
++                gateway_project_id="proj_789",
++            )
++
++        assert result["final_response"] == "ok"
++        assert usage == {"input_tokens": 1, "output_tokens": 2, "total_tokens": 3}
++        assert captured["context"] == {
++            "run_id": "run_abc",
++            "agent_id": "agent_xyz",
++            "project_id": "proj_789",
++        }
++        assert get_gateway_request_context() == {"run_id": "", "agent_id": "", "project_id": ""}
++
++    @pytest.mark.asyncio
++    async def test_run_agent_isolates_gateway_request_context_per_request(self, adapter):
++        captured = {}
++
++        class FakeAgent:
++            session_id = "session-ctx"
++            session_prompt_tokens = 1
++            session_completion_tokens = 1
++            session_total_tokens = 2
++
++            def run_conversation(self, **kwargs):
++                task_id = kwargs.get("task_id")
++                time.sleep(0.05)
++                captured[task_id] = get_gateway_request_context()
++                return {"final_response": task_id}
++
++        with patch.object(adapter, "_create_agent", return_value=FakeAgent()):
++            await asyncio.gather(
++                adapter._run_agent(
++                    user_message="one",
++                    conversation_history=[],
++                    session_id="session-one",
++                    gateway_session_key="cmp_1:sub_1",
++                    gateway_run_id="run-one",
++                    gateway_agent_id="agent-one",
++                    gateway_project_id="proj-one",
++                ),
++                adapter._run_agent(
++                    user_message="two",
++                    conversation_history=[],
++                    session_id="session-two",
++                    gateway_session_key="cmp_2:_business",
++                    gateway_run_id="run-two",
++                    gateway_agent_id="agent-two",
++                    gateway_project_id="proj-two",
++                ),
++            )
++
++        assert captured["session-one"] == {
++            "run_id": "run-one",
++            "agent_id": "agent-one",
++            "project_id": "proj-one",
++        }
++        assert captured["session-two"] == {
++            "run_id": "run-two",
++            "agent_id": "agent-two",
++            "project_id": "proj-two",
++        }
++        assert get_gateway_request_context() == {"run_id": "", "agent_id": "", "project_id": ""}
++
+ 
+ # ---------------------------------------------------------------------------
+ # /health endpoint
+@@ -924,6 +1009,38 @@ class TestChatCompletionsEndpoint:
+             assert data["object"] == "chat.completion"
+             assert data["choices"][0]["message"]["content"] == mock_result["final_response"]
+ 
++    @pytest.mark.asyncio
++    async def test_chat_completions_passes_gateway_tool_headers_to_run_agent(self, auth_adapter):
++        app = _create_app(auth_adapter)
++        async with TestClient(TestServer(app)) as cli:
++            with patch.object(auth_adapter, "_run_agent", new_callable=AsyncMock) as mock_run:
++                mock_run.return_value = (
++                    {"final_response": "ok", "messages": [], "api_calls": 1},
++                    {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2},
++                )
++                resp = await cli.post(
++                    "/v1/chat/completions",
++                    json={
++                        "model": "hermes-agent",
++                        "messages": [{"role": "user", "content": "Hello"}],
++                    },
++                    headers={
++                        "Authorization": "Bearer sk-secret",
++                        "X-Hermes-Session-Key": "cmp_123:sub_456",
++                        "X-Hermes-Run-Id": "run_abc",
++                        "X-Hermes-Agent-Id": "agent_xyz",
++                        "X-Hermes-Project-Id": "proj_789",
++                    },
++                )
++
++            assert resp.status == 200
++            mock_run.assert_awaited_once()
++            kwargs = mock_run.await_args.kwargs
++            assert kwargs["gateway_session_key"] == "cmp_123:sub_456"
++            assert kwargs["gateway_run_id"] == "run_abc"
++            assert kwargs["gateway_agent_id"] == "agent_xyz"
++            assert kwargs["gateway_project_id"] == "proj_789"
++
+     @pytest.mark.asyncio
+     async def test_stream_task_done_callback_enqueues_eos_for_chat_completions(self, adapter):
+         """Regression guard for #24451: completion callback must signal SSE EOS."""
+diff --git a/tests/tools/test_mcp_tool.py b/tests/tools/test_mcp_tool.py
+index e257566474..20f743e8b0 100644
+--- a/tests/tools/test_mcp_tool.py
++++ b/tests/tools/test_mcp_tool.py
+@@ -342,6 +342,35 @@ class TestSchemaConversion:
+ 
+         assert schema["parameters"] == {"type": "object", "properties": {}}
+ 
++    def test_strips_hidden_paperclip_context_from_model_visible_schema(self):
++        from tools import mcp_tool as mcp_mod
++        from tools.mcp_tool import _convert_mcp_schema
++
++        mcp_tool = _make_mcp_tool(
++            name="query",
++            description="Paperclip query",
++            input_schema={
++                "type": "object",
++                "properties": {
++                    "query": {"type": "string"},
++                    "_paperclip_context": {
++                        "type": "object",
++                        "properties": {"companyId": {"type": "string"}},
++                    },
++                },
++                "required": ["query", "_paperclip_context"],
++            },
++        )
++
++        mcp_mod._paperclip_context_servers.add("paperclip")
++        try:
++            schema = _convert_mcp_schema("paperclip", mcp_tool)
++        finally:
++            mcp_mod._paperclip_context_servers.discard("paperclip")
++
++        assert "_paperclip_context" not in schema["parameters"]["properties"]
++        assert schema["parameters"]["required"] == ["query"]
++
+     def test_tool_name_prefix_format(self):
+         from tools.mcp_tool import _convert_mcp_schema
+ 
+@@ -547,6 +576,77 @@ class TestToolHandler:
+         finally:
+             _servers.pop("test_srv", None)
+ 
++    def test_paperclip_handler_overwrites_model_supplied_context_and_sets_business_scope_null(self):
++        from gateway.session_context import (
++            clear_gateway_request_context,
++            clear_session_vars,
++            set_gateway_request_context,
++            set_session_vars,
++        )
++        from tools.mcp_tool import _make_tool_handler, _paperclip_context_servers, _servers
++
++        mock_session = MagicMock()
++        mock_session.call_tool = AsyncMock(return_value=_make_call_result("ok", is_error=False))
++        server = _make_mock_server("paperclip", session=mock_session)
++        _servers["paperclip"] = server
++        _paperclip_context_servers.add("paperclip")
++        session_tokens = set_session_vars(platform="api_server", session_key="cmp_123:_business")
++        request_tokens = set_gateway_request_context(
++            run_id="run_abc",
++            agent_id="agent_xyz",
++            project_id="proj_789",
++        )
++
++        try:
++            handler = _make_tool_handler("paperclip", "query", 120)
++            with self._patch_mcp_loop():
++                result = json.loads(handler({
++                    "query": "status",
++                    "_paperclip_context": {"companyId": "spoof", "runId": "spoof"},
++                }))
++            assert result["result"] == "ok"
++            mock_session.call_tool.assert_called_once_with(
++                "query",
++                arguments={
++                    "query": "status",
++                    "_paperclip_context": {
++                        "companyId": "cmp_123",
++                        "subAccountId": None,
++                        "agentId": "agent_xyz",
++                        "runId": "run_abc",
++                        "projectId": "proj_789",
++                    },
++                },
++            )
++        finally:
++            clear_gateway_request_context(request_tokens)
++            clear_session_vars(session_tokens)
++            _paperclip_context_servers.discard("paperclip")
++            _servers.pop("paperclip", None)
++
++    def test_paperclip_handler_blocks_when_required_context_missing(self):
++        from gateway.session_context import clear_session_vars, set_session_vars
++        from tools.mcp_tool import _make_tool_handler, _paperclip_context_servers, _servers
++
++        mock_session = MagicMock()
++        mock_session.call_tool = AsyncMock(return_value=_make_call_result("ok", is_error=False))
++        server = _make_mock_server("paperclip", session=mock_session)
++        _servers["paperclip"] = server
++        _paperclip_context_servers.add("paperclip")
++        session_tokens = set_session_vars(platform="api_server", session_key="cmp_123:sub_456")
++
++        try:
++            handler = _make_tool_handler("paperclip", "query", 120)
++            result = json.loads(handler({"query": "status"}))
++            assert "error" in result
++            assert "missing tenant/run context" in result["error"]
++            assert "missing X-Hermes-Run-Id" in result["error"]
++            mock_session.call_tool.assert_not_called()
++        finally:
++            clear_session_vars(session_tokens)
++            _paperclip_context_servers.discard("paperclip")
++            _servers.pop("paperclip", None)
++
+     def test_interrupted_call_returns_interrupted_error(self):
+         from tools.mcp_tool import _make_tool_handler, _servers
+ 
+diff --git a/tools/mcp_tool.py b/tools/mcp_tool.py
+index b3a7cd2d5c..154d414c11 100644
+--- a/tools/mcp_tool.py
++++ b/tools/mcp_tool.py
+@@ -2246,6 +2246,10 @@ _parallel_safe_servers: set = set()
+ # guessing.
+ _mcp_tool_server_names: Dict[str, str] = {}
+ 
++# Sanitized server names that opt into Hermes-managed Paperclip tenant envelope injection.
++_paperclip_context_servers: set[str] = set()
++_PAPERCLIP_CONTEXT_ARG = "_paperclip_context"
++
+ # Dedicated event loop running in a background daemon thread.
+ _mcp_loop: Optional[asyncio.AbstractEventLoop] = None
+ _mcp_thread: Optional[threading.Thread] = None
+@@ -2478,6 +2482,12 @@ def _make_tool_handler(server_name: str, tool_name: str, tool_timeout: float):
+     """
+ 
+     def _handler(args: dict, **kwargs) -> str:
++        forwarded_args, injection_error = _inject_paperclip_context_args(server_name, args or {})
++        if injection_error is not None:
++            return json.dumps({
++                "error": f"Paperclip tool call blocked: missing tenant/run context ({injection_error})"
++            }, ensure_ascii=False)
++
+         # Circuit breaker: if this server has failed too many times
+         # consecutively, short-circuit with a clear message so the model
+         # stops retrying and uses alternative approaches (#10447).
+@@ -2514,7 +2524,7 @@ def _make_tool_handler(server_name: str, tool_name: str, tool_timeout: float):
+ 
+         async def _call():
+             async with server._rpc_lock:
+-                result = await server.session.call_tool(tool_name, arguments=args)
++                result = await server.session.call_tool(tool_name, arguments=forwarded_args)
+             # MCP CallToolResult has .content (list of content blocks) and .isError
+             if result.isError:
+                 error_text = ""
+@@ -3014,10 +3024,13 @@ def _convert_mcp_schema(server_name: str, mcp_tool) -> dict:
+     safe_tool_name = sanitize_mcp_name_component(mcp_tool.name)
+     safe_server_name = sanitize_mcp_name_component(server_name)
+     prefixed_name = f"mcp_{safe_server_name}_{safe_tool_name}"
++    parameters = _normalize_mcp_input_schema(getattr(mcp_tool, "inputSchema", None))
++    if _server_injects_paperclip_context(server_name):
++        parameters = _strip_hidden_paperclip_context_from_schema(parameters)
+     return {
+         "name": prefixed_name,
+         "description": mcp_tool.description or f"MCP tool {mcp_tool.name} from {server_name}",
+-        "parameters": _normalize_mcp_input_schema(getattr(mcp_tool, "inputSchema", None)),
++        "parameters": parameters,
+     }
+ 
+ 
+@@ -3160,6 +3173,90 @@ def _forget_mcp_tool_server(tool_name: str) -> None:
+         _mcp_tool_server_names.pop(tool_name, None)
+ 
+ 
++def _server_injects_paperclip_context(server_name: str) -> bool:
++    """Return True when this MCP server opts into Paperclip context injection."""
++    safe_server_name = sanitize_mcp_name_component(server_name)
++    with _lock:
++        return safe_server_name in _paperclip_context_servers
++
++
++def _parse_paperclip_session_key(session_key: str) -> tuple[Optional[dict[str, Any]], Optional[str]]:
++    """Decode ``<companyId>:<subAccountId|_business>`` into v1 envelope fields."""
++    raw = str(session_key or "").strip()
++    if not raw:
++        return None, "missing X-Hermes-Session-Key"
++    if raw.count(":") != 1:
++        return None, "invalid X-Hermes-Session-Key format"
++    company_id, scope = raw.split(":", 1)
++    company_id = company_id.strip()
++    scope = scope.strip()
++    if not company_id or not scope:
++        return None, "invalid X-Hermes-Session-Key format"
++    return {
++        "companyId": company_id,
++        "subAccountId": None if scope == "_business" else scope,
++    }, None
++
++
++def _build_paperclip_context_envelope(server_name: str) -> tuple[Optional[dict[str, Any]], Optional[str]]:
++    """Build the reserved Paperclip tenant envelope from request-local context."""
++    from gateway.session_context import get_gateway_request_context, get_session_env
++
++    if not _server_injects_paperclip_context(server_name):
++        return None, None
++
++    session_key = get_session_env("HERMES_SESSION_KEY", "")
++    session_fields, err = _parse_paperclip_session_key(session_key)
++    if err is not None:
++        return None, err
++
++    gateway_ctx = get_gateway_request_context()
++    run_id = str((gateway_ctx or {}).get("run_id") or "").strip()
++    agent_id = str((gateway_ctx or {}).get("agent_id") or "").strip()
++    project_id = str((gateway_ctx or {}).get("project_id") or "").strip()
++    if not run_id:
++        return None, "missing X-Hermes-Run-Id"
++    if not agent_id:
++        return None, "missing X-Hermes-Agent-Id"
++
++    envelope = {
++        **session_fields,
++        "agentId": agent_id,
++        "runId": run_id,
++    }
++    if project_id:
++        envelope["projectId"] = project_id
++    return envelope, None
++
++
++def _inject_paperclip_context_args(server_name: str, args: dict) -> tuple[dict, Optional[str]]:
++    """Overwrite the reserved Paperclip envelope when the server opts in."""
++    if not _server_injects_paperclip_context(server_name):
++        return args, None
++    envelope, err = _build_paperclip_context_envelope(server_name)
++    if err is not None:
++        return {}, err
++    forwarded = dict(args or {})
++    forwarded[_PAPERCLIP_CONTEXT_ARG] = envelope
++    return forwarded, None
++
++
++def _strip_hidden_paperclip_context_from_schema(schema: dict) -> dict:
++    """Remove the reserved hidden Paperclip envelope from the model-visible schema."""
++    if not isinstance(schema, dict):
++        return schema
++    repaired = json.loads(json.dumps(schema))
++    props = repaired.get("properties")
++    if isinstance(props, dict):
++        props.pop(_PAPERCLIP_CONTEXT_ARG, None)
++    required = repaired.get("required")
++    if isinstance(required, list):
++        repaired["required"] = [item for item in required if item != _PAPERCLIP_CONTEXT_ARG]
++        if not repaired["required"]:
++            repaired.pop("required", None)
++    return repaired
++
++
+ def _select_utility_schemas(server_name: str, server: MCPServerTask, config: dict) -> List[dict]:
+     """Select utility schemas based on config and server capabilities."""
+     tools_filter = config.get("tools") or {}
+@@ -3399,10 +3496,15 @@ def register_mcp_servers(servers: Dict[str, dict]) -> List[str]:
+         }
+         # Track which servers opt-in to parallel tool calls (idempotent).
+         for srv_name, srv_cfg in servers.items():
++            safe_name = sanitize_mcp_name_component(srv_name)
+             if _parse_boolish(srv_cfg.get("supports_parallel_tool_calls", False), default=False):
+-                _parallel_safe_servers.add(sanitize_mcp_name_component(srv_name))
++                _parallel_safe_servers.add(safe_name)
++            else:
++                _parallel_safe_servers.discard(safe_name)
++            if _parse_boolish(srv_cfg.get("inject_paperclip_context", False), default=False):
++                _paperclip_context_servers.add(safe_name)
+             else:
+-                _parallel_safe_servers.discard(sanitize_mcp_name_component(srv_name))
++                _paperclip_context_servers.discard(safe_name)
+ 
+     if not new_servers:
+         return _existing_tool_names()

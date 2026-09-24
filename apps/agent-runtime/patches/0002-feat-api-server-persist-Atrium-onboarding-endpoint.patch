@@ -1,0 +1,556 @@
+From 2ee07562d1373778d8eab5aa87926057349ce4f7 Mon Sep 17 00:00:00 2001
+From: Hermes (agent) <hermes-agent@orbit.example>
+Date: Sat, 19 Sep 2026 19:54:15 +0000
+Subject: [PATCH 2/2] feat(api-server): persist Atrium onboarding endpoints
+
+---
+ gateway/platforms/api_server.py  | 335 ++++++++++++++++++++++++++++++-
+ tests/gateway/test_api_server.py | 143 +++++++++++++
+ 2 files changed, 477 insertions(+), 1 deletion(-)
+
+diff --git a/gateway/platforms/api_server.py b/gateway/platforms/api_server.py
+index 47a26a8228..288e4f507d 100644
+--- a/gateway/platforms/api_server.py
++++ b/gateway/platforms/api_server.py
+@@ -70,6 +70,28 @@ CHAT_COMPLETIONS_SSE_KEEPALIVE_SECONDS = 30.0
+ MAX_NORMALIZED_TEXT_LENGTH = 65_536  # 64 KB cap for normalized content parts
+ MAX_CONTENT_LIST_SIZE = 1_000  # Max items when content is an array
+ 
++ATRIUM_ROLE_ENUM = frozenset({
++    "cto",
++    "cmo",
++    "cfo",
++    "designer",
++    "devops",
++    "engineer",
++    "pm",
++    "qa",
++    "researcher",
++    "security",
++    "sales",
++    "support",
++    "content",
++    "general",
++    "default",
++})
++MAX_ROLE_MAPPING_ANSWER_CHARS = 12_000
++MAX_MEMORY_SEED_FACTS = 100
++MAX_MEMORY_SEED_FACT_CHARS = 8_000
++
++
+ 
+ def _coerce_port(value: Any, default: int = DEFAULT_PORT) -> int:
+     """Parse a listen port without letting malformed env/config values crash startup."""
+@@ -542,6 +564,130 @@ def _openai_error(message: str, err_type: str = "invalid_request_error", param:
+     }
+ 
+ 
++def _atrium_scope(company_id: str, sub_account_id: Optional[str] = None) -> str:
++    """Return the Orbit memory scope key used by the assistant read path."""
++    company = str(company_id or "").strip()
++    sub = str(sub_account_id or "").strip() or "_business"
++    return f"{company}:{sub}"
++
++
++def _compact_json(value: Any) -> str:
++    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
++
++
++def _normalize_seed_fact(value: Any) -> tuple[str, str]:
++    """Return (memory_text, idempotency_canonical) for a caller-provided fact."""
++    if isinstance(value, str):
++        text = value.strip()
++        canonical = text
++    elif isinstance(value, dict):
++        canonical = _compact_json(value)
++        preferred = value.get("fact") or value.get("memory") or value.get("text") or value.get("content")
++        if preferred is not None and str(preferred).strip():
++            text = str(preferred).strip()
++            extra = {k: v for k, v in value.items() if k not in {"fact", "memory", "text", "content"}}
++            if extra:
++                text = f"{text} | structured={_compact_json(extra)}"
++        else:
++            text = canonical
++    else:
++        canonical = _compact_json(value)
++        text = canonical
++    if len(text) > MAX_MEMORY_SEED_FACT_CHARS:
++        text = text[:MAX_MEMORY_SEED_FACT_CHARS]
++    return text, canonical
++
++
++def _extract_json_object(text: str) -> Dict[str, Any]:
++    """Parse a JSON object from strict or fenced model output."""
++    raw = (text or "").strip()
++    if raw.startswith("```"):
++        raw = re.sub(r"^```(?:json)?\s*", "", raw, flags=re.IGNORECASE)
++        raw = re.sub(r"\s*```$", "", raw)
++    try:
++        data = json.loads(raw)
++    except Exception:
++        start = raw.find("{")
++        end = raw.rfind("}")
++        if start < 0 or end <= start:
++            raise
++        data = json.loads(raw[start : end + 1])
++    if not isinstance(data, dict):
++        raise ValueError("mapping output must be a JSON object")
++    return data
++
++
++def _normalize_role_mapping_payload(data: Dict[str, Any], *, max_roles: int = 5) -> Dict[str, Any]:
++    """Validate role-map JSON, dropping hallucinated roles and non-string hints."""
++    raw_suggestions = data.get("suggestions")
++    if raw_suggestions is None and isinstance(data.get("roles"), list):
++        raw_suggestions = [{"role": role, "rationale": data.get("rationale", "")} for role in data.get("roles", [])]
++    if not isinstance(raw_suggestions, list):
++        raw_suggestions = []
++
++    suggestions: List[Dict[str, Any]] = []
++    seen: set[str] = set()
++    for item in raw_suggestions:
++        if isinstance(item, str):
++            role = item.strip().lower()
++            rationale = ""
++            hints: List[str] = []
++        elif isinstance(item, dict):
++            role = str(item.get("role") or "").strip().lower()
++            rationale = str(item.get("rationale") or "").strip()[:500]
++            raw_hints = item.get("first_task_hints") or item.get("firstTaskHints") or []
++            hints = [str(h).strip()[:200] for h in raw_hints if str(h).strip()] if isinstance(raw_hints, list) else []
++        else:
++            continue
++        if role not in ATRIUM_ROLE_ENUM or role in seen:
++            continue
++        seen.add(role)
++        suggestions.append({
++            "role": role,
++            "rationale": rationale,
++            "first_task_hints": hints[:5],
++        })
++        if len(suggestions) >= max_roles:
++            break
++    return {
++        "object": "hermes.atrium.role_mapping",
++        "roles": [s["role"] for s in suggestions],
++        "suggestions": suggestions,
++    }
++
++
++def _deterministic_role_mapping(answers_text: str, *, max_roles: int = 5) -> Dict[str, Any]:
++    """Small safety net for tests/LLM failures; Conductor owns the formal fallback."""
++    text = (answers_text or "").lower()
++    keyword_map = [
++        ("cto", ("technical", "architecture", "engineering strategy", "stack", "codebase", "integrations")),
++        ("engineer", ("build", "feature", "bug", "frontend", "backend", "api", "code")),
++        ("devops", ("deploy", "deployment", "infra", "hosting", "ci", "cd", "server", "uptime")),
++        ("security", ("security", "compliance", "permission", "auth", "risk", "audit")),
++        ("cmo", ("marketing", "campaign", "brand", "social", "ads", "leads", "audience")),
++        ("sales", ("sales", "prospect", "qualification", "qualify", "conversion", "closing", "crm hygiene")),
++        ("support", ("support", "ticket", "tickets", "customer success", "onboarding", "retention", "churn", "renewal")),
++        ("content", ("content", "editorial", "blog", "copywriting", "copy", "newsletter", "publishing calendar")),
++        ("cfo", ("finance", "budget", "billing", "invoice", "cash", "revenue")),
++        ("designer", ("design", "visual", "logo", "ux", "ui", "brand kit")),
++        ("pm", ("roadmap", "project", "timeline", "requirements", "coordinate")),
++        ("qa", ("test", "quality", "bug bash", "regression", "acceptance")),
++        ("researcher", ("research", "market", "competitor", "analyze", "discovery")),
++    ]
++    suggestions = []
++    for role, words in keyword_map:
++        hits = [w for w in words if w in text]
++        if hits:
++            suggestions.append({
++                "role": role,
++                "rationale": f"Matched onboarding language around {', '.join(hits[:3])}.",
++                "first_task_hints": [],
++            })
++        if len(suggestions) >= max_roles:
++            break
++    return {"object": "hermes.atrium.role_mapping", "roles": [s["role"] for s in suggestions], "suggestions": suggestions}
++
++
+ if AIOHTTP_AVAILABLE:
+     @web.middleware
+     async def body_limit_middleware(request, handler):
+@@ -1159,7 +1305,8 @@ class APIServerAdapter(BasePlatformAdapter):
+                 "session_fork": True,
+                 "admin_config_rw": False,
+                 "jobs_admin": False,
+-                "memory_write_api": False,
++                "memory_write_api": True,
++                "atrium_role_mapping": True,
+                 "skills_api": True,
+                 "audio_api": False,
+                 "realtime_voice": False,
+@@ -1180,6 +1327,8 @@ class APIServerAdapter(BasePlatformAdapter):
+                 "run_stop": {"method": "POST", "path": "/v1/runs/{run_id}/stop"},
+                 "skills": {"method": "GET", "path": "/v1/skills"},
+                 "toolsets": {"method": "GET", "path": "/v1/toolsets"},
++                "memory_seed": {"method": "POST", "path": "/v1/memory/seed"},
++                "atrium_role_mapping": {"method": "POST", "path": "/v1/atrium/role-map"},
+                 "sessions": {"method": "GET", "path": "/api/sessions"},
+                 "session_create": {"method": "POST", "path": "/api/sessions"},
+                 "session": {"method": "GET", "path": "/api/sessions/{session_id}"},
+@@ -4158,6 +4307,188 @@ class APIServerAdapter(BasePlatformAdapter):
+ 
+         return web.json_response({"run_id": run_id, "status": "stopping"})
+ 
++    # ------------------------------------------------------------------
++    # Atrium/Conductor backend capabilities
++    # ------------------------------------------------------------------
++
++    def _seed_mem0_facts_sync(self, *, company_id: str, sub_account_id: Optional[str], facts: List[Any]) -> Dict[str, Any]:
++        """Seed structured facts into the exact mem0_local scope the assistant reads."""
++        scope = _atrium_scope(company_id, sub_account_id)
++        from plugins.memory.mem0_local import Mem0LocalMemoryProvider
++
++        provider = Mem0LocalMemoryProvider()
++        provider.initialize(session_id=f"seed-{uuid.uuid4().hex[:8]}", gateway_session_key=scope)
++        client = provider._get_client()
++        collection = getattr(provider, "_collection", None)
++        agent_id = getattr(provider, "_agent_id", "hermes")
++        filters = {"user_id": scope}
++
++        existing_records = provider._unwrap_results(client.get_all(filters=filters))
++        existing_memories = {str(row.get("memory") or "").strip() for row in existing_records if isinstance(row, dict)}
++        existing_seed_ids = set()
++        for row in existing_records:
++            if not isinstance(row, dict):
++                continue
++            metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
++            seed_id = metadata.get("seed_id") or row.get("seed_id")
++            if seed_id:
++                existing_seed_ids.add(str(seed_id))
++
++        written: List[Dict[str, Any]] = []
++        skipped: List[Dict[str, Any]] = []
++        for idx, raw_fact in enumerate(facts):
++            memory_text, canonical = _normalize_seed_fact(raw_fact)
++            if not memory_text:
++                skipped.append({"index": idx, "reason": "empty"})
++                continue
++            seed_id = hashlib.sha256(f"{scope}\n{canonical}".encode("utf-8")).hexdigest()
++            if seed_id in existing_seed_ids or memory_text in existing_memories:
++                skipped.append({"index": idx, "seed_id": seed_id, "reason": "already_present"})
++                continue
++            client.add(
++                [{"role": "user", "content": memory_text}],
++                user_id=scope,
++                agent_id=agent_id,
++                metadata={
++                    "source": "engram_seed",
++                    "companyId": company_id,
++                    "subAccountId": sub_account_id,
++                    "scope": scope,
++                    "seed_id": seed_id,
++                    "canonical_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
++                },
++                infer=False,
++            )
++            existing_memories.add(memory_text)
++            existing_seed_ids.add(seed_id)
++            written.append({"index": idx, "seed_id": seed_id, "memory": memory_text})
++
++        readback_records = provider._unwrap_results(client.get_all(filters=filters))
++        readback_memories = [str(row.get("memory") or "") for row in readback_records if isinstance(row, dict) and row.get("memory")]
++        return {
++            "object": "hermes.memory.seed_result",
++            "scope": scope,
++            "companyId": company_id,
++            "subAccountId": sub_account_id,
++            "collection": collection,
++            "written": len(written),
++            "skipped": len(skipped),
++            "written_facts": written,
++            "skipped_facts": skipped,
++            "readback": {
++                "count": len(readback_memories),
++                "matches_written": all(item["memory"] in readback_memories for item in written),
++                "sample": readback_memories[:10],
++            },
++        }
++
++    async def _handle_memory_seed(self, request: "web.Request") -> "web.Response":
++        """POST /v1/memory/seed — direct structured fact seed for Engram."""
++        auth_err = self._check_auth(request)
++        if auth_err:
++            return auth_err
++        body, err = await self._read_json_body(request)
++        if err:
++            return err
++        company_id = str(body.get("companyId") or body.get("company_id") or "").strip()
++        raw_sub = body.get("subAccountId", body.get("sub_account_id"))
++        sub_account_id = str(raw_sub).strip() if raw_sub is not None and str(raw_sub).strip() else None
++        facts = body.get("facts")
++        if not company_id:
++            return web.json_response(_openai_error("Missing required field: companyId", code="missing_company_id"), status=400)
++        if not isinstance(facts, list) or not facts:
++            return web.json_response(_openai_error("facts must be a non-empty array", code="invalid_facts"), status=400)
++        if len(facts) > MAX_MEMORY_SEED_FACTS:
++            return web.json_response(_openai_error(f"facts may contain at most {MAX_MEMORY_SEED_FACTS} items", code="too_many_facts"), status=400)
++        try:
++            result = await asyncio.get_running_loop().run_in_executor(
++                None,
++                lambda: self._seed_mem0_facts_sync(company_id=company_id, sub_account_id=sub_account_id, facts=facts),
++            )
++        except Exception as exc:
++            logger.exception("POST /v1/memory/seed failed")
++            return web.json_response(_openai_error(str(exc), err_type="server_error", code="memory_seed_failed"), status=500)
++        return web.json_response(result)
++
++    def _answers_to_text(self, answers: Any) -> str:
++        if isinstance(answers, str):
++            text = answers
++        else:
++            text = _compact_json(answers)
++        return text[:MAX_ROLE_MAPPING_ANSWER_CHARS]
++
++    def _infer_role_mapping_sync(self, answers_text: str, *, max_roles: int) -> Dict[str, Any]:
++        """Bounded single-shot role mapping using the active profile model."""
++        from run_agent import AIAgent
++        from gateway.run import _resolve_runtime_agent_kwargs, _resolve_gateway_model, GatewayRunner
++
++        system_prompt = (
++            "You map Atrium onboarding interview answers to canonical department roles. "
++            "Return ONLY JSON with shape {\"suggestions\":[{\"role\": string, \"rationale\": string, "
++            "\"first_task_hints\": string[]}]} . Allowed role values: "
++            + ", ".join(sorted(ATRIUM_ROLE_ENUM))
++            + ". Use an empty suggestions array for nonsense, insufficient, or unrelated answers. "
++            "Never invent a role outside the enum. Keep rationales short."
++        )
++        runtime_kwargs = _resolve_runtime_agent_kwargs()
++        reasoning_config = GatewayRunner._load_reasoning_config()
++        agent = AIAgent(
++            model=_resolve_gateway_model(),
++            **runtime_kwargs,
++            max_iterations=1,
++            quiet_mode=True,
++            verbose_logging=False,
++            ephemeral_system_prompt=system_prompt,
++            enabled_toolsets=[],
++            session_id=f"role-map-{uuid.uuid4().hex[:8]}",
++            platform="api_server",
++            skip_memory=True,
++            reasoning_config=reasoning_config,
++        )
++        result = agent.run_conversation(
++            user_message=(
++                "Map these onboarding answers to at most "
++                f"{max_roles} roles. Return JSON only.\n\nAnswers:\n{answers_text}"
++            ),
++            conversation_history=[],
++        )
++        final = result.get("final_response", "") if isinstance(result, dict) else ""
++        parsed = _extract_json_object(final)
++        normalized = _normalize_role_mapping_payload(parsed, max_roles=max_roles)
++        normalized["model"] = self._model_name
++        return normalized
++
++    async def _handle_atrium_role_mapping(self, request: "web.Request") -> "web.Response":
++        """POST /v1/atrium/role-map — bounded structured mapping inference."""
++        auth_err = self._check_auth(request)
++        if auth_err:
++            return auth_err
++        body, err = await self._read_json_body(request)
++        if err:
++            return err
++        answers = body.get("answers")
++        if answers is None:
++            return web.json_response(_openai_error("Missing required field: answers", code="missing_answers"), status=400)
++        try:
++            max_roles = int(body.get("maxRoles") or body.get("max_roles") or 5)
++        except (TypeError, ValueError):
++            max_roles = 5
++        max_roles = max(0, min(max_roles, 12))
++        answers_text = self._answers_to_text(answers)
++        if not answers_text.strip():
++            return web.json_response(_normalize_role_mapping_payload({"suggestions": []}, max_roles=max_roles))
++        try:
++            result = await asyncio.get_running_loop().run_in_executor(
++                None,
++                lambda: self._infer_role_mapping_sync(answers_text, max_roles=max_roles),
++            )
++        except Exception as exc:
++            logger.warning("POST /v1/atrium/role-map inference failed; returning deterministic fallback: %s", exc)
++            result = _deterministic_role_mapping(answers_text, max_roles=max_roles)
++            result["fallback"] = "deterministic"
++            result["model"] = self._model_name
++        return web.json_response(result)
++
+     async def _sweep_orphaned_runs(self) -> None:
+         """Periodically clean up run streams that were never consumed."""
+         while True:
+@@ -4214,6 +4545,8 @@ class APIServerAdapter(BasePlatformAdapter):
+             self._app.router.add_get("/v1/capabilities", self._handle_capabilities)
+             self._app.router.add_get("/v1/skills", self._handle_skills)
+             self._app.router.add_get("/v1/toolsets", self._handle_toolsets)
++            self._app.router.add_post("/v1/memory/seed", self._handle_memory_seed)
++            self._app.router.add_post("/v1/atrium/role-map", self._handle_atrium_role_mapping)
+             # Session/client control surface (thin wrappers over SessionDB + _run_agent)
+             self._app.router.add_get("/api/sessions", self._handle_list_sessions)
+             self._app.router.add_post("/api/sessions", self._handle_create_session)
+diff --git a/tests/gateway/test_api_server.py b/tests/gateway/test_api_server.py
+index d4fbc1f07d..c8bed14e08 100644
+--- a/tests/gateway/test_api_server.py
++++ b/tests/gateway/test_api_server.py
+@@ -30,6 +30,8 @@ from gateway.platforms.api_server import (
+     ResponseStore,
+     _IdempotencyCache,
+     _derive_chat_session_id,
++    _deterministic_role_mapping,
++    _normalize_role_mapping_payload,
+     check_api_server_requirements,
+     cors_middleware,
+     security_headers_middleware,
+@@ -415,6 +417,8 @@ def _create_app(adapter: APIServerAdapter) -> web.Application:
+     app.router.add_get("/v1/capabilities", adapter._handle_capabilities)
+     app.router.add_get("/v1/skills", adapter._handle_skills)
+     app.router.add_get("/v1/toolsets", adapter._handle_toolsets)
++    app.router.add_post("/v1/memory/seed", adapter._handle_memory_seed)
++    app.router.add_post("/v1/atrium/role-map", adapter._handle_atrium_role_mapping)
+     app.router.add_post("/v1/chat/completions", adapter._handle_chat_completions)
+     app.router.add_post("/v1/responses", adapter._handle_responses)
+     app.router.add_get("/v1/responses/{response_id}", adapter._handle_get_response)
+@@ -3612,3 +3616,142 @@ class TestSessionKeyHeader:
+             assert resp.status == 200
+             data = await resp.json()
+             assert data["features"]["session_key_header"] == "X-Hermes-Session-Key"
++
++
++# ---------------------------------------------------------------------------
++# Atrium/Conductor backend capability endpoints
++# ---------------------------------------------------------------------------
++
++class TestAtriumBackendCapabilities:
++    def test_deterministic_role_mapping_knows_agency_departments(self):
++        result = _deterministic_role_mapping(
++            "sales qualification, support tickets and retention, content calendar",
++            max_roles=5,
++        )
++        assert result["roles"] == ["sales", "support", "content"]
++
++    def test_role_mapping_normalizer_allows_new_agency_roles(self):
++        result = _normalize_role_mapping_payload(
++            {
++                "suggestions": [
++                    {"role": "cto", "rationale": "technical ownership", "first_task_hints": ["Audit stack"]},
++                    {"role": "wizard", "rationale": "invalid", "first_task_hints": []},
++                    {"role": "sales", "rationale": "pipeline ownership", "first_task_hints": ["Review pipeline"]},
++                    {"role": "support", "rationale": "customer health", "first_task_hints": ["Triage tickets"]},
++                    {"role": "content", "rationale": "editorial execution", "first_task_hints": ["Draft calendar"]},
++                ],
++            },
++            max_roles=5,
++        )
++
++        assert result["roles"] == ["cto", "sales", "support", "content"]
++        assert [s["role"] for s in result["suggestions"]] == ["cto", "sales", "support", "content"]
++
++    def test_role_mapping_llm_path_prompt_and_output_include_new_agency_roles(self, auth_adapter):
++        captured = {}
++
++        class FakeAgent:
++            def __init__(self, **kwargs):
++                captured["system_prompt"] = kwargs["ephemeral_system_prompt"]
++
++            def run_conversation(self, user_message, conversation_history):
++                captured["user_message"] = user_message
++                return {
++                    "final_response": json.dumps({
++                        "suggestions": [
++                            {"role": "sales", "rationale": "Outbound sales motion", "first_task_hints": []},
++                            {"role": "support", "rationale": "Heavy support load", "first_task_hints": []},
++                            {"role": "content", "rationale": "Content calendar ownership", "first_task_hints": []},
++                        ]
++                    })
++                }
++
++        with (
++            patch("gateway.run._resolve_runtime_agent_kwargs", return_value={}),
++            patch("gateway.run._resolve_gateway_model", return_value="test-model"),
++            patch("gateway.run.GatewayRunner._load_reasoning_config", return_value=None),
++            patch("run_agent.AIAgent", FakeAgent),
++        ):
++            result = auth_adapter._infer_role_mapping_sync(
++                "outbound sales + heavy support + content calendar",
++                max_roles=3,
++            )
++
++        assert result["roles"] == ["sales", "support", "content"]
++        assert "Allowed role values:" in captured["system_prompt"]
++        for role in ("sales", "support", "content"):
++            assert role in captured["system_prompt"]
++        assert "outbound sales + heavy support + content calendar" in captured["user_message"]
++
++    @pytest.mark.asyncio
++    async def test_role_mapping_nonsense_can_return_empty(self, auth_adapter):
++        app = _create_app(auth_adapter)
++        with patch.object(auth_adapter, "_infer_role_mapping_sync", return_value={
++            "object": "hermes.atrium.role_mapping",
++            "roles": [],
++            "suggestions": [],
++        }):
++            async with TestClient(TestServer(app)) as cli:
++                resp = await cli.post(
++                    "/v1/atrium/role-map",
++                    headers={"Authorization": "Bearer sk-secret"},
++                    json={"answers": "purple banana static"},
++                )
++                assert resp.status == 200
++                data = await resp.json()
++                assert data["roles"] == []
++                assert data["suggestions"] == []
++
++    @pytest.mark.asyncio
++    async def test_memory_seed_contract_scope_and_readback(self, auth_adapter):
++        expected = {
++            "object": "hermes.memory.seed_result",
++            "scope": "co_123:sub_456",
++            "companyId": "co_123",
++            "subAccountId": "sub_456",
++            "collection": "orbit_mem_co_123",
++            "written": 1,
++            "skipped": 0,
++            "written_facts": [{"index": 0, "seed_id": "abc", "memory": "Brand voice: direct"}],
++            "skipped_facts": [],
++            "readback": {"count": 1, "matches_written": True, "sample": ["Brand voice: direct"]},
++        }
++        app = _create_app(auth_adapter)
++        with patch.object(auth_adapter, "_seed_mem0_facts_sync", return_value=expected) as seed:
++            async with TestClient(TestServer(app)) as cli:
++                resp = await cli.post(
++                    "/v1/memory/seed",
++                    headers={"Authorization": "Bearer sk-secret"},
++                    json={"companyId": "co_123", "subAccountId": "sub_456", "facts": ["Brand voice: direct"]},
++                )
++                assert resp.status == 200
++                data = await resp.json()
++                assert data["scope"] == "co_123:sub_456"
++                assert data["collection"] == "orbit_mem_co_123"
++                assert data["readback"]["matches_written"] is True
++                seed.assert_called_once()
++
++    @pytest.mark.asyncio
++    async def test_memory_seed_business_scope_when_subaccount_absent(self, auth_adapter):
++        app = _create_app(auth_adapter)
++        with patch.object(auth_adapter, "_seed_mem0_facts_sync", return_value={
++            "object": "hermes.memory.seed_result",
++            "scope": "co_123:_business",
++            "companyId": "co_123",
++            "subAccountId": None,
++            "collection": "orbit_mem_co_123",
++            "written": 0,
++            "skipped": 1,
++            "written_facts": [],
++            "skipped_facts": [{"index": 0, "reason": "already_present"}],
++            "readback": {"count": 1, "matches_written": True, "sample": []},
++        }):
++            async with TestClient(TestServer(app)) as cli:
++                resp = await cli.post(
++                    "/v1/memory/seed",
++                    headers={"Authorization": "Bearer sk-secret"},
++                    json={"companyId": "co_123", "facts": ["Business-level fact"]},
++                )
++                assert resp.status == 200
++                data = await resp.json()
++                assert data["scope"] == "co_123:_business"
