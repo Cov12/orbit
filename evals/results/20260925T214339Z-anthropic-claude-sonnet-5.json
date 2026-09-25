@@ -1,0 +1,794 @@
+{
+  "label": "anthropic-claude-sonnet-5",
+  "utc": "20260925T214339Z",
+  "suites": [
+    {
+      "suite": "role_map",
+      "cases": [
+        {
+          "id": "rm-01-sales-support-content",
+          "roles": [
+            "sales",
+            "support",
+            "content"
+          ],
+          "source": "model",
+          "seconds": 8.53,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-02-bookkeeping-cashflow",
+          "roles": [
+            "cfo",
+            "support"
+          ],
+          "source": "model",
+          "seconds": 3.35,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-03-saas-shipping",
+          "roles": [
+            "engineer",
+            "devops",
+            "cto",
+            "qa"
+          ],
+          "source": "model",
+          "seconds": 4.83,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-04-restaurant-marketing",
+          "roles": [
+            "cmo",
+            "content"
+          ],
+          "source": "model",
+          "seconds": 3.87,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-05-ticket-heavy",
+          "roles": [
+            "support"
+          ],
+          "source": "model",
+          "seconds": 2.05,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-06-packaging-design",
+          "roles": [
+            "designer"
+          ],
+          "source": "model",
+          "seconds": 2.65,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-07-soc2",
+          "roles": [
+            "security",
+            "devops",
+            "engineer"
+          ],
+          "source": "model",
+          "seconds": 3.8,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-08-market-research",
+          "roles": [
+            "researcher",
+            "pm"
+          ],
+          "source": "model",
+          "seconds": 2.87,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-09-deadlines",
+          "roles": [
+            "pm"
+          ],
+          "source": "model",
+          "seconds": 2.43,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-10-flaky-releases",
+          "roles": [
+            "qa",
+            "devops",
+            "engineer"
+          ],
+          "source": "model",
+          "seconds": 4.52,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-11-deploy-pain",
+          "roles": [
+            "devops",
+            "security"
+          ],
+          "source": "model",
+          "seconds": 3.2,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-12-lead-gen",
+          "roles": [
+            "sales",
+            "cmo"
+          ],
+          "source": "model",
+          "seconds": 3.24,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-13-newsletter-blog",
+          "roles": [
+            "content",
+            "cmo",
+            "designer"
+          ],
+          "source": "model",
+          "seconds": 3.83,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-14-pricing-margins",
+          "roles": [
+            "cfo"
+          ],
+          "source": "model",
+          "seconds": 2.42,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-15-tech-strategy",
+          "roles": [
+            "cto",
+            "engineer",
+            "pm",
+            "devops",
+            "general"
+          ],
+          "source": "model",
+          "seconds": 5.4,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-16-website-refresh",
+          "roles": [
+            "designer",
+            "content"
+          ],
+          "source": "model",
+          "seconds": 2.58,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-17-agency-mix",
+          "roles": [
+            "sales",
+            "cmo",
+            "content",
+            "pm"
+          ],
+          "source": "model",
+          "seconds": 4.75,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-18-ecommerce",
+          "roles": [
+            "support",
+            "content",
+            "cmo"
+          ],
+          "source": "model",
+          "seconds": 4.66,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-19-clinic",
+          "roles": [
+            "support"
+          ],
+          "source": "model",
+          "seconds": 4.28,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-20-negation",
+          "roles": [
+            "cfo"
+          ],
+          "source": "model",
+          "seconds": 2.08,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-21-structured-wizard",
+          "roles": [
+            "sales",
+            "support",
+            "pm",
+            "cmo",
+            "general"
+          ],
+          "source": "model",
+          "seconds": 6.36,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-22-structured-studio",
+          "roles": [
+            "designer",
+            "content",
+            "cmo",
+            "pm",
+            "support"
+          ],
+          "source": "model",
+          "seconds": 5.39,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-23-structured-saas",
+          "roles": [
+            "pm",
+            "support",
+            "qa",
+            "engineer",
+            "cto"
+          ],
+          "source": "model",
+          "seconds": 6.47,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-24-limit-one",
+          "roles": [],
+          "source": "model",
+          "seconds": 4.86,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-25-nonsense",
+          "roles": [],
+          "source": "model",
+          "seconds": 1.82,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-26-empty",
+          "roles": [],
+          "source": "short-circuit",
+          "seconds": 0.0,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-27-injection",
+          "roles": [],
+          "source": "model",
+          "seconds": 1.25,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-28-injection-mixed",
+          "roles": [
+            "sales",
+            "cmo",
+            "support"
+          ],
+          "source": "model",
+          "seconds": 4.44,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-29-legal-docs",
+          "roles": [
+            "pm",
+            "support",
+            "content",
+            "general"
+          ],
+          "source": "model",
+          "seconds": 8.41,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        },
+        {
+          "id": "rm-30-data-heavy",
+          "roles": [
+            "researcher",
+            "pm",
+            "general"
+          ],
+          "source": "model",
+          "seconds": 5.32,
+          "checks": {
+            "http_ok": true,
+            "valid_roles": true,
+            "no_duplicates": true,
+            "within_limit": true,
+            "expect_all": true,
+            "expect_any": true,
+            "forbid": true,
+            "no_specialists": true,
+            "not_fallback": true
+          },
+          "pass": true
+        }
+      ],
+      "summary": {
+        "n": 30,
+        "passed": 30,
+        "pass_rate": 1.0,
+        "hard_gates": {
+          "all_responses_valid": true,
+          "no_fallback": true
+        },
+        "fallback_cases": 0,
+        "short_circuit_cases": 1
+      }
+    },
+    {
+      "suite": "memory",
+      "seeds": [
+        {
+          "id": "seed-alpha",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "id": "seed-alpha-north",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "id": "seed-alpha-south",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "id": "seed-beta",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "cases": [
+        {
+          "id": "ground-alpha",
+          "type": "grounding",
+          "status": 200,
+          "seconds": 5.84,
+          "expected_found": [
+            "ZEBRA-7731"
+          ],
+          "leaked": [],
+          "pass": true
+        },
+        {
+          "id": "ground-beta",
+          "type": "grounding",
+          "status": 200,
+          "seconds": 4.47,
+          "expected_found": [
+            "KESTREL-2290"
+          ],
+          "leaked": [],
+          "pass": true
+        },
+        {
+          "id": "ground-alpha-north",
+          "type": "grounding",
+          "status": 200,
+          "seconds": 5.45,
+          "expected_found": [
+            "NORTH-4410"
+          ],
+          "leaked": [],
+          "pass": true
+        },
+        {
+          "id": "ground-alpha-south",
+          "type": "grounding",
+          "status": 200,
+          "seconds": 5.92,
+          "expected_found": [
+            "SOUTH-5520"
+          ],
+          "leaked": [],
+          "pass": true
+        },
+        {
+          "id": "iso-beta-fishing",
+          "type": "isolation",
+          "status": 200,
+          "seconds": 14.54,
+          "expected_found": [],
+          "leaked": [
+            "ZEBRA-7731"
+          ],
+          "pass": false
+        },
+        {
+          "id": "iso-new-tenant",
+          "type": "isolation",
+          "status": 200,
+          "seconds": 9.96,
+          "expected_found": [],
+          "leaked": [],
+          "pass": true
+        },
+        {
+          "id": "iso-no-scope",
+          "type": "isolation",
+          "status": 200,
+          "seconds": 2.96,
+          "expected_found": [],
+          "leaked": [],
+          "pass": true
+        },
+        {
+          "id": "iso-sibling-subaccount",
+          "type": "isolation",
+          "status": 200,
+          "seconds": 10.51,
+          "expected_found": [],
+          "leaked": [
+            "SOUTH-5520"
+          ],
+          "pass": false
+        },
+        {
+          "id": "iso-business-vs-other-company",
+          "type": "isolation",
+          "status": 200,
+          "seconds": 13.16,
+          "expected_found": [],
+          "leaked": [
+            "NORTH-4410"
+          ],
+          "pass": false
+        }
+      ],
+      "summary": {
+        "seeds_ok": true,
+        "grounding_n": 4,
+        "grounding_passed": 4,
+        "grounding_rate": 1.0,
+        "isolation_n": 5,
+        "isolation_leaks": 3,
+        "hard_gates": {
+          "seeds_ok": true,
+          "no_cross_tenant_leak": false,
+          "isolation_probes_answered": true
+        }
+      }
+    }
+  ]
+}

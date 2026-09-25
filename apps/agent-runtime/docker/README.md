@@ -61,7 +61,9 @@ curl -s localhost:8642/v1/models -H "Authorization: Bearer $HERMES_API_KEY"
   short (< 8 chars) keys when bound to a non-loopback address — which it is in a container.
 - **`$HERMES_HOME/config.yaml`** — regenerated on every start (edits are overwritten):
   `model.provider` / `model.default`, `memory.provider: mem0_local`, Hermes' built-in
-  file memory switched **off** (it is not tenant-scoped), `security.allow_lazy_installs: false`.
+  file memory switched **off** (it is not tenant-scoped), the `session_search` toolset
+  **disabled** (`agent.disabled_toolsets` — it searches every session with no tenant filter; see
+  [finding 1](../../../evals/results/SUMMARY.md#findings)), `security.allow_lazy_installs: false`.
 - **`$HERMES_HOME/mem0_local.json`** — `require_scope: true`, OpenAI embeddings, extraction
   LLM, Qdrant mode.
 - **No secrets are written to the volume.** Keys stay in the process environment, where
@@ -89,6 +91,12 @@ Other commands pass through: `docker run --rm <image> version` runs `hermes vers
 | `ANTHROPIC_BASE_URL` | Anthropic API | Optional; read directly by Hermes and mem0. |
 
 Hermes provider ids: `anthropic` → `anthropic`, `openai` → `openai-api`.
+
+### Tools
+
+| Variable | Default | |
+|---|---|---|
+| `HERMES_DISABLED_TOOLSETS` | — | Comma-separated toolsets to turn off in addition to `session_search`, which is always off. |
 
 ### Memory (`mem0_local`)
 

@@ -65,6 +65,12 @@ def int_env(name: str, default: int) -> int:
         raise AssertionError  # unreachable
 
 
+def disabled_toolsets() -> list[str]:
+    # Comma-separated; session_search is always included (see config comment).
+    extra = [t.strip() for t in env("HERMES_DISABLED_TOOLSETS").split(",") if t.strip()]
+    return ["session_search"] + [t for t in extra if t != "session_search"]
+
+
 def main() -> None:
     home = Path(env("HERMES_HOME", "/opt/data"))
     home.mkdir(parents=True, exist_ok=True)
@@ -86,6 +92,10 @@ def main() -> None:
         },
         # The venv is read-only for the runtime user; never pip-install at runtime.
         "security": {"allow_lazy_installs": False},
+        # session_search reads the whole session store with no tenant filter, so
+        # one tenant's agent could recall another tenant's conversations. Off
+        # until the session store is tenant-scoped (caught by evals/ memory suite).
+        "agent": {"disabled_toolsets": disabled_toolsets()},
     }
 
     have_openai = bool(env("OPENAI_API_KEY"))

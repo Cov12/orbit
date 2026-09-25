@@ -77,7 +77,13 @@ and scores it deterministically:
   **any canary appearing for another business, a sibling sub-account, a new tenant or an unscoped
   request fails the run.**
 
-Results are committed in [`evals/results/`](../../evals/results/SUMMARY.md).
+Results are committed in [`evals/results/`](../../evals/results/SUMMARY.md), failed runs included.
+The first memory runs failed: the memory layer was isolated correctly, but the runtime's built-in
+session-search tool searched every tenant's past conversations, and one business's assistant
+repeated another's codes. Every unit test passed, because none of them covered that path. Disabling the tool
+brought leaks to zero in three straight runs; scoping the session store by tenant is the permanent
+fix. The same suite flags one open weakness. When a prompt injection is mixed into a real business
+description, the model sometimes discards the whole answer instead of only the injected part.
 
 **End-to-end smoke tests before users see a change** — and incidents written up when something
 gets through anyway. Four that shaped the system:
@@ -103,6 +109,7 @@ gets through anyway. Four that shaped the system:
 ## What's next
 
 - Per-run scoped credentials for tool calls, replacing the shared service key.
+- A tenant-scoped session store, so conversation search can be turned back on safely.
 - Tool-use evals over the full stack (does the agent call the right tool with the right scope, and
   ground its answer in the result?).
 - Health reporting for components that degrade silently.

@@ -112,8 +112,15 @@ building that solo, the way I worked before, is six to nine months — roughly 3
 
 ## Evals
 
-_In progress._ An eval harness for the agent behaviors — role suggestions, memory grounding and
-tenant isolation — with committed results will live in `evals/`.
+[`evals/`](evals/README.md) runs the agent through the real runtime against fixed inputs and scores it
+deterministically: 30 role-suggestion cases (including negations and prompt injection) and a memory
+suite that seeds canary facts per tenant and fails on any cross-tenant recall.
+
+Latest runs (Claude Sonnet 5): role suggestions 30/30 in four of five runs, and memory grounding 4/4 with
+**zero cross-tenant leaks** in each of the three runs since the fix. That fix came from the evals
+themselves. The earlier runs leaked, and the cause turned out to be the runtime's built-in session
+search, which had no tenant filter. Every run is committed, failures included:
+[`evals/results/SUMMARY.md`](evals/results/SUMMARY.md).
 
 ## Repository layout
 

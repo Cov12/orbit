@@ -33,6 +33,16 @@ through the same header the orchestrator uses (`X-Hermes-Session-Key: <company>:
 
 Every run uses fresh tenant IDs, so runs never share memory.
 
+## What they caught
+
+The first memory runs with working seeds failed isolation: tenants were getting back other
+tenants' canary codes. The memory layer turned out to be sound; the leak came from the runtime's
+built-in `session_search` tool, which searches every stored conversation with no tenant filter and
+is on by default. It is now disabled in the runtime config, and the next three runs came back with
+zero leaks. The investigation is written up in [`results/SUMMARY.md`](results/SUMMARY.md#findings).
+That is exactly the kind of failure these evals exist for: every unit test passed, and the leak
+came through a path none of them covered.
+
 ## What they would have caught
 
 In September the runtime's role list was missing three newly added roles (sales, support,
