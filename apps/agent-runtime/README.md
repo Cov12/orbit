@@ -51,7 +51,8 @@ A fork of upstream's `mem0` provider that runs Mem0's open-source engine **in-pr
 calling the hosted service — facts are extracted, embedded and stored locally (Qdrant), and
 telemetry is forced off. What makes it multi-tenant:
 
-- **Per-company collections** — each tenant's memories live in their own collection.
+- **Per-company collections** — with an external Qdrant server, each tenant's memories live in
+  their own collection (the embedded, single-file mode uses one collection filtered by scope).
 - **Sub-account filter** — within a company, reads and writes are filtered by sub-account.
 - **Fail-closed scope** — with `require_scope` on, a session that arrives without a tenant scope
   gets **no memory at all**, rather than falling back to a shared pool.
@@ -86,3 +87,10 @@ docker run -d -p 127.0.0.1:8642:8642 -v agent-runtime-data:/opt/data \
 
 Every environment variable, and how the configuration is generated, is documented in
 [`docker/README.md`](docker/README.md).
+
+**Changes made for this edition.** So the container can run without local models, the memory
+plugin gained opt-in hosted providers — OpenAI-compatible embeddings and Anthropic for fact
+extraction — and an external-Qdrant setting; its defaults (local models, on-disk store) are
+unchanged. The same work fixed a bug: when no home directory was passed in, the plugin fell back to
+a hard-coded path instead of `$HERMES_HOME`, so memory written through the seed endpoint could land
+somewhere the agent doesn't read.
