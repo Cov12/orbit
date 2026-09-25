@@ -144,10 +144,6 @@ NEXT_PUBLIC_DRIVE_URL=https://drive.orbit.example/drive
 NEXT_PUBLIC_ATRIUM_URL=https://atrium.orbit.example
 ```
 
-## Deployment
-
-Render Web Service. Auto-deploys from `main` branch. Custom domain `portal.orbit.example` via CNAME.
-
 ## License
 
 Proprietary — © Orbit

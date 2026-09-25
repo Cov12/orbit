@@ -12,7 +12,6 @@ Multi-tenant SaaS platform for business management — pipelines, contacts, invo
 - **Styling/UI**: Tailwind CSS + shadcn/ui
 - **Payments**: Stripe Billing + Connect
 - **File Uploads**: UploadThing
-- **Hosting**: Render (`workpipe.orbit.example`)
 
 ## Authentication
 
@@ -48,16 +47,6 @@ Change Portal only. WorkPipe stays the same. The JWT contract is the boundary.
 - Notifications & theming (light/dark)
 - Subdomain routing for white-label agency sites
 
-## Pricing
-
-Managed via Portal. Per-app subscriptions:
-
-| Tier     | Monthly | Annual |
-| -------- | ------- | ---------------- |
-| Starter  | $—/mo  | $—/mo        |
-| Pro      | $—/mo  | $—/mo        |
-| Business | $—/mo  | $—/mo        |
-
 ## Environment Variables
 
 ```
@@ -79,10 +68,6 @@ npx prisma generate
 npx prisma db push
 npm run dev
 ```
-
-## Deployment
-
-Render Web Service. Auto-deploys from `master` branch.
 
 ## License
 

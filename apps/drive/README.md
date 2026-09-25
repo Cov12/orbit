@@ -11,7 +11,6 @@ Secure org-scoped file storage for the Orbit product suite. Built on Cloudflare 
 - **Database**: PostgreSQL + Prisma 7 (Neon, `@prisma/adapter-pg`)
 - **Storage**: Cloudflare R2 (S3-compatible)
 - **Encryption**: Server-side AES-256-GCM (client-side WebCrypto planned for Phase 2)
-- **Hosting**: Render (`drive.orbit.example`)
 
 ## Authentication
 
@@ -75,10 +74,6 @@ npx prisma generate
 npx prisma db push
 npm run dev
 ```
-
-## Deployment
-
-Render Web Service. Custom domain `drive.orbit.example` via CNAME. Auto-deploys from `main` branch.
 
 ## License
 
