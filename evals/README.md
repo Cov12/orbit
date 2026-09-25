@@ -50,9 +50,18 @@ score as the fallback's accuracy.
 # validate datasets (no server; runs in CI)
 python evals/run.py --check
 
-# run against a runtime (see apps/agent-runtime for starting one)
+# one command: throwaway runtime + dedicated Qdrant on a private network, then the evals
+evals/run-local.sh --provider anthropic --env-file anthropic.env --env-file openai.env
+
+# or against a runtime you already run
 HERMES_API_KEY=… python evals/run.py --base-url http://127.0.0.1:18643 --label <model-name>
 ```
+
+`run-local.sh` gives memory a dedicated Qdrant server, so the memory suite exercises the same
+per-company collections production uses. The memory suite needs an embeddings key (OpenAI).
+
+A run where the runtime is broken can't pass by accident: if isolation probes don't get answers,
+the run fails even though nothing leaked.
 
 Each run writes a full JSON report to [`results/`](results/) and appends a row to
 [`results/SUMMARY.md`](results/SUMMARY.md). The exit code is non-zero if a hard gate fails.
