@@ -12,6 +12,7 @@ This directory holds **only what we changed**, applied on top of a pinned upstre
 | `patches/` | Our changes to upstream files, as `git format-patch` output — two commits, ~900 added lines including tests. |
 | `plugins/memory/mem0_local/` | A memory provider we wrote. It backs **Engram**, Orbit's per-tenant memory. |
 | `UPSTREAM-LICENSE` | Upstream's MIT license, retained. |
+| `build.sh`, `docker/` | Builds a slim runtime image from all of the above — see [`docker/README.md`](docker/README.md). |
 
 Keeping our footprint to a couple of patches and a plugin is deliberate: pulling a new
 upstream release is a rebase of two small commits, not a merge of a fork.
@@ -68,3 +69,20 @@ cp -r ../apps/agent-runtime/plugins/memory/mem0_local plugins/memory/
 ```
 
 The patches are verified to apply cleanly to the pinned commit.
+
+## Container
+
+`build.sh` does the steps above in a throwaway build context (failing on any patch that
+doesn't apply) and builds `orbit/agent-runtime:dev`: a `python:3.12-slim` image running
+Hermes' API server as a non-root user, configured entirely from environment variables.
+`build.sh --test` also runs the patch tests inside the image.
+
+```bash
+apps/agent-runtime/build.sh --test
+docker run -d -p 127.0.0.1:8642:8642 -v agent-runtime-data:/opt/data \
+  -e HERMES_API_KEY=... -e ANTHROPIC_API_KEY=... -e OPENAI_API_KEY=... \
+  orbit/agent-runtime:dev
+```
+
+Every environment variable, and how the configuration is generated, is documented in
+[`docker/README.md`](docker/README.md).

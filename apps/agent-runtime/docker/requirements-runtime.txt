@@ -1,0 +1,16 @@
+# Installed on top of upstream's locked core + `mcp` extra (exported from uv.lock).
+# Exact pins, matching upstream's no-ranges policy.
+
+# API server platform adapter (gateway/platforms/api_server.py) is built on aiohttp.
+# Upstream ships it via the messaging/sms extras; we want only aiohttp. Same pin.
+aiohttp==3.13.3
+
+# Native Anthropic provider. Pinned to tools/lazy_deps.py's "provider.anthropic"
+# spec (not the older pyproject extra) so the lazy installer never tries to
+# upgrade it at runtime -- lazy installs are disabled in this image.
+anthropic==0.87.0
+
+# mem0_local memory provider: Mem0 OSS engine. Pulls qdrant-client (embedded
+# on-disk store or external server) and uses the openai SDK for embeddings.
+mem0ai==2.2.1
+qdrant-client==1.19.1
