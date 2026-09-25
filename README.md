@@ -133,8 +133,8 @@ scripts/          the scrub gate used by this edition
 ## How this edition was made
 
 - **History.** Portal, WorkPipe and Drive keep their full commit history — real dates, real
-  authorship. Human commits map to my GitHub account; commits written by agents stay attributed to
-  the agent. Atrium and Conductor are forks of large upstream projects whose history isn't mine to
+  authorship. Commits map to my GitHub account; those written with Claude Code keep their
+  `Co-Authored-By` trailer. Atrium and Conductor are forks of large upstream projects whose history isn't mine to
   republish, so they're single snapshots and their shipped work is listed in the
   [ship log](docs/SHIPLOG.md).
 - **Scrub.** History was rewritten with `git filter-repo` to replace business names and identifiers,
