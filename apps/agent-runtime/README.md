@@ -9,13 +9,13 @@ This directory holds **only what we changed**, applied on top of a pinned upstre
 | Path | What it is |
 |---|---|
 | `UPSTREAM_REF` | The upstream commit the patches apply to (`ef3a650f05d2`, 2026-06-01). |
-| `patches/` | Our changes to upstream files, as `git format-patch` output — two commits, ~900 added lines including tests. |
+| `patches/` | Our changes to upstream files, as `git format-patch` output — three commits, ~950 added lines including tests. |
 | `plugins/memory/mem0_local/` | A memory provider we wrote. It backs **Engram**, Orbit's per-tenant memory. |
 | `UPSTREAM-LICENSE` | Upstream's MIT license, retained. |
 | `build.sh`, `docker/` | Builds a slim runtime image from all of the above — see [`docker/README.md`](docker/README.md). |
 
 Keeping our footprint to a couple of patches and a plugin is deliberate: pulling a new
-upstream release is a rebase of two small commits, not a merge of a fork.
+upstream release is a rebase of three small commits, not a merge of a fork.
 
 ## The patches
 
@@ -44,6 +44,12 @@ Conductor's bridge:
   the suggestions before any agent is created.
 
 Adds 6 tests.
+
+**`0003` — two fixes.** The role-map fallback matched keywords as substrings, so short keywords
+fired inside unrelated words ("ci" inside "social" suggested a devops agent to any social-media
+business); it now matches whole words. And a failed memory seed no longer echoes the underlying
+exception to the caller — that text could include a provider's masked key hint; the full error
+stays in the server log. Adds 3 tests.
 
 ## The memory plugin (`mem0_local`)
 

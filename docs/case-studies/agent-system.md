@@ -64,8 +64,8 @@ agents is a separate, idempotent step that runs only after a person confirms.
 
 ## How I know it works
 
-**Tests.** Our runtime patches add 12 tests (tenant envelope and onboarding endpoints); the two
-test files they extend — 364 tests in all — pass inside the runtime image. The orchestrator's
+**Tests.** Our runtime patches add 15 tests (tenant envelope, onboarding endpoints and their
+fixes); the two test files they extend — 367 tests in all — pass inside the runtime image. The orchestrator's
 bridge routes, tool plugin and tenant scoping have their own unit and route tests.
 
 **Evals.** [`evals/`](../../evals/) runs the agent against fixed inputs through the real runtime

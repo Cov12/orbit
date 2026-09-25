@@ -1,0 +1,109 @@
+From 40041a6fccdc56f15e018fa32ea89bc2512e982b Mon Sep 17 00:00:00 2001
+From: "Covals D." <29109684+Cov12@users.noreply.github.com>
+Date: Fri, 25 Sep 2026 20:10:46 +0000
+Subject: [PATCH] fix(api-server): whole-word role fallback matching; don't
+ echo seed errors
+
+- The deterministic role-map fallback matched keywords as substrings, so short
+  keywords fired inside unrelated words ("ci" in "social" suggested devops,
+  "ui" in "guides" suggested a designer, "auth" in "authors" suggested
+  security). Match whole words, allowing a simple plural.
+- A failed memory seed returned the raw exception text, which could include a
+  provider's masked key hint. Return a generic message; the full exception is
+  already logged server-side.
+
+Adds tests for both.
+---
+ gateway/platforms/api_server.py  | 10 ++++++++--
+ tests/gateway/test_api_server.py | 33 ++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 2 deletions(-)
+
+diff --git a/gateway/platforms/api_server.py b/gateway/platforms/api_server.py
+index 2cd3078cba..75dbb66d10 100644
+--- a/gateway/platforms/api_server.py
++++ b/gateway/platforms/api_server.py
+@@ -656,6 +656,12 @@ def _normalize_role_mapping_payload(data: Dict[str, Any], *, max_roles: int = 5)
+     }
+ 
+ 
++def _keyword_in(text: str, keyword: str) -> bool:
++    """Whole-word match (allowing a simple plural), so short keywords like "ci" or "ui"
++    don't fire inside unrelated words such as "social" or "build"."""
++    return re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?:s|es)?(?![a-z0-9])", text) is not None
++
++
+ def _deterministic_role_mapping(answers_text: str, *, max_roles: int = 5) -> Dict[str, Any]:
+     """Small safety net for tests/LLM failures; Conductor owns the formal fallback."""
+     text = (answers_text or "").lower()
+@@ -676,7 +682,7 @@ def _deterministic_role_mapping(answers_text: str, *, max_roles: int = 5) -> Dic
+     ]
+     suggestions = []
+     for role, words in keyword_map:
+-        hits = [w for w in words if w in text]
++        hits = [w for w in words if _keyword_in(text, w)]
+         if hits:
+             suggestions.append({
+                 "role": role,
+@@ -4407,7 +4413,7 @@ class APIServerAdapter(BasePlatformAdapter):
+             )
+         except Exception as exc:
+             logger.exception("POST /v1/memory/seed failed")
+-            return web.json_response(_openai_error(str(exc), err_type="server_error", code="memory_seed_failed"), status=500)
++            return web.json_response(_openai_error("Memory seed failed; see the server log for details.", err_type="server_error", code="memory_seed_failed"), status=500)
+         return web.json_response(result)
+ 
+     def _answers_to_text(self, answers: Any) -> str:
+diff --git a/tests/gateway/test_api_server.py b/tests/gateway/test_api_server.py
+index 9ceb58e2db..1128291970 100644
+--- a/tests/gateway/test_api_server.py
++++ b/tests/gateway/test_api_server.py
+@@ -3630,6 +3630,23 @@ class TestAtriumBackendCapabilities:
+         )
+         assert result["roles"] == ["sales", "support", "content"]
+ 
++    def test_deterministic_role_mapping_matches_whole_words_only(self):
++        # "ci" sits inside "social", "ui" inside "guides", "auth" inside "authors":
++        # none of those should pull in devops, designer or security.
++        result = _deterministic_role_mapping(
++            "We run social media campaigns and write guides for authors",
++            max_roles=5,
++        )
++        assert "cmo" in result["roles"]
++        assert "devops" not in result["roles"]
++        assert "designer" not in result["roles"]
++        assert "security" not in result["roles"]
++
++    def test_deterministic_role_mapping_still_matches_plurals(self):
++        result = _deterministic_role_mapping("Our tickets pile up and our campaigns stall", max_roles=5)
++        assert "support" in result["roles"]
++        assert "cmo" in result["roles"]
++
+     def test_role_mapping_normalizer_allows_new_agency_roles(self):
+         result = _normalize_role_mapping_payload(
+             {
+@@ -3731,6 +3748,22 @@ class TestAtriumBackendCapabilities:
+                 assert data["readback"]["matches_written"] is True
+                 seed.assert_called_once()
+ 
++    @pytest.mark.asyncio
++    async def test_memory_seed_error_does_not_echo_exception(self, auth_adapter):
++        app = _create_app(auth_adapter)
++        boom = RuntimeError("provider rejected key sk-fake-****0000")
++        with patch.object(auth_adapter, "_seed_mem0_facts_sync", side_effect=boom):
++            async with TestClient(TestServer(app)) as cli:
++                resp = await cli.post(
++                    "/v1/memory/seed",
++                    headers={"Authorization": "Bearer sk-secret"},
++                    json={"companyId": "co_123", "facts": ["Brand voice: direct"]},
++                )
++                assert resp.status == 500
++                body = await resp.text()
++                assert "sk-fake" not in body
++                assert "memory_seed_failed" in body
++
+     @pytest.mark.asyncio
+     async def test_memory_seed_business_scope_when_subaccount_absent(self, auth_adapter):
+         app = _create_app(auth_adapter)
+-- 
+2.43.0
+
