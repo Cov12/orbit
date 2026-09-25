@@ -60,8 +60,8 @@ HERMES_API_KEY=… python evals/run.py --base-url http://127.0.0.1:18643 --label
 `run-local.sh` gives memory a dedicated Qdrant server, so the memory suite exercises the same
 per-company collections production uses. The memory suite needs an embeddings key (OpenAI).
 
-A run where the runtime is broken can't pass by accident: if isolation probes don't get answers,
-the run fails even though nothing leaked.
+A run where the runtime is broken can't pass by accident: if seeding fails, or isolation probes
+don't get answers, the run fails even though nothing leaked.
 
 Each run writes a full JSON report to [`results/`](results/) and appends a row to
 [`results/SUMMARY.md`](results/SUMMARY.md). The exit code is non-zero if a hard gate fails.

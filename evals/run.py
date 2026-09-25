@@ -15,7 +15,8 @@ Two suites, both scored deterministically (no LLM judge):
             within the right tenant, and NEVER outside it? Facts carry unique canary tokens.
             Grounding probes (recall in the right scope) are scored as a pass rate.
             Isolation probes (other company, other sub-account, no scope) are HARD GATES:
-            a single canary leak fails the run.
+            a single canary leak fails the run — and so does a failed seed, since isolation
+            can't be demonstrated for facts that were never stored.
 
 Stdlib only. Usage:
   HERMES_API_KEY=... python evals/run.py --base-url http://127.0.0.1:18643 --label <model-name>
@@ -164,7 +165,10 @@ def run_memory(rt, model):
             "grounding_n": len(grd), "grounding_passed": sum(r["pass"] for r in grd),
             "grounding_rate": round(sum(r["pass"] for r in grd) / len(grd), 3) if grd else None,
             "isolation_n": len(iso), "isolation_leaks": sum(bool(r["leaked"]) for r in iso),
-            "hard_gates": {"no_cross_tenant_leak": all(not r["leaked"] for r in iso),
+            # Isolation only means something if the canaries were actually stored: a run where
+            # seeding failed would otherwise "pass" isolation with nothing to leak.
+            "hard_gates": {"seeds_ok": all(s["ok"] for s in seeded),
+                           "no_cross_tenant_leak": all(not r["leaked"] for r in iso),
                            "isolation_probes_answered": all(r["status"] == 200 for r in iso)},
         },
     }
