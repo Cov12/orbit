@@ -1,0 +1,25 @@
+# Copied to <build context>/.dockerignore by build.sh.
+# Drops upstream trees the API-server runtime never uses (web/TUI frontends,
+# desktop apps, docs site, CI, VCS metadata). tests/ is kept for the test target.
+hermes/.git
+hermes/.github
+hermes/website
+hermes/web
+hermes/ui-tui
+hermes/apps
+hermes/infographic
+hermes/docs
+hermes/plans
+hermes/nix
+hermes/assets
+hermes/datagen-config-examples
+hermes/node_modules
+hermes/package.json
+hermes/package-lock.json
+hermes/flake.nix
+hermes/flake.lock
+hermes/docker-compose*.yml
+hermes/Dockerfile
+hermes/RELEASE_*.md
+hermes/**/__pycache__
+hermes/**/.venv

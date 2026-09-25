@@ -4,15 +4,22 @@ A fork of the bundled `mem0` provider that swaps the Mem0 *Platform* cloud clien
 (`MemoryClient`, which calls app.mem0.ai) for Mem0's in-process **OSS** engine
 (`Memory.from_config`) backed entirely by local infrastructure:
 
-  - vector store : qdrant, on-disk under HERMES_HOME (no server, no network)
-  - LLM (extract): Ollama (local) — fact extraction / dedup on each turn
-  - embedder     : Ollama (local) — nomic-embed-text (768-dim)
+  - vector store : qdrant, on-disk under HERMES_HOME (no server, no network),
+                   or an external Qdrant server (one collection per company)
+  - LLM (extract): Ollama (local) by default — fact extraction / dedup on each
+                   turn; or any OpenAI-compatible endpoint, or Anthropic
+  - embedder     : Ollama (local) by default — nomic-embed-text (768-dim);
+                   or OpenAI-compatible embeddings (e.g. text-embedding-3-small)
 
-Client memory therefore never leaves the box. The three tools, circuit breaker,
+With the default (Ollama) backends client memory never leaves the box; with hosted
+extraction/embeddings the text sent to those APIs does, but storage stays local
+(or on your own Qdrant server). The three tools, circuit breaker,
 and background prefetch/sync threads are unchanged from the bundled provider.
 
 Config via $HERMES_HOME/mem0_local.json (or env), keys:
+  llm_provider     (default: openai)     # openai | anthropic | ollama
   llm_model        (default: qwen2.5:14b)
+  embedder_provider (default: ollama)    # ollama | openai
   embedder_model   (default: nomic-embed-text)
   embedding_dims   (default: 768)        # MUST match the embedder (nomic=768)
   ollama_base_url  (default: http://localhost:11434)
@@ -47,14 +54,20 @@ _BREAKER_COOLDOWN_SECS = 120
 
 _DEFAULTS = {
     # Extraction LLM. "openai" + the Hermes subscription proxy rides the Grok sub
-    # (fast, smart, flat-rate); "ollama" keeps it fully local (slow on CPU).
-    "llm_provider": "openai",            # "openai" (proxy/api) | "ollama" (local)
+    # (fast, smart, flat-rate); "ollama" keeps it fully local (slow on CPU);
+    # "anthropic" uses the Anthropic API (key from ANTHROPIC_API_KEY).
+    "llm_provider": "openai",            # "openai" (proxy/api) | "anthropic" | "ollama" (local)
     "llm_model": "grok-4.20-0309-non-reasoning",  # via Hermes proxy; ollama: qwen2.5:14b
     "openai_base_url": "http://127.0.0.1:8645/v1",  # `hermes proxy start`
     "openai_api_key": "unused-proxy-attaches-creds",  # proxy ignores it; client needs non-empty
-    # Embedder + store: always local (embeddings don't go through the proxy).
+    # Embedder. "ollama" = local (default); "openai" = any OpenAI-compatible
+    # embeddings endpoint (key: MEM0_LOCAL_EMBEDDER_API_KEY env, then the
+    # embedder_api_key config value, then OPENAI_API_KEY env).
+    "embedder_provider": "ollama",       # "ollama" | "openai"
     "embedder_model": "nomic-embed-text",
     "embedding_dims": 768,
+    "embedder_base_url": "https://api.openai.com/v1",  # embedder_provider=openai only
+    "embedder_api_key": "",
     "ollama_base_url": "http://localhost:11434",
     "collection_name": "orbit_memories",
     "user_id": "hermes-user",
@@ -84,6 +97,18 @@ def _sanitize_collection(name: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_.-]", "_", name)[:255]
 
 
+def _default_hermes_home() -> str:
+    """$HERMES_HOME (via hermes_constants), falling back to ~/.hermes. Callers
+    that construct the provider directly (e.g. the memory-seed endpoint) don't
+    pass hermes_home, so this must resolve the same home the agent uses."""
+    try:
+        from hermes_constants import get_hermes_home
+
+        return str(get_hermes_home())
+    except Exception:
+        return os.path.expanduser("~/.hermes")
+
+
 def _load_config() -> dict:
     """Defaults <- $HERMES_HOME/mem0_local.json <- a few env overrides."""
     from hermes_constants import get_hermes_home
@@ -101,6 +126,8 @@ def _load_config() -> dict:
         ("MEM0_LOCAL_LLM_MODEL", "llm_model"),
         ("MEM0_LOCAL_EMBEDDER_MODEL", "embedder_model"),
         ("MEM0_LOCAL_OLLAMA_URL", "ollama_base_url"),
+        # Secrets are better kept in env than in the json on disk.
+        ("MEM0_LOCAL_QDRANT_API_KEY", "qdrant_api_key"),
     ):
         if os.environ.get(env_key):
             config[cfg_key] = os.environ[env_key]
@@ -167,6 +194,9 @@ class Mem0LocalMemoryProvider(MemoryProvider):
         self._llm_model = _DEFAULTS["llm_model"]
         self._openai_base_url = _DEFAULTS["openai_base_url"]
         self._openai_api_key = _DEFAULTS["openai_api_key"]
+        self._embedder_provider = _DEFAULTS["embedder_provider"]
+        self._embedder_base_url = _DEFAULTS["embedder_base_url"]
+        self._embedder_api_key = ""
         self._embedder_model = _DEFAULTS["embedder_model"]
         self._embedding_dims = _DEFAULTS["embedding_dims"]
         self._ollama_url = _DEFAULTS["ollama_base_url"]
@@ -189,12 +219,21 @@ class Mem0LocalMemoryProvider(MemoryProvider):
         return "mem0_local"
 
     def is_available(self) -> bool:
-        # Local-only: available iff the OSS deps are importable. No network calls.
+        # Available iff the OSS deps are importable. No network calls. The
+        # ollama client is only required when a configured backend uses it.
         try:
             import mem0  # noqa: F401
-            import ollama  # noqa: F401
         except Exception:
             return False
+        try:
+            cfg = _load_config()
+        except Exception:
+            cfg = dict(_DEFAULTS)
+        if "ollama" in (str(cfg.get("llm_provider", "")).lower(), str(cfg.get("embedder_provider", "")).lower()):
+            try:
+                import ollama  # noqa: F401
+            except Exception:
+                return False
         return True
 
     def get_config_schema(self):
@@ -228,7 +267,7 @@ class Mem0LocalMemoryProvider(MemoryProvider):
 
     def initialize(self, session_id: str, **kwargs) -> None:
         self._config = _load_config()
-        self._hermes_home = kwargs.get("hermes_home", "") or os.path.expanduser("~/.hermes")
+        self._hermes_home = kwargs.get("hermes_home", "") or _default_hermes_home()
         # Memory scope (per-tenant partition key), in priority order:
         #  1. user_id            — platform user (gateway/Telegram sessions)
         #  2. gateway_session_key — the X-Hermes-Session-Key the Orbit bridge sets to
@@ -256,6 +295,16 @@ class Mem0LocalMemoryProvider(MemoryProvider):
         self._openai_api_key = (
             os.environ.get("MEM0_LOCAL_OPENAI_API_KEY")
             or self._config.get("openai_api_key", _DEFAULTS["openai_api_key"])
+        )
+        self._embedder_provider = str(
+            self._config.get("embedder_provider", _DEFAULTS["embedder_provider"])
+        ).lower()
+        self._embedder_base_url = self._config.get("embedder_base_url", _DEFAULTS["embedder_base_url"])
+        self._embedder_api_key = (
+            os.environ.get("MEM0_LOCAL_EMBEDDER_API_KEY")
+            or self._config.get("embedder_api_key")
+            or os.environ.get("OPENAI_API_KEY")
+            or ""
         )
         self._embedder_model = self._config.get("embedder_model", _DEFAULTS["embedder_model"])
         self._embedding_dims = int(self._config.get("embedding_dims", _DEFAULTS["embedding_dims"]))
@@ -291,7 +340,7 @@ class Mem0LocalMemoryProvider(MemoryProvider):
             pass
 
     def _qdrant_path(self) -> str:
-        base = self._hermes_home or os.path.expanduser("~/.hermes")
+        base = self._hermes_home or _default_hermes_home()
         return str(Path(base) / "mem0_local_qdrant")
 
     def _company_id(self) -> str:
@@ -328,9 +377,37 @@ class Mem0LocalMemoryProvider(MemoryProvider):
                     "api_key": self._openai_api_key or "unused",
                 },
             }
+        if self._llm_provider == "anthropic":
+            # Key comes from ANTHROPIC_API_KEY (read by mem0's Anthropic client).
+            return {"provider": "anthropic", "config": {"model": self._llm_model}}
         return {
             "provider": "ollama",
             "config": {"model": self._llm_model, "ollama_base_url": self._ollama_url},
+        }
+
+    def _build_embedder_config(self) -> dict:
+        if self._embedder_provider == "openai":
+            if not self._embedder_api_key:
+                raise RuntimeError(
+                    "mem0_local: embedder_provider=openai but no embeddings API key is "
+                    "configured (set OPENAI_API_KEY or MEM0_LOCAL_EMBEDDER_API_KEY)."
+                )
+            return {
+                "provider": "openai",
+                "config": {
+                    "model": self._embedder_model,
+                    "api_key": self._embedder_api_key,
+                    "openai_base_url": self._embedder_base_url,
+                    "embedding_dims": self._embedding_dims,
+                },
+            }
+        return {
+            "provider": "ollama",
+            "config": {
+                "model": self._embedder_model,
+                "ollama_base_url": self._ollama_url,
+                "embedding_dims": self._embedding_dims,
+            },
         }
 
     def _build_oss_config(self) -> dict:
@@ -340,19 +417,12 @@ class Mem0LocalMemoryProvider(MemoryProvider):
                 "config": self._vector_store_config(),
             },
             "llm": self._build_llm_config(),
-            "embedder": {
-                "provider": "ollama",
-                "config": {
-                    "model": self._embedder_model,
-                    "ollama_base_url": self._ollama_url,
-                    "embedding_dims": self._embedding_dims,
-                },
-            },
+            "embedder": self._build_embedder_config(),
         }
         # Per-company history DB (mem0's SQLite change-log). Server mode partitions
         # it alongside the vectors so the "what changed, when" metadata isn't shared.
         if self._qdrant_mode == "server" and self._user_id:
-            hist_dir = Path(self._hermes_home or os.path.expanduser("~/.hermes")) / "mem0_history"
+            hist_dir = Path(self._hermes_home or _default_hermes_home()) / "mem0_history"
             try:
                 hist_dir.mkdir(parents=True, exist_ok=True)
             except Exception:

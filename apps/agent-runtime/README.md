@@ -12,6 +12,7 @@ This directory holds **only what we changed**, applied on top of a pinned upstre
 | `patches/` | Our changes to upstream files, as `git format-patch` output — two commits, ~900 added lines including tests. |
 | `plugins/memory/mem0_local/` | A memory provider we wrote. It backs **Engram**, Orbit's per-tenant memory. |
 | `UPSTREAM-LICENSE` | Upstream's MIT license, retained. |
+| `build.sh`, `docker/` | Builds a slim runtime image from all of the above — see [`docker/README.md`](docker/README.md). |
 
 Keeping our footprint to a couple of patches and a plugin is deliberate: pulling a new
 upstream release is a rebase of two small commits, not a merge of a fork.
@@ -50,7 +51,8 @@ A fork of upstream's `mem0` provider that runs Mem0's open-source engine **in-pr
 calling the hosted service — facts are extracted, embedded and stored locally (Qdrant), and
 telemetry is forced off. What makes it multi-tenant:
 
-- **Per-company collections** — each tenant's memories live in their own collection.
+- **Per-company collections** — with an external Qdrant server, each tenant's memories live in
+  their own collection (the embedded, single-file mode uses one collection filtered by scope).
 - **Sub-account filter** — within a company, reads and writes are filtered by sub-account.
 - **Fail-closed scope** — with `require_scope` on, a session that arrives without a tenant scope
   gets **no memory at all**, rather than falling back to a shared pool.
@@ -68,3 +70,27 @@ cp -r ../apps/agent-runtime/plugins/memory/mem0_local plugins/memory/
 ```
 
 The patches are verified to apply cleanly to the pinned commit.
+
+## Container
+
+`build.sh` does the steps above in a throwaway build context (failing on any patch that
+doesn't apply) and builds `orbit/agent-runtime:dev`: a `python:3.12-slim` image running
+Hermes' API server as a non-root user, configured entirely from environment variables.
+`build.sh --test` also runs the patch tests inside the image.
+
+```bash
+apps/agent-runtime/build.sh --test
+docker run -d -p 127.0.0.1:8642:8642 -v agent-runtime-data:/opt/data \
+  -e HERMES_API_KEY=... -e ANTHROPIC_API_KEY=... -e OPENAI_API_KEY=... \
+  orbit/agent-runtime:dev
+```
+
+Every environment variable, and how the configuration is generated, is documented in
+[`docker/README.md`](docker/README.md).
+
+**Changes made for this edition.** So the container can run without local models, the memory
+plugin gained opt-in hosted providers — OpenAI-compatible embeddings and Anthropic for fact
+extraction — and an external-Qdrant setting; its defaults (local models, on-disk store) are
+unchanged. The same work fixed a bug: when no home directory was passed in, the plugin fell back to
+a hard-coded path instead of `$HERMES_HOME`, so memory written through the seed endpoint could land
+somewhere the agent doesn't read.
