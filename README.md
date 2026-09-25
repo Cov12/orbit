@@ -39,7 +39,8 @@ orchestrator and an agent runtime — built by one engineer working with a team 
    closed a class of cross-tenant access bugs in the CRM.
 8. **[`apps/drive/src/lib/encryption.ts`](apps/drive/src/lib/encryption.ts)** — envelope encryption:
    a random key per file, wrapped by a per-tenant key.
-9. **[`docs/SHIPLOG.md`](docs/SHIPLOG.md)** — every merged PR, with dates.
+9. **[`docs/case-studies/agent-system.md`](docs/case-studies/agent-system.md)** — the agent system end to end: what it does, how it's orchestrated, how I know it works, and the incidents that shaped it.
+10. **[`docs/SHIPLOG.md`](docs/SHIPLOG.md)** — every merged PR, with dates.
 
 ## Architecture
 
