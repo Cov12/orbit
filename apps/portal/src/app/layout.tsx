@@ -18,6 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider
+      waitlistUrl="/waitlist"
       appearance={{
         baseTheme: dark,
         variables: {
