@@ -291,7 +291,8 @@ def test_resolve_active_subaccount_id_degrades_invalid_state_to_business_scope(d
     monkeypatch.setattr(subaccount_sync, "_fetch_subaccounts", lambda token: payload)
     subaccount_sync.sync_org_subaccounts(db, org_id, _PORTAL_CUID, _TOKEN)
 
-    assert subaccount_sync.resolve_active_subaccount_id(db, org_id, None) is None
+    # No cookie + exactly one ACTIVE sub-account (Globex is paused) => that one.
+    assert subaccount_sync.resolve_active_subaccount_id(db, org_id, None) == _SA1
     assert (
         subaccount_sync.resolve_active_subaccount_id(
             db, org_id, subaccount_sync.BUSINESS_SCOPE_SENTINEL
@@ -302,3 +303,23 @@ def test_resolve_active_subaccount_id_degrades_invalid_state_to_business_scope(d
     assert subaccount_sync.resolve_active_subaccount_id(db, org_id, _SA2) is None
     assert subaccount_sync.resolve_active_subaccount_id(db, org_id, "missing") is None
     assert subaccount_sync.resolve_active_subaccount_id(db, "other-org", _SA1) is None
+
+
+def test_resolve_active_subaccount_id_no_cookie_with_several_active_is_business_scope(db, monkeypatch):
+    """Only a single active sub-account is a safe default; with two, nothing is chosen."""
+    org = _org(db)
+    org_id = str(org.id)
+    payload = [
+        {"id": _SA1, "name": "Northwind", "status": "active"},
+        {"id": _SA2, "name": "Globex", "status": "active"},
+    ]
+    monkeypatch.setattr(subaccount_sync, "_fetch_subaccounts", lambda token: payload)
+    subaccount_sync.sync_org_subaccounts(db, org_id, _PORTAL_CUID, _TOKEN)
+
+    assert subaccount_sync.resolve_active_subaccount_id(db, org_id, None) is None
+    assert subaccount_sync.resolve_active_subaccount_id(db, org_id, _SA2) == _SA2
+
+
+def test_resolve_active_subaccount_id_no_cookie_no_subaccounts_is_business_scope(db):
+    org = _org(db)
+    assert subaccount_sync.resolve_active_subaccount_id(db, str(org.id), None) is None

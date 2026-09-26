@@ -494,14 +494,20 @@ def resolve_active_subaccount_id(
     """Resolve the chat's active sub-account from the selector cookie.
 
     Semantics for Atrium chat:
-      * missing cookie => business scope (None)
+      * missing cookie => the org's only ACTIVE sub-account if it has exactly one,
+        else business scope (None)
       * BUSINESS sentinel => explicit business scope (None)
       * any id => only honored if it names an ACTIVE mirrored sub-account of this org
 
     Invalid / stale / cross-org cookie values fail closed to business scope.
     """
-    if not cookie_value or cookie_value == BUSINESS_SCOPE_SENTINEL:
+    if cookie_value == BUSINESS_SCOPE_SENTINEL:
         return None
+    if not cookie_value:
+        # A business with a single location has nothing to choose between; defaulting to it
+        # lets sub-account tools (CRM data) work before anyone opens the scope selector.
+        only = list_active_subaccounts(db, internal_org_id)
+        return only[0].id if len(only) == 1 else None
     for row in list_active_subaccounts(db, internal_org_id):
         if row.id == cookie_value:
             return row.id
