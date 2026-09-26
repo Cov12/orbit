@@ -101,6 +101,7 @@ Hermes provider ids: `anthropic` → `anthropic`, `openai` → `openai-api`.
 | `HERMES_API_TOOLSETS` | `todo` | Allowlist of toolsets for API-server sessions, which is how tenants reach the runtime. Keep host-reaching toolsets (`terminal`, `file`, `code_execution`, `browser`, `cronjob`, `delegation`, `skills`) off it: one runtime serves many tenants. |
 | `PAPERCLIP_API_URL` | — | With `PAPERCLIP_API_KEY`, registers the orchestrator's MCP server (`paperclip`) and add it to the allowlist. |
 | `PAPERCLIP_API_KEY` | — | Its API key. Referenced as `${PAPERCLIP_API_KEY}` in the config, so it stays in the environment. |
+| `PAPERCLIP_MCP_TOOLS` | the four WorkPipe data tools | Exact names of the orchestrator tools to register. The server also offers generic admin tools (raw API requests, approval decisions, issue edits) that run with the service key, which can act for any company; they are never registered unless listed here. |
 | `PAPERCLIP_MCP_SERVER` | `/opt/orbit/mcp/paperclip-mcp-server.mjs` | Path of the bundled MCP server (present in the demo image, which adds Node). |
 
 ### Memory (`mem0_local`)

@@ -26,6 +26,16 @@ PROVIDERS = {
     "anthropic": {"hermes_id": "anthropic", "key_env": "ANTHROPIC_API_KEY", "model": "claude-sonnet-4-6"},
     "openai": {"hermes_id": "openai-api", "key_env": "OPENAI_API_KEY", "model": "gpt-5.4"},
 }
+# Orchestrator MCP tools a tenant conversation may use: the WorkPipe data tools only. The same
+# server also offers generic admin tools (raw API requests, approval decisions, issue edits)
+# that run with the runtime's service key, which can act for any company, so they are never
+# registered. Override with PAPERCLIP_MCP_TOOLS (comma-separated exact names).
+PAPERCLIP_MCP_TOOLS_DEFAULT = (
+    "plugin_orbit_workpipe-tools_listPipelines",
+    "plugin_orbit_workpipe-tools_getPipeline",
+    "plugin_orbit_workpipe-tools_findContact",
+    "plugin_orbit_workpipe-tools_getContact",
+)
 # mem0 fact-extraction model defaults (mem0's own defaults for each backend).
 MEM0_LLM_DEFAULTS = {"openai": "gpt-5-mini", "anthropic": "claude-sonnet-4-6"}
 
@@ -105,11 +115,14 @@ def main() -> None:
     if env("PAPERCLIP_API_URL") and env("PAPERCLIP_API_KEY"):
         # Orchestrator tools over stdio MCP. The key is a ${VAR} placeholder that Hermes
         # resolves from the process environment, so it is never written to the volume.
+        mcp_tools = [t.strip() for t in env("PAPERCLIP_MCP_TOOLS").split(",") if t.strip()] \
+            or list(PAPERCLIP_MCP_TOOLS_DEFAULT)
         config["mcp_servers"] = {
             "paperclip": {
                 "command": "node",
                 "args": [env("PAPERCLIP_MCP_SERVER", "/opt/orbit/mcp/paperclip-mcp-server.mjs")],
                 "env": {"PAPERCLIP_API_URL": "${PAPERCLIP_API_URL}", "PAPERCLIP_API_KEY": "${PAPERCLIP_API_KEY}"},
+                "tools": {"include": mcp_tools, "resources": False, "prompts": False},
             }
         }
         if "paperclip" not in api_toolsets:
@@ -157,7 +170,8 @@ def main() -> None:
         f"render_config: provider={spec['hermes_id']} model={model} memory=mem0_local "
         f"(require_scope, qdrant={mem0['qdrant_mode']}, embedder={mem0['embedder_model']}, "
         f"embeddings_key={'set' if (have_openai or env('MEM0_LOCAL_EMBEDDER_API_KEY')) else 'MISSING'}) "
-        f"api_toolsets={','.join(config['platform_toolsets']['api_server'])}",
+        f"api_toolsets={','.join(config['platform_toolsets']['api_server'])} "
+        f"mcp_tools={len(config.get('mcp_servers', {}).get('paperclip', {}).get('tools', {}).get('include', []))}",
         file=sys.stderr,
     )
 

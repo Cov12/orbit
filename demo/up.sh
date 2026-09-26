@@ -9,6 +9,7 @@
 #   r2.env          R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT, R2_BUCKET
 #   anthropic.env   ANTHROPIC_API_KEY
 #   openai.env      OPENAI_API_KEY (memory embeddings)
+#   demo-seed.env   written by demo/seed.sh
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 secrets=${ORBIT_SECRETS:-$HOME/showcase/.secrets}
@@ -19,6 +20,8 @@ for f in demo clerk r2 anthropic openai; do
   [[ -r "$secrets/$f.env" ]] || { echo "up.sh: missing $secrets/$f.env" >&2; exit 64; }
   args+=(--env-file "$secrets/$f.env")
 done
+# Written by demo/seed.sh (API key, plugin and agent ids); absent before the first seed.
+[[ -r "$secrets/demo-seed.env" ]] && args+=(--env-file "$secrets/demo-seed.env")
 
 # Builds share this box with other workloads: keep them polite.
 exec nice -n 10 docker compose -f "$here/compose.yaml" "${args[@]}" "$@"
