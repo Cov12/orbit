@@ -56,6 +56,18 @@ Atrium ──bridge (shared secret)──▶ Conductor ──agent request + ten
 The design principle throughout: **identity is decided by the servers, never by the model.** The
 model chooses what to do; it never chooses whose data it does it to.
 
+**Tool lockdown.** One runtime serves every tenant, so anything the model can reach that isn't
+tenant-scoped is a way across the boundary. Tenant sessions get an allowlist, not a denylist
+([`render_config.py`](../../apps/agent-runtime/docker/render_config.py)):
+- **Off:** the runtime's terminal, file, code-execution, browser, scheduling and delegation tools.
+- **Off:** its built-in memory, which is one file per runtime and is replaced by the tenant-scoped memory.
+- **Off:** its session search, which spans every conversation (see *Evals* below).
+- **Conductor's MCP server:** registers only the four CRM tools. The same server offers generic admin
+  tools, such as raw API requests and approval decisions, that run with the service key. That key can
+  act for any company, so those tools are never registered.
+
+Each of these came from checking what the model could actually reach, not what the prompt told it to do.
+
 Onboarding follows the same shape. The role suggestion is constrained, not trusted: the model's
 output is validated against a fixed set of roles, capped and de-duplicated, with a deterministic
 fallback if the model is unavailable

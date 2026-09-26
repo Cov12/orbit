@@ -133,6 +133,8 @@ apps/
   atrium/         workspace, on Open WebUI (snapshot — see below)
   conductor/      orchestrator, on Paperclip (snapshot — see below)
   agent-runtime/  our changes to Hermes Agent
+demo/             the live demo: compose stack, seeds, smoke test, nightly reset
+evals/            agent evals and every result, failures included
 factory/          how it's built: agent rules, protocols, scripts, real handoffs
 docs/SHIPLOG.md   every merged pull request
 scripts/          the scrub gate used by this edition
@@ -157,9 +159,50 @@ scripts/          the scrub gate used by this edition
   scanners — gitleaks, with a narrow allowlist of verified test fixtures, and trufflehog, where each
   finding was reviewed individually.
 
+## Live demo
+
+**[orbit-app.site](https://orbit-app.site)** runs the whole stack. Access is by invitation:
+[request access](https://orbit-app.site/waitlist).
+
+The demo business is **Harbor Supply Co.**, a fictional wholesale distributor with one location, a
+small sales pipeline and a few customers. Things to try:
+
+1. **Sign in to Portal**, the identity gate, and open **Atrium**, the workspace. Portal hands each app a
+   signed token carrying the organization, location and app entitlements.
+2. **Ask the assistant about the business**, for example *"Which deals are in our Wholesale Orders
+   pipeline, and which is the biggest?"* It answers from the CRM through tool calls scoped to this
+   business and location. It can't reach another tenant's data, because tool calls take their tenant
+   identity from the request, not from the model.
+3. **Ask it to hand something to the team**, for example *"Put together a follow-up plan to close the
+   Greenleaf deal."* It files a ticket for the business's lead agent on the orchestrator's board
+   (**Conductor**).
+4. **Open WorkPipe** (the CRM) and **Drive** (the file vault) from Portal. They use the same sign-in and
+   show the same business.
+
+What's different from production: the data is fictional, and **everything resets nightly** (3am US
+Eastern). The coding-agent CLIs that production agents use to work tickets are left out of the demo,
+so handed-off tickets wait on the board rather than being worked. The assistant runs with the tool
+lockdown described in [the case study](docs/case-studies/agent-system.md): only the CRM tools, with
+no host access, no shared memory and no cross-session search.
+
 ## Running it
 
-_In progress_ — a containerized stack for local runs and a hosted demo.
+[`demo/`](demo/) runs everything on one machine with Docker Compose: one Postgres, a dedicated
+vector store for memory, the agent runtime, and every port bound to localhost. The only public
+entry is an outbound tunnel.
+
+```bash
+demo/build.sh                  # build every image, one at a time
+demo/up.sh up -d               # start (env files are read from outside the repo; see demo/up.sh)
+demo/seed.sh                   # orchestrator plugins, assistant template, API key, admin
+demo/seed-demo-account.sh      # the demo business, through each app's own first-launch path
+demo/smoke.sh                  # ask the assistant about the pipeline; pass only if it names a real deal
+demo/reset.sh                  # drop all data and reseed (runs nightly)
+```
+
+`smoke.sh` is the end-to-end check. The first time it ran, it found three breaks between the
+workspace and the CRM. All three failed closed, and the model covered each one with "which account
+do you mean?" The fixes are in the commit that added it.
 
 ## License
 
