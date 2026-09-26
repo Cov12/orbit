@@ -141,6 +141,11 @@ services:
       WEBUI_URL: https://atrium.${ORBIT_DEMO_DOMAIN:?}
       ATRIUM_PUBLIC_ORIGIN: https://atrium.${ORBIT_DEMO_DOMAIN:?}
       ENABLE_SIGNUP: "false"
+      # Created at startup when no users exist, so the first person to sign in through
+      # Portal never becomes the workspace administrator. Needed on every fresh volume.
+      WEBUI_ADMIN_EMAIL: admin@orbit.example
+      WEBUI_ADMIN_PASSWORD: ${ORBIT_ATRIUM_ADMIN_PASSWORD:?}
+      WEBUI_ADMIN_NAME: Platform Admin
       # Tenants never talk to model endpoints directly; every turn goes through Conductor.
       # Also keeps the container off anything listening on the host's bridge address.
       ENABLE_OLLAMA_API: "false"
