@@ -200,6 +200,22 @@ services:
         limits: { cpus: "1", memory: 1g }
     restart: unless-stopped
 
+  # The only way in from outside: a Cloudflare Tunnel (outbound connection, no open ports).
+  # Public hostnames -> services are configured on the tunnel in Cloudflare: the apex to
+  # portal:3000, and workpipe., drive., conductor., atrium. to their services. The runtime,
+  # Qdrant and Postgres are never routed. Opt-in: demo/up.sh --profile public up -d
+  cloudflared:
+    image: cloudflare/cloudflared:2026.9.3
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?}
+    depends_on: [portal, workpipe, drive, conductor, atrium]
+    profiles: [public]
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256m }
+    restart: unless-stopped
+
 volumes:
   db-data:
   conductor-data:

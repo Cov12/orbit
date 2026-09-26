@@ -9,6 +9,7 @@
 #   r2.env          R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT, R2_BUCKET
 #   anthropic.env   ANTHROPIC_API_KEY
 #   openai.env      OPENAI_API_KEY (memory embeddings)
+#   cloudflared.env TUNNEL_TOKEN (only used by the `public` profile)
 #   demo-seed.env   written by demo/seed.sh
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
@@ -16,7 +17,7 @@ secrets=${ORBIT_SECRETS:-$HOME/showcase/.secrets}
 export ORBIT_DEMO_DOMAIN=${ORBIT_DEMO_DOMAIN:-orbit-app.site}
 
 args=()
-for f in demo clerk r2 anthropic openai; do
+for f in demo clerk r2 anthropic openai cloudflared; do
   [[ -r "$secrets/$f.env" ]] || { echo "up.sh: missing $secrets/$f.env" >&2; exit 64; }
   args+=(--env-file "$secrets/$f.env")
 done
