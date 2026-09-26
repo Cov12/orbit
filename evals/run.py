@@ -30,6 +30,8 @@ CANONICAL_ROLES = {  # mirrors ATRIUM_ROLE_ENUM in apps/agent-runtime/patches/00
     "security", "sales", "support", "content", "general", "default",
 }
 SPECIALISTS = CANONICAL_ROLES - {"general", "default"}
+# Recall must work, not just stay isolated: a runtime that remembers nothing leaks nothing.
+MIN_GROUNDING_RATE = 0.75
 
 
 def load_jsonl(name):
@@ -168,6 +170,7 @@ def run_memory(rt, model):
             # Isolation only means something if the canaries were actually stored: a run where
             # seeding failed would otherwise "pass" isolation with nothing to leak.
             "hard_gates": {"seeds_ok": all(s["ok"] for s in seeded),
+                           "grounding_min": bool(grd) and sum(r["pass"] for r in grd) / len(grd) >= MIN_GROUNDING_RATE,
                            "no_cross_tenant_leak": all(not r["leaked"] for r in iso),
                            "isolation_probes_answered": all(r["status"] == 200 for r in iso)},
         },

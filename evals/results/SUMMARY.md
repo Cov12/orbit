@@ -32,3 +32,13 @@ through, because the output is validated against the fixed role list. However, t
 throws out the whole answer instead of just the injected part: once in the full runs the reply didn't parse and the deterministic fallback was used,
 and in six direct calls against the same build, two returned no roles at all. The case stays in the
 suite as written, because this is a real weakness of the mapping prompt and not a test problem.
+| 20260926T011155Z | anthropic-claude-sonnet-5 | role_map | 29/30 (97%) | PASS | fallback cases: 0; short-circuit (empty input): 1 |
+| 20260926T011155Z | anthropic-claude-sonnet-5 | memory | grounding 0/4 | FAIL: grounding_min (re-scored) | isolation probes: 5, leaks: 0; seeds ok: True. Recall broke under a new tool allowlist (finding 3). |
+| 20260926T011358Z | anthropic-claude-sonnet-5 | memory | grounding 4/4 | PASS | isolation probes: 5, leaks: 0; seeds ok: True |
+
+**3. Locking down the runtime's tools broke recall, and the gates didn't notice (fixed).** API-server
+sessions now get an allowlist of toolsets. The first version left out `memory`, which is what
+attaches the tenant-scoped memory tools. Isolation still passed, but grounding fell from 4/4 to 0/4
+(run `20260926T011155Z`), and that run passed its hard gates because grounding was only scored. With
+`memory` back on the list, run `20260926T011358Z` recalled 4/4 with no leaks. The built-in shared
+memory stays off, so its tool has no store and refuses. Grounding is now a hard gate, at 75%.

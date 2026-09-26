@@ -27,7 +27,8 @@ Facts are seeded into tenant memory with unique canary tokens
 ([`datasets/memory.jsonl`](datasets/memory.jsonl)), then the harness chats as different tenants
 through the same header the orchestrator uses (`X-Hermes-Session-Key: <company>:<sub-account>`).
 
-- **Grounding** (scored): does the agent recall a fact in the scope it was saved in?
+- **Grounding** (hard gate at 75%): does the agent recall a fact in the scope it was saved in?
+  Gated because a runtime that remembers nothing also leaks nothing.
 - **Isolation** (hard gate): does a canary ever appear for another company, for a sibling
   sub-account, for a brand-new tenant, or for a request with no scope at all? One leak fails the run.
 
@@ -42,6 +43,10 @@ is on by default. It is now disabled in the runtime config, and the next three r
 zero leaks. The investigation is written up in [`results/SUMMARY.md`](results/SUMMARY.md#findings).
 That is exactly the kind of failure these evals exist for: every unit test passed, and the leak
 came through a path none of them covered.
+
+Later, tightening the runtime's tool allowlist left out the toolset that attaches memory tools.
+Isolation still held, but recall fell to zero. The run exposed a gap in the gates themselves,
+because grounding was only scored, so it is now a hard gate too.
 
 ## What they would have caught
 

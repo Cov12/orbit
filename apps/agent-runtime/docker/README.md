@@ -98,7 +98,7 @@ Hermes provider ids: `anthropic` → `anthropic`, `openai` → `openai-api`.
 | Variable | Default | |
 |---|---|---|
 | `HERMES_DISABLED_TOOLSETS` | — | Comma-separated toolsets to turn off in addition to `session_search`, which is always off. |
-| `HERMES_API_TOOLSETS` | `todo` | Allowlist of toolsets for API-server sessions, which is how tenants reach the runtime. Keep host-reaching toolsets (`terminal`, `file`, `code_execution`, `browser`, `cronjob`, `delegation`, `skills`) off it: one runtime serves many tenants. |
+| `HERMES_API_TOOLSETS` | `todo,memory` | Allowlist of toolsets for API-server sessions, which is how tenants reach the runtime. `memory` is what attaches the tenant-scoped memory tools; without it recall stops working. Keep host-reaching toolsets (`terminal`, `file`, `code_execution`, `browser`, `cronjob`, `delegation`, `skills`) off it: one runtime serves many tenants. |
 | `PAPERCLIP_API_URL` | — | With `PAPERCLIP_API_KEY`, registers the orchestrator's MCP server (`paperclip`) and add it to the allowlist. |
 | `PAPERCLIP_API_KEY` | — | Its API key. Referenced as `${PAPERCLIP_API_KEY}` in the config, so it stays in the environment. |
 | `PAPERCLIP_MCP_TOOLS` | the four WorkPipe data tools | Exact names of the orchestrator tools to register. The server also offers generic admin tools (raw API requests, approval decisions, issue edits) that run with the service key, which can act for any company; they are never registered unless listed here. |

@@ -116,8 +116,9 @@ building that solo, the way I worked before, is six to nine months — roughly 3
 deterministically: 30 role-suggestion cases (including negations and prompt injection) and a memory
 suite that seeds canary facts per tenant and fails on any cross-tenant recall.
 
-Latest runs (Claude Sonnet 5): role suggestions 30/30 in four of five runs, and memory grounding 4/4 with
-**zero cross-tenant leaks** in each of the three runs since the fix. That fix came from the evals
+Latest runs (Claude Sonnet 5): role suggestions 30/30 in four of six runs and 29/30 in the other two,
+and **zero cross-tenant leaks** in all five memory runs since the fix, with recall at 4/4 in each except
+one, where a tool-allowlist change broke recall and the evals caught it. The isolation fix itself came from the evals
 themselves. The earlier runs leaked, and the cause turned out to be the runtime's built-in session
 search, which had no tenant filter. Every run is committed, failures included:
 [`evals/results/SUMMARY.md`](evals/results/SUMMARY.md).

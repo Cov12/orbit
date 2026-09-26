@@ -111,7 +111,9 @@ def main() -> None:
     # Tenants reach the runtime only through the API server, so that platform gets an
     # allowlist: no terminal, files, code execution, browser, cron, delegation or skills,
     # any of which would let one tenant's conversation reach the host or another tenant.
-    api_toolsets = [t.strip() for t in env("HERMES_API_TOOLSETS", "todo").split(",") if t.strip()]
+    # "memory" is what attaches the tenant-scoped mem0_local tools (recall); Hermes' own
+    # file memory stays off above, so its shared `memory` tool has no store and refuses.
+    api_toolsets = [t.strip() for t in env("HERMES_API_TOOLSETS", "todo,memory").split(",") if t.strip()]
     if env("PAPERCLIP_API_URL") and env("PAPERCLIP_API_KEY"):
         # Orchestrator tools over stdio MCP. The key is a ${VAR} placeholder that Hermes
         # resolves from the process environment, so it is never written to the volume.
