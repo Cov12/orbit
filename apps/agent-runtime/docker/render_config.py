@@ -98,6 +98,24 @@ def main() -> None:
         "agent": {"disabled_toolsets": disabled_toolsets()},
     }
 
+    # Tenants reach the runtime only through the API server, so that platform gets an
+    # allowlist: no terminal, files, code execution, browser, cron, delegation or skills,
+    # any of which would let one tenant's conversation reach the host or another tenant.
+    api_toolsets = [t.strip() for t in env("HERMES_API_TOOLSETS", "todo").split(",") if t.strip()]
+    if env("PAPERCLIP_API_URL") and env("PAPERCLIP_API_KEY"):
+        # Orchestrator tools over stdio MCP. The key is a ${VAR} placeholder that Hermes
+        # resolves from the process environment, so it is never written to the volume.
+        config["mcp_servers"] = {
+            "paperclip": {
+                "command": "node",
+                "args": [env("PAPERCLIP_MCP_SERVER", "/opt/orbit/mcp/paperclip-mcp-server.mjs")],
+                "env": {"PAPERCLIP_API_URL": "${PAPERCLIP_API_URL}", "PAPERCLIP_API_KEY": "${PAPERCLIP_API_KEY}"},
+            }
+        }
+        if "paperclip" not in api_toolsets:
+            api_toolsets.append("paperclip")
+    config["platform_toolsets"] = {"api_server": api_toolsets}
+
     have_openai = bool(env("OPENAI_API_KEY"))
     mem0_llm = env("MEM0_LLM_PROVIDER", "openai" if have_openai else provider).lower()
     if mem0_llm not in MEM0_LLM_DEFAULTS:
@@ -138,7 +156,8 @@ def main() -> None:
     print(
         f"render_config: provider={spec['hermes_id']} model={model} memory=mem0_local "
         f"(require_scope, qdrant={mem0['qdrant_mode']}, embedder={mem0['embedder_model']}, "
-        f"embeddings_key={'set' if (have_openai or env('MEM0_LOCAL_EMBEDDER_API_KEY')) else 'MISSING'})",
+        f"embeddings_key={'set' if (have_openai or env('MEM0_LOCAL_EMBEDDER_API_KEY')) else 'MISSING'}) "
+        f"api_toolsets={','.join(config['platform_toolsets']['api_server'])}",
         file=sys.stderr,
     )
 

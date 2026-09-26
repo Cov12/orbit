@@ -91,3 +91,35 @@ EXPOSE 3100
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "--import", "./server/node_modules/tsx/dist/loader.mjs", "server/dist/index.js"]
+
+# ---------------------------------------------------------------------------
+# Demo targets (see demo/compose.yaml). The production stage above installs the
+# coding-agent CLIs and Tailscale, which the demo doesn't use.
+
+# The stdio MCP server as one self-contained file, for the agent runtime image.
+FROM build AS mcp
+RUN mkdir -p /out \
+  && pnpm exec esbuild packages/mcp-server/src/stdio.ts --bundle --platform=node --format=esm \
+       --target=node22 --outfile=/out/paperclip-mcp-server.mjs \
+       --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);"
+
+FROM base AS demo
+WORKDIR /app
+COPY --chown=node:node --from=build /app /app
+COPY scripts/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
+  && mkdir -p /paperclip && chown node:node /paperclip
+ENV NODE_ENV=production \
+  HOME=/paperclip \
+  HOST=0.0.0.0 \
+  PORT=3100 \
+  SERVE_UI=true \
+  PAPERCLIP_HOME=/paperclip \
+  PAPERCLIP_INSTANCE_ID=default \
+  PAPERCLIP_CONFIG=/paperclip/instances/default/config.json \
+  PAPERCLIP_DEPLOYMENT_MODE=authenticated \
+  PAPERCLIP_DEPLOYMENT_EXPOSURE=private
+VOLUME ["/paperclip"]
+EXPOSE 3100
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["node", "--import", "./server/node_modules/tsx/dist/loader.mjs", "server/dist/index.js"]

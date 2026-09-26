@@ -63,7 +63,8 @@ curl -s localhost:8642/v1/models -H "Authorization: Bearer $HERMES_API_KEY"
   `model.provider` / `model.default`, `memory.provider: mem0_local`, Hermes' built-in
   file memory switched **off** (it is not tenant-scoped), the `session_search` toolset
   **disabled** (`agent.disabled_toolsets` — it searches every session with no tenant filter; see
-  [finding 1](../../../evals/results/SUMMARY.md#findings)), `security.allow_lazy_installs: false`.
+  [finding 1](../../../evals/results/SUMMARY.md#findings)), an allowlist of toolsets for API-server
+  sessions (`platform_toolsets.api_server`, below), `security.allow_lazy_installs: false`.
 - **`$HERMES_HOME/mem0_local.json`** — `require_scope: true`, OpenAI embeddings, extraction
   LLM, Qdrant mode.
 - **No secrets are written to the volume.** Keys stay in the process environment, where
@@ -97,6 +98,10 @@ Hermes provider ids: `anthropic` → `anthropic`, `openai` → `openai-api`.
 | Variable | Default | |
 |---|---|---|
 | `HERMES_DISABLED_TOOLSETS` | — | Comma-separated toolsets to turn off in addition to `session_search`, which is always off. |
+| `HERMES_API_TOOLSETS` | `todo` | Allowlist of toolsets for API-server sessions, which is how tenants reach the runtime. Keep host-reaching toolsets (`terminal`, `file`, `code_execution`, `browser`, `cronjob`, `delegation`, `skills`) off it: one runtime serves many tenants. |
+| `PAPERCLIP_API_URL` | — | With `PAPERCLIP_API_KEY`, registers the orchestrator's MCP server (`paperclip`) and add it to the allowlist. |
+| `PAPERCLIP_API_KEY` | — | Its API key. Referenced as `${PAPERCLIP_API_KEY}` in the config, so it stays in the environment. |
+| `PAPERCLIP_MCP_SERVER` | `/opt/orbit/mcp/paperclip-mcp-server.mjs` | Path of the bundled MCP server (present in the demo image, which adds Node). |
 
 ### Memory (`mem0_local`)
 

@@ -615,12 +615,14 @@ model Notification {
   @@index([userId])
 }
 
+// Legacy: values were Stripe price IDs from the original subscription setup, replaced for
+// publication. Plan gating now reads the Portal subscription claims (src/lib/plan-gate.ts).
 enum Plan {
-  price_REDACTED
-  price_REDACTED
-  price_REDACTED
-  price_REDACTED
-  price_REDACTED
+  price_legacy_1
+  price_legacy_2
+  price_legacy_3
+  price_legacy_4
+  price_legacy_5
 }
 
 model Subscription {

@@ -1,0 +1,203 @@
+# Orbit demo stack. Start it with demo/up.sh, which supplies the env files.
+#
+# Every host port binds to 127.0.0.1; the public entry point is a Cloudflare Tunnel.
+# Secrets come from env files outside the repo (see demo/README.md) and are never baked
+# into images. NEXT_PUBLIC_* values are, so images are rebuilt when the domain changes.
+
+name: orbit-demo
+
+x-public-urls: &public-urls
+  NEXT_PUBLIC_APP_URL: https://${ORBIT_DEMO_DOMAIN:?}
+  NEXT_PUBLIC_PORTAL_URL: https://${ORBIT_DEMO_DOMAIN:?}
+  NEXT_PUBLIC_WORKPIPE_URL: https://workpipe.${ORBIT_DEMO_DOMAIN:?}
+  NEXT_PUBLIC_DRIVE_URL: https://drive.${ORBIT_DEMO_DOMAIN:?}
+  NEXT_PUBLIC_CONDUCTOR_URL: https://conductor.${ORBIT_DEMO_DOMAIN:?}
+  NEXT_PUBLIC_ATRIUM_URL: https://atrium.${ORBIT_DEMO_DOMAIN:?}
+
+x-next-limits: &next-limits
+  deploy:
+    resources:
+      limits: { cpus: "1.5", memory: 1g }
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: orbit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports: ["127.0.0.1:15432:5432"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "orbit"]
+      interval: 5s
+      retries: 20
+    deploy:
+      resources:
+        limits: { cpus: "1", memory: 1g }
+    restart: unless-stopped
+
+  portal:
+    <<: *next-limits
+    image: orbit/portal:demo
+    build:
+      context: ../apps/portal
+      args:
+        <<: *public-urls
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:?}
+    environment:
+      DATABASE_URL: postgresql://orbit:${POSTGRES_PASSWORD}@db:5432/portal
+      JWT_SECRET: ${ORBIT_JWT_SECRET:?}
+      ORBIT_PORTAL_JWT_SECRET: ${ORBIT_JWT_SECRET:?}
+      ADMIN_SESSION_SECRET: ${ORBIT_ADMIN_SESSION_SECRET:?}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:?}
+      CONDUCTOR_URL: http://conductor:3100
+    ports: ["127.0.0.1:15100:3000"]
+    depends_on:
+      db: { condition: service_healthy }
+
+  workpipe:
+    <<: *next-limits
+    image: orbit/workpipe:demo
+    build:
+      context: ../apps/workpipe
+      args:
+        NEXT_PUBLIC_URL: https://workpipe.${ORBIT_DEMO_DOMAIN:?}/
+        NEXT_PUBLIC_PORTAL_URL: https://${ORBIT_DEMO_DOMAIN:?}
+    environment:
+      DATABASE_URL: postgresql://orbit:${POSTGRES_PASSWORD}@db:5432/workpipe
+      JWT_SECRET: ${ORBIT_JWT_SECRET:?}
+      DRIVE_API_URL: http://drive:3000
+    ports: ["127.0.0.1:15101:3000"]
+    depends_on:
+      db: { condition: service_healthy }
+
+  drive:
+    <<: *next-limits
+    image: orbit/drive:demo
+    build:
+      context: ../apps/drive
+      args:
+        NEXT_PUBLIC_PORTAL_URL: https://${ORBIT_DEMO_DOMAIN:?}
+    environment:
+      DATABASE_URL: postgresql://orbit:${POSTGRES_PASSWORD}@db:5432/portal
+      JWT_SECRET: ${ORBIT_JWT_SECRET:?}
+      DRIVE_MASTER_KEY: ${DRIVE_MASTER_KEY:?}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?}
+      R2_ENDPOINT: ${R2_ENDPOINT:?}
+      R2_BUCKET: ${R2_BUCKET:?}
+    ports: ["127.0.0.1:15102:3000"]
+    depends_on:
+      portal: { condition: service_started }   # Portal applies the shared schema
+
+  conductor:
+    image: orbit/conductor:demo
+    build:
+      context: ../apps/conductor
+      target: demo
+    environment:
+      DATABASE_URL: postgres://orbit:${POSTGRES_PASSWORD}@db:5432/conductor
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?}
+      PAPERCLIP_AGENT_JWT_SECRET: ${PAPERCLIP_AGENT_JWT_SECRET:?}
+      ORBIT_PORTAL_JWT_SECRET: ${ORBIT_JWT_SECRET:?}
+      ORBIT_BRIDGE_SECRET: ${ORBIT_BRIDGE_SECRET:?}
+      PAPERCLIP_PUBLIC_URL: https://conductor.${ORBIT_DEMO_DOMAIN:?}
+      # Atrium and the runtime call Conductor by its service name.
+      PAPERCLIP_ALLOWED_HOSTNAMES: conductor,localhost,127.0.0.1
+      PAPERCLIP_AUTH_DISABLE_SIGN_UP: "true"
+      HERMES_API_BASE_URL: http://runtime:8642
+      HERMES_API_KEY: ${HERMES_API_KEY:?}
+      CONDUCTOR_ASSISTANT_TEMPLATE_AGENT_ID: ${ORBIT_TEMPLATE_AGENT_ID:-}
+    volumes:
+      - conductor-data:/paperclip
+    ports: ["127.0.0.1:15103:3100"]
+    depends_on:
+      db: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: "2", memory: 2g }
+    restart: unless-stopped
+
+  # Build-only: the orchestrator's MCP server bundled into one file for the runtime image.
+  conductor-mcp:
+    image: orbit/conductor-mcp:demo
+    build:
+      context: ../apps/conductor
+      target: mcp
+    profiles: [build]
+
+  atrium:
+    image: orbit/atrium:demo
+    build:
+      context: ../apps/atrium
+      args:
+        USE_SLIM: "true"
+    environment:
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:?}
+      WEBUI_URL: https://atrium.${ORBIT_DEMO_DOMAIN:?}
+      ATRIUM_PUBLIC_ORIGIN: https://atrium.${ORBIT_DEMO_DOMAIN:?}
+      ENABLE_SIGNUP: "false"
+      # Tenants never talk to model endpoints directly; every turn goes through Conductor.
+      # Also keeps the container off anything listening on the host's bridge address.
+      ENABLE_OLLAMA_API: "false"
+      ENABLE_OPENAI_API: "false"
+      JWT_SECRET: ${ORBIT_JWT_SECRET:?}
+      PORTAL_URL: https://${ORBIT_DEMO_DOMAIN:?}
+      WORKPIPE_API_URL: http://workpipe:3000
+      DRIVE_API_URL: http://drive:3000
+      CONDUCTOR_BASE_URL: http://conductor:3100
+      CONDUCTOR_BRIDGE_URL: http://conductor:3100/api/plugins/${ORBIT_BRIDGE_PLUGIN_ID:-unset}/api/chat
+      ORBIT_BRIDGE_ENABLED: "true"
+      ORBIT_BRIDGE_SECRET: ${ORBIT_BRIDGE_SECRET:?}
+    volumes:
+      - atrium-data:/app/backend/data
+    ports: ["127.0.0.1:15104:8080"]
+    depends_on:
+      conductor: { condition: service_started }
+    deploy:
+      resources:
+        limits: { cpus: "2", memory: 3g }
+    restart: unless-stopped
+
+  runtime:
+    image: orbit/agent-runtime:demo
+    build:
+      context: ./runtime
+    environment:
+      HERMES_API_KEY: ${HERMES_API_KEY:?}
+      HERMES_PROVIDER: anthropic
+      HERMES_MODEL: ${ORBIT_DEMO_MODEL:-claude-sonnet-5}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?}
+      MEM0_QDRANT_HOST: qdrant
+      PAPERCLIP_API_URL: http://conductor:3100
+      PAPERCLIP_API_KEY: ${ORBIT_BOARD_API_KEY:-}   # minted by the seed; MCP stays off until set
+    volumes:
+      - runtime-data:/opt/data
+    ports: ["127.0.0.1:15105:8642"]
+    depends_on:
+      qdrant: { condition: service_started }
+    deploy:
+      resources:
+        limits: { cpus: "2", memory: 2g }
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.19.0
+    volumes:
+      - qdrant-data:/qdrant/storage
+    deploy:
+      resources:
+        limits: { cpus: "1", memory: 1g }
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  conductor-data:
+  atrium-data:
+  runtime-data:
+  qdrant-data:
