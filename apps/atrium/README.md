@@ -68,3 +68,14 @@ each scoped to the caller's organization and the selected sub-account.
 ## Running it
 
 See [`UPSTREAM-README.md`](UPSTREAM-README.md) for running the underlying platform.
+
+## Tests
+
+Our backend suite (421 tests) runs from this directory with the backend's dependencies plus the
+async test plugin. Without `pytest-asyncio`, every async test fails with "async def functions are not
+natively supported", which looks like breakage but isn't.
+
+```bash
+pip install -r backend/requirements.txt pytest-asyncio
+PYTHONPATH=.:backend python -m pytest apps/atrium/backend/tests
+```
