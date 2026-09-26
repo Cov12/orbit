@@ -240,6 +240,20 @@ def test_list_organizations_unknown_cuid_returns_empty(client):
     assert resp.json() == []
 
 
+def test_list_organizations_anonymous_is_rejected(client):
+    """No Portal JWT and no workspace session: 401, never the list of every org."""
+    resp = client.get("/api/atrium/orgs/")
+    assert resp.status_code == 401, resp.text
+
+
+def test_create_organization_anonymous_is_rejected(client, db_session):
+    """An anonymous POST must not create an organization."""
+    resp = client.post("/api/atrium/orgs/", json={"name": "Anon Co", "slug": "anon-co"})
+    assert resp.status_code == 401, resp.text
+    db_session.expire_all()
+    assert db_session.query(AtriumOrganization).filter_by(slug="anon-co").count() == 0
+
+
 # ── Sub-account cross-org rejection ──────────────────────────────────────────
 
 

@@ -69,10 +69,8 @@ async def list_organizations(
 
     #35 (GA-safety): on the Portal-authed path this is scoped to the caller's own
     Portal org (portal_auth.org_id == AtriumOrganization.portal_org_id) so it can
-    no longer enumerate every tenant's orgs. The unauthenticated dev/OWUI-internal
-    fallback (no portal_auth — e.g. the X-Org-Id header path, which is gated to
-    non-prod by require_app_access elsewhere) keeps the legacy list-all behavior so
-    single-tenant/dev flows are unaffected.
+    no longer enumerate every tenant's orgs. On the workspace-session path it returns
+    only the caller's memberships. With neither identity it answers 401.
     """
     portal_auth = getattr(request.state, "portal_auth", None)
     portal_cuid = getattr(portal_auth, "org_id", None) if portal_auth else None
@@ -95,7 +93,10 @@ async def list_organizations(
                 o for o in OrganizationsService.list_orgs(db) if o.id in member_org_ids
             ]
         else:
-            orgs = OrganizationsService.list_orgs(db)
+            # No Portal JWT and no workspace session: nothing to scope to. This used to
+            # list every organization (a dev convenience that also answered anonymous
+            # requests); it now refuses.
+            raise HTTPException(status_code=401, detail="Not authenticated")
     return [
         {
             "id": o.id,
@@ -119,6 +120,12 @@ async def create_organization(
     db: Session = Depends(get_tenant_session),
 ):
     """Create a new organization with default departments."""
+    from ..middleware.deps import _resolve_owui_user_id
+
+    # Only a signed-in caller may create an organization (the workspace creates one for a
+    # user who has none). Anonymous requests used to succeed.
+    if getattr(request.state, "portal_auth", None) is None and not _resolve_owui_user_id(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
     existing = OrganizationsService.get_org_by_slug(db, data.slug)
     if existing:
         raise HTTPException(status_code=409, detail="Organization slug already exists")
