@@ -36,8 +36,9 @@ PAPERCLIP_MCP_TOOLS_DEFAULT = (
     "plugin_orbit_workpipe-tools_findContact",
     "plugin_orbit_workpipe-tools_getContact",
 )
-# mem0 fact-extraction model defaults (mem0's own defaults for each backend).
-MEM0_LLM_DEFAULTS = {"openai": "gpt-5-mini", "anthropic": "claude-sonnet-4-6"}
+# mem0 fact-extraction model defaults. mem0 calls the extraction model with temperature 0.1,
+# which the gpt-5 family rejects (only the default is accepted), so use a model that takes it.
+MEM0_LLM_DEFAULTS = {"openai": "gpt-4.1-mini", "anthropic": "claude-sonnet-4-6"}
 
 
 def env(name: str, default: str = "") -> str:
@@ -125,6 +126,10 @@ def main() -> None:
                 "args": [env("PAPERCLIP_MCP_SERVER", "/opt/orbit/mcp/paperclip-mcp-server.mjs")],
                 "env": {"PAPERCLIP_API_URL": "${PAPERCLIP_API_URL}", "PAPERCLIP_API_KEY": "${PAPERCLIP_API_KEY}"},
                 "tools": {"include": mcp_tools, "resources": False, "prompts": False},
+                # Have the runtime inject the request's tenant/run envelope into every call
+                # (patch 0001). Without it the server refuses the call: it takes tenant
+                # identity only from that envelope.
+                "inject_paperclip_context": True,
             }
         }
         if "paperclip" not in api_toolsets:

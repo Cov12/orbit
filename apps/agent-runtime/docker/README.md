@@ -114,7 +114,7 @@ Hermes provider ids: `anthropic` → `anthropic`, `openai` → `openai-api`.
 | `MEM0_EMBEDDER_MODEL` | `text-embedding-3-small` | |
 | `MEM0_EMBEDDING_DIMS` | `1536` | Must match the embedder model. Changing it on an existing store needs a new collection. |
 | `MEM0_LLM_PROVIDER` | `openai` if `OPENAI_API_KEY` is set, else the main provider | Fact-extraction LLM: `openai` or `anthropic`. Only used for inferred writes; seeds and `mem0_conclude` are stored verbatim. |
-| `MEM0_LLM_MODEL` | `gpt-5-mini` / `claude-sonnet-4-6` | |
+| `MEM0_LLM_MODEL` | `gpt-4.1-mini` / `claude-sonnet-4-6` | mem0 calls it with temperature 0.1, which the gpt-5 family rejects. |
 | `MEM0_LOCAL_OPENAI_API_KEY` | `OPENAI_API_KEY` | Key for an `openai` extraction LLM. |
 | `MEM0_QDRANT_HOST` | — | Set to use an external Qdrant server: **one collection per company** (`<prefix><companyId>`), sub-account filtered by payload. Unset = embedded on-disk Qdrant in the volume (single collection, filtered by `companyId:subAccountId`). |
 | `MEM0_QDRANT_PORT` | `6333` | |

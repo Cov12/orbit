@@ -93,6 +93,8 @@ fi
 log "secret: $secret"
 
 echo "== plugins"
+# The plugin host refuses private addresses (SSRF guard), so the WorkPipe tools reach WorkPipe
+# at its public URL, as they do in production; its internal API still requires their token.
 install_plugin() {  # install_plugin KEY DIR -> id
   local id
   id=$(api GET /api/plugins | pick id pluginKey "$1")
@@ -107,7 +109,7 @@ tools=$(install_plugin orbit.workpipe-tools paperclip-plugin-orbit-workpipe-tool
 api POST "/api/plugins/$bridge/config" \
   "$(python3 -c 'import json,os; print(json.dumps({"configJson":{"sharedSecret":os.environ["ORBIT_BRIDGE_SECRET"]}}))')" >/dev/null
 api POST "/api/plugins/$tools/config" \
-  "{\"configJson\":{\"jwtSecretRef\":\"$secret\",\"portalOrgId\":\"per-company\",\"workpipeBaseUrl\":\"http://workpipe:3000\"}}" >/dev/null
+  "{\"configJson\":{\"jwtSecretRef\":\"$secret\",\"portalOrgId\":\"per-company\",\"workpipeBaseUrl\":\"https://workpipe.${ORBIT_DEMO_DOMAIN:-orbit-app.site}\"}}" >/dev/null
 save ORBIT_BRIDGE_PLUGIN_ID "$bridge"
 log "bridge: $bridge  tools: $tools"
 
