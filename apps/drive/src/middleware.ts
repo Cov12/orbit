@@ -85,7 +85,7 @@ function redirectToPortal(req: NextRequest): NextResponse {
   // API routes get 401 JSON instead of redirect
   if (req.nextUrl.pathname.startsWith('/api/')) {
     return NextResponse.json(
-      { error: 'Unauthorized', message: 'Authentication required. Please sign in at portal.orbit.example' },
+      { error: 'Unauthorized', message: `Authentication required. Please sign in at ${new URL(portalUrl).host}` },
       { status: 401 }
     );
   }

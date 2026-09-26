@@ -15,7 +15,7 @@ export function driveErrorResponse(error: unknown) {
       return NextResponse.json({ error: "Multiple organizations found. Set X-Org-Id header to select one." }, { status: 400 });
     }
     if (error.message === "DRIVE_ACCESS_DENIED") {
-      return NextResponse.json({ error: "Drive access requires an active subscription. Upgrade at portal.orbit.example/billing" }, { status: 403 });
+      return NextResponse.json({ error: "Drive is not enabled for this organization. Ask an administrator to enable it in Portal." }, { status: 403 });
     }
     if (error.message === "INVALID_SUBACCOUNT") {
       return NextResponse.json({ error: "Unknown or inactive sub-account for this org" }, { status: 400 });

@@ -120,6 +120,35 @@ agent=$(curl -sS -f -X POST http://127.0.0.1:15103/api/bridge/ensure-agent -H "x
   -H 'Content-Type: application/json' --data "{\"companyId\":\"$company\"}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["agentId"])')
 log "agent: $agent"
 
+# New companies get a CEO (and later specialists) on the coding-agent CLI adapter that
+# production uses; the demo image leaves those CLIs out, so a ticket handed to the CEO would
+# fail. Point this business's CLI agents at the agent runtime instead.
+echo "== CEO and specialists on the agent runtime"
+ORG_NAME="$ORG_NAME" python3 - "$company" <<'PY'
+import json, os, sys, urllib.request
+company = sys.argv[1]; key = os.environ["ORBIT_BOARD_API_KEY"]; base = "http://127.0.0.1:15103/api"
+def call(method, path, body=None):
+    req = urllib.request.Request(base + path, method=method, data=json.dumps(body).encode() if body else None,
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=30) as r: return json.load(r)
+agents = call("GET", f"/companies/{company}/agents")
+agents = agents if isinstance(agents, list) else agents.get("data", [])
+switched = 0
+for a in agents:
+    if a.get("adapterType") not in ("codex_local", "claude_local", "opencode_local", "process"):
+        continue
+    title = a.get("title") or a.get("role") or "specialist"
+    prompt = (f"You are the {title} agent for {os.environ['ORG_NAME']}, a small business. Work arrives as "
+              "tickets, often handed over by the business's assistant. Reply with a short, concrete plan: "
+              "what you would do, what you need from the owner, and what could go wrong. Never claim "
+              "that work is done, sent or scheduled; you can only plan it here.")
+    call("PATCH", f"/agents/{a['id']}", {"adapterType": "hermes_openai", "replaceAdapterConfig": True,
+         "adapterConfig": {"url": "http://runtime:8642/v1/chat/completions", "model": "hermes-agent",
+                           "apiKeyEnv": "HERMES_API_KEY", "timeoutSec": 120, "systemPrompt": prompt}})
+    switched += 1
+print(f"  switched {switched} agent(s)")
+PY
+
 echo "== WorkPipe sample data"
 psql_db workpipe -v sub="$SUB_ID" <<'SQL'
 INSERT INTO "Pipeline"(id, name, "subAccountId", "updatedAt") VALUES
