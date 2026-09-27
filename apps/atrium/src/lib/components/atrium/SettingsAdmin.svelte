@@ -5,10 +5,19 @@
 	import { getOrganization, getOrgMembers } from '$lib/apis/atrium';
 	import GlassPanel from '$lib/components/atrium/shared/GlassPanel.svelte';
 	import MaterialIcon from '$lib/components/atrium/shared/MaterialIcon.svelte';
+	import Modal from '$lib/components/common/Modal.svelte';
 
 	let orgName = 'Atrium';
 	let domain = 'atrium.orbit.example';
 	let isLoading = false;
+
+	// Actions that aren't built yet open this notice instead of doing nothing.
+	let comingSoon = '';
+	let showComingSoon = false;
+	function notYet(feature: string) {
+		comingSoon = feature;
+		showComingSoon = true;
+	}
 
 	type TeamMember = {
 		initials: string;
@@ -61,12 +70,17 @@
 			orgName = organization.name || orgName;
 			domain = organization.slug ? `${organization.slug}.atrium.orbit.example` : domain;
 
+			const me = $user as { id?: string; name?: string; email?: string } | undefined;
 			team = membersResponse.members.map((member) => {
-				const displayName = member.user_id || 'Team Member';
+				// The members endpoint returns user IDs only; name the signed-in user and
+				// keep everyone else generic rather than showing a raw ID.
+				const isMe = !!me?.id && member.user_id === me.id;
+				const displayName = (isMe && me?.name) || 'Team Member';
+				const email = (isMe && me?.email) || '';
 				return {
-					initials: getInitials(displayName, member.user_id),
-					name: displayName,
-					email: member.user_id,
+					initials: getInitials(displayName, email),
+					name: isMe ? `${displayName} (you)` : displayName,
+					email,
 					role: member.role.toUpperCase(),
 					roleStyle: ROLE_STYLES[member.role.toUpperCase()] || ROLE_STYLES.MEMBER,
 					lastActive: '—',
@@ -78,11 +92,6 @@
 		} finally {
 			isLoading = false;
 		}
-	}
-
-	function saveSettings() {
-		// TODO: Wire save action when organization update endpoint is available.
-		console.info('Save settings is not yet connected to backend update endpoint.');
 	}
 
 	onMount(() => {
@@ -102,11 +111,11 @@
 				<p class="text-sm sm:text-base text-slate-400 mt-1.5 sm:mt-2">Manage your workspace members, permissions, and configuration.</p>
 			</div>
 			<div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-				<button class="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-slate-100 px-4 sm:px-5 py-2.5 rounded-lg border border-white/10 font-semibold transition-all text-sm">
+				<button class="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-slate-100 px-4 sm:px-5 py-2.5 rounded-lg border border-white/10 font-semibold transition-all text-sm" on:click={() => notYet('Audit log export')}>
 					<MaterialIcon icon="file_download" size={20} />
 					Export Audit Logs
 				</button>
-				<button class="flex items-center justify-center gap-2 bg-[#6961ff] hover:bg-[#6961ff]/90 text-white px-4 sm:px-5 py-2.5 rounded-lg font-bold shadow-lg shadow-[#6961ff]/20 transition-all text-sm" on:click={saveSettings}>
+				<button class="flex items-center justify-center gap-2 bg-[#6961ff] hover:bg-[#6961ff]/90 text-white px-4 sm:px-5 py-2.5 rounded-lg font-bold shadow-lg shadow-[#6961ff]/20 transition-all text-sm" on:click={() => notYet('Member invitations')}>
 					<MaterialIcon icon="person_add" size={20} />
 					Invite Member
 				</button>
@@ -170,7 +179,7 @@
 									</td>
 									<td class="px-5 sm:px-8 py-3 sm:py-4 text-sm text-slate-400 font-medium">{member.lastActive}</td>
 									<td class="px-5 sm:px-8 py-3 sm:py-4 text-right">
-										<button class="text-slate-500 hover:text-white transition-colors">
+										<button class="text-slate-500 hover:text-white transition-colors" aria-label="Member actions" on:click={() => notYet('Member management')}>
 											<MaterialIcon icon="more_horiz" />
 										</button>
 									</td>
@@ -206,11 +215,14 @@
 				</GlassPanel>
 
 				<GlassPanel class="lg:col-span-2 p-5 sm:p-6 lg:p-8">
-					<div class="flex items-center gap-2 mb-6 lg:mb-8">
-						<MaterialIcon icon="analytics" class="text-[#6961ff]" />
-						<h3 class="text-base lg:text-lg font-bold text-slate-100">Resource Usage</h3>
+					<div class="flex items-center justify-between gap-2 mb-6 lg:mb-8">
+						<div class="flex items-center gap-2">
+							<MaterialIcon icon="analytics" class="text-[#6961ff]" />
+							<h3 class="text-base lg:text-lg font-bold text-slate-100">Resource Usage</h3>
+						</div>
+						<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold px-2 py-1 rounded tracking-wider uppercase">Coming soon</span>
 					</div>
-					<div class="space-y-6 lg:space-y-8">
+					<div class="space-y-6 lg:space-y-8 opacity-60" aria-disabled="true">
 						<div class="space-y-3">
 							<div class="flex justify-between items-end">
 								<span class="text-sm font-semibold text-slate-100">AI Tokens Processed</span>
@@ -219,12 +231,11 @@
 							<div class="w-full h-3 bg-white/5 rounded-full overflow-hidden">
 								<div class="h-full bg-gradient-to-r from-[#6961ff] to-[#20B2AA] rounded-full" style="width: 0%"></div>
 							</div>
-							<p class="text-[11px] text-slate-500 italic">Usage tracking coming soon</p>
 						</div>
 						<div class="space-y-3">
 							<div class="flex justify-between items-end">
 								<span class="text-sm font-semibold text-slate-100">Automated Workflows</span>
-								<span class="text-xs font-medium text-slate-400">0 / Unlimited</span>
+								<span class="text-xs font-medium text-slate-400">— / —</span>
 							</div>
 							<div class="w-full h-3 bg-white/5 rounded-full overflow-hidden">
 								<div class="h-full bg-[#20B2AA] rounded-full" style="width: 0%"></div>
@@ -241,8 +252,10 @@
 						<MaterialIcon icon="grid_view" class="text-[#6961ff]" />
 						<h3 class="text-base lg:text-lg font-bold text-slate-100">Connected Services</h3>
 					</div>
-					<button class="text-sm font-semibold text-[#6961ff] hover:underline">Marketplace</button>
+					<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold px-2 py-1 rounded tracking-wider uppercase">Coming soon</span>
 				</div>
+				<p class="text-sm text-slate-400 -mt-3 mb-5 lg:mb-6">Managing connections from here is coming soon. Your assistant already works with your CRM data.</p>
+				<div class="opacity-60 pointer-events-none select-none" aria-disabled="true">
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
 					{#each integrations as integ}
 						<div class="bg-[#1c1c21]/50 border border-white/10 p-4 sm:p-5 rounded-xl flex items-center gap-4 hover:border-[#6961ff]/30 transition-all {integ.enabled ? '' : 'opacity-70'}">
@@ -254,14 +267,26 @@
 								<p class="text-[11px] text-slate-500">{integ.desc}</p>
 							</div>
 							<label class="relative inline-flex items-center cursor-pointer shrink-0 p-2">
-								<input type="checkbox" checked={integ.enabled} class="sr-only peer" />
+								<input type="checkbox" checked={integ.enabled} disabled tabindex="-1" class="sr-only peer" />
 								<div class="w-11 h-6 bg-white/10 rounded-full transition-all peer peer-checked:bg-[#6961ff]"></div>
 								<div class="absolute left-3 top-3 bg-slate-300 size-4 rounded-full transition-all peer-checked:translate-x-5 peer-checked:bg-white"></div>
 							</label>
 						</div>
 					{/each}
 				</div>
+				</div>
 			</GlassPanel>
 		</div>
 	</div>
 </div>
+
+<Modal bind:show={showComingSoon} size="sm" className="bg-[#16161a] border border-white/10 rounded-2xl">
+	<div class="p-6 sm:p-8 text-center">
+		<div class="mx-auto mb-4 size-12 rounded-full bg-[#6961ff]/10 flex items-center justify-center">
+			<MaterialIcon icon="schedule" class="text-[#6961ff]" />
+		</div>
+		<h3 class="text-lg font-bold text-slate-100">Coming soon</h3>
+		<p class="text-sm text-slate-400 mt-2">{comingSoon} isn't available yet. We're working on it.</p>
+		<button class="mt-6 bg-[#6961ff] hover:bg-[#6961ff]/90 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition-all" on:click={() => (showComingSoon = false)}>Got it</button>
+	</div>
+</Modal>

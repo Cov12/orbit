@@ -74,6 +74,9 @@ services:
       DATABASE_URL: postgresql://orbit:${POSTGRES_PASSWORD}@db:5432/workpipe
       JWT_SECRET: ${ORBIT_JWT_SECRET:?}
       DRIVE_API_URL: http://drive:3000
+      # `next start` re-reads next.config.mjs at runtime; its image allowlist includes
+      # Portal's origin (organization logos) from this variable.
+      NEXT_PUBLIC_PORTAL_URL: https://${ORBIT_DEMO_DOMAIN:?}
     ports: ["127.0.0.1:15101:3000"]
     depends_on:
       db: { condition: service_healthy }

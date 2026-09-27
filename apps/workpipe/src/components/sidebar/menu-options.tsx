@@ -10,7 +10,6 @@ import {
 } from '@prisma/client'
 import clsx from 'clsx'
 import { ChevronsUpDown, Compass, Menu, PlusCircleIcon } from 'lucide-react'
-import Image from 'next/image'
 import Link from 'next/link'
 
 import { icons } from '@/lib/constants'
@@ -18,6 +17,7 @@ import { useModal } from '@/providers/modal-provider'
 
 import SubAccountDetails from '../forms/subaccount-details'
 import CustomModal from '../global/custom-modal'
+import LogoOrInitial from '../global/logo-or-initial'
 import { AspectRatio } from '../ui/aspect-ratio'
 import { Button } from '../ui/button'
 import {
@@ -94,11 +94,12 @@ const MenuOptions = ({
         <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
         <div>
           <AspectRatio ratio={16 / 5}>
-            <Image
+            <LogoOrInitial
               src={sidebarLogo}
+              name={details?.name}
               alt="Sidebar Logo"
-              fill
               className="rounded-md object-contain"
+              initialClassName="text-4xl"
             />
           </AspectRatio>
           <Popover>
@@ -137,11 +138,12 @@ const MenuOptions = ({
                           className="flex h-full w-full gap-4"
                         >
                           <div className="relative w-16">
-                            <Image
+                            <LogoOrInitial
                               src={user?.Business?.businessLogo}
+                              name={user?.Business?.name}
                               alt="Business Logo"
-                              fill
                               className="rounded-md object-contain"
+                              initialClassName="text-lg"
                             />
                           </div>
                           <div className="flex flex-1 flex-col">
@@ -158,11 +160,12 @@ const MenuOptions = ({
                             className="flex h-full w-full gap-4"
                           >
                             <div className="relative w-16">
-                              <Image
+                              <LogoOrInitial
                                 src={user?.Business?.businessLogo}
+                                name={user?.Business?.name}
                                 alt="Business Logo"
-                                fill
                                 className="rounded-md object-contain"
+                                initialClassName="text-lg"
                               />
                             </div>
                             <div className="flex flex-1 flex-col">
@@ -187,11 +190,12 @@ const MenuOptions = ({
                                 className="flex h-full w-full gap-4"
                               >
                                 <div className="relative w-16">
-                                  <Image
+                                  <LogoOrInitial
                                     src={subaccount.subAccountLogo}
+                                    name={subaccount.name}
                                     alt="subaccount Logo"
-                                    fill
                                     className="rounded-md object-contain"
+                                    initialClassName="text-lg"
                                   />
                                 </div>
                                 <div className="flex flex-1 flex-col">
@@ -208,11 +212,12 @@ const MenuOptions = ({
                                   className="flex h-full w-full gap-4"
                                 >
                                   <div className="relative w-16">
-                                    <Image
+                                    <LogoOrInitial
                                       src={subaccount.subAccountLogo}
+                                      name={subaccount.name}
                                       alt="subaccount Logo"
-                                      fill
                                       className="rounded-md object-contain"
+                                      initialClassName="text-lg"
                                     />
                                   </div>
                                   <div className="flex flex-1 flex-col">

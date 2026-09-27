@@ -1,9 +1,9 @@
 import ComingSoonPage from '@/components/global/coming-soon-page'
 
-export default function KickStartPage() {
+export default function AutomationsPage() {
   return (
     <ComingSoonPage>
-      <div>Kick Start Coming Soon!</div>
+      <div>Automations Coming Soon!</div>
     </ComingSoonPage>
   )
 }
