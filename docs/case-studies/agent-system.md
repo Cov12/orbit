@@ -66,7 +66,7 @@ tenant-scoped is a way across the boundary. Tenant sessions get an allowlist, no
   tools, such as raw API requests and approval decisions, that run with the service key. That key can
   act for any company, so those tools are never registered.
 
-Each of these came from checking what the model could actually reach, not what the prompt told it to do.
+Each of these came from checking what the model could actually reach, not what the prompt told it to do. The same check against production found those tools open there too; the allowlist went into production the same day, and a review of its session history and memory showed no sign that tenant data had crossed.
 
 Onboarding follows the same shape. The role suggestion is constrained, not trusted: the model's
 output is validated against a fixed set of roles, capped and de-duplicated, with a deterministic

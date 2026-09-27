@@ -1,0 +1,58 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  repo:
+    name: Evals datasets, scripts, runtime config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Eval datasets are well-formed
+        run: python evals/run.py --check
+      - name: Shell scripts parse
+        run: for f in demo/*.sh scripts/*.sh apps/agent-runtime/build.sh apps/agent-runtime/docker/entrypoint.sh; do bash -n "$f"; done
+      - name: Runtime config keeps tenant sessions locked down
+        run: |
+          pip install --quiet pyyaml
+          export HERMES_HOME="$RUNNER_TEMP/hermes" ANTHROPIC_API_KEY=x OPENAI_API_KEY=x \
+                 PAPERCLIP_API_URL=http://conductor:3100 PAPERCLIP_API_KEY=x
+          python apps/agent-runtime/docker/render_config.py
+          python - <<'PY'
+          import os, yaml
+          cfg = yaml.safe_load(open(os.path.join(os.environ["HERMES_HOME"], "config.yaml")))
+          allowed = set(cfg["platform_toolsets"]["api_server"])
+          assert allowed == {"todo", "memory", "paperclip"}, allowed
+          assert "session_search" in cfg["agent"]["disabled_toolsets"]
+          assert cfg["memory"]["memory_enabled"] is False
+          tools = cfg["mcp_servers"]["paperclip"]["tools"]["include"]
+          assert all(t.startswith("plugin_orbit_workpipe-tools_") for t in tools), tools
+          assert cfg["mcp_servers"]["paperclip"]["inject_paperclip_context"] is True
+          print("runtime config OK:", sorted(allowed), len(tools), "MCP tools")
+          PY
+
+  workpipe:
+    name: WorkPipe tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/workpipe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/workpipe/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npx vitest run
