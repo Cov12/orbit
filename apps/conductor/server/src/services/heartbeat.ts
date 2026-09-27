@@ -2028,6 +2028,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     agent: { id: string; companyId: string };
     runId: string;
     resultJson: AdapterExecutionResult["resultJson"];
+    subAccountId?: string | null;
   }): Promise<unknown> {
     return fileHandoffTicket(
       {
@@ -2043,8 +2044,10 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
           return rows[0]?.id ?? null;
         },
         createIssue: (companyId, input) => issuesSvc.create(companyId, input),
-        wakeAssignee: async ({ issueId, assigneeAgentId, requestedByActorId }) => {
+        wakeAssignee: async ({ issueId, assigneeAgentId, requestedByActorId, subAccountId }) => {
           await queueIssueAssignmentWakeup({
+            // Carry the chat's sub-account so the CEO's run (memory, tools) is scoped to it.
+            ...(subAccountId ? { contextExtras: { bridgeSubAccountId: subAccountId } } : {}),
             heartbeat: { wakeup: enqueueWakeup },
             issue: { id: issueId, assigneeAgentId, status: "todo" },
             reason: "orbit_handoff",
@@ -5748,6 +5751,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
           agent: { id: agent.id, companyId: agent.companyId },
           runId: run.id,
           resultJson: adapterResult.resultJson,
+          subAccountId: readNonEmptyString(parseObject(run.contextSnapshot).bridgeSubAccountId),
         });
       }
 
@@ -5872,6 +5876,19 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
               const issueComment = buildHeartbeatRunIssueComment(persistedResultJson);
               if (issueComment) {
                 await issuesSvc.addComment(issueId, issueComment, { agentId: agent.id, runId: livenessRun.id });
+                // A single-shot runtime agent answers a ticket in one reply and can't move the
+                // ticket itself. Hand it to a person for review; left in progress, liveness
+                // continuation would keep re-waking the agent on a ticket it already answered.
+                if (agent.adapterType === "hermes_openai") {
+                  const current = await db
+                    .select({ status: issues.status })
+                    .from(issues)
+                    .where(eq(issues.id, issueId))
+                    .then((rows) => rows[0] ?? null);
+                  if (current && (current.status === "todo" || current.status === "in_progress")) {
+                    await issuesSvc.update(issueId, { status: "in_review", actorAgentId: agent.id });
+                  }
+                }
               }
             }
           } catch (err) {

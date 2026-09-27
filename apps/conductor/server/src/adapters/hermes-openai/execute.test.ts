@@ -259,6 +259,46 @@ describe("hermes_openai adapter execute", () => {
     expect(body.messages).toEqual([{ role: "user", content: "from markdown" }]);
   });
 
+  it("answers a task wake (no chat message) from the rendered task section", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse(200, { choices: [{ message: { content: "plan" } }] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await execute(
+      makeCtx({ context: { paperclipTaskMarkdown: "Issue HAR-1: follow-up plan" } }),
+    );
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.messages).toEqual([{ role: "user", content: "Issue HAR-1: follow-up plan" }]);
+    expect(result.summary).toBe("plan");
+  });
+
+  it("prefers the chat message over the task section when both are present", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse(200, { choices: [{ message: { content: "ok" } }] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await execute(
+      makeCtx({ context: { bridgeChatPrompt: "hi", paperclipTaskMarkdown: "task" } }),
+    );
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.messages).toEqual([{ role: "user", content: "hi" }]);
+  });
+
+  it("never files a handoff ticket from a reply to a task", async () => {
+    const reply = 'On it.\n```ticket\n{"title":"Another ticket"}\n```';
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => jsonResponse(200, { choices: [{ message: { content: reply } }] })),
+    );
+
+    const result = await execute(makeCtx({ context: { paperclipTaskMarkdown: "task" } }));
+    expect(result.resultJson?.handoffTicket).toBeUndefined();
+  });
+
   it("routes through a dispatcher when HERMES_OUTBOUND_PROXY is set", async () => {
     process.env.HERMES_OUTBOUND_PROXY = "http://proxy.internal:3128";
     const fetchMock = vi.fn(async () =>

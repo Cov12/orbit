@@ -46,6 +46,8 @@ export async function GET(request: Request) {
             OR: [
               { name: { contains: search, mode: 'insensitive' as const } },
               { email: { contains: search, mode: 'insensitive' as const } },
+              // People are asked about by their business ("who's our contact at …").
+              { companyName: { contains: search, mode: 'insensitive' as const } },
             ],
           }
         : {}),

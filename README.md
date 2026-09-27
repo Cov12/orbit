@@ -175,13 +175,14 @@ small sales pipeline and a few customers. Things to try:
    identity from the request, not from the model.
 3. **Ask it to hand something to the team**, for example *"Put together a follow-up plan to close the
    Greenleaf deal."* It files a ticket for the business's lead agent on the orchestrator's board
-   (**Conductor**).
+   (**Conductor**). The lead agent picks the ticket up, replies on it with a plan built from the
+   CRM, and hands it back for review.
 4. **Open WorkPipe** (the CRM) and **Drive** (the file vault) from Portal. They use the same sign-in and
    show the same business.
 
 What's different from production: the data is fictional, and **everything resets nightly** (3am US
 Eastern). The coding-agent CLIs that production agents use to work tickets are left out of the demo,
-so handed-off tickets wait on the board rather than being worked. The assistant runs with the tool
+so the lead agent answers a ticket with a plan rather than carrying it out. The assistant runs with the tool
 lockdown described in [the case study](docs/case-studies/agent-system.md): only the CRM tools, with
 no host access, no shared memory and no cross-session search.
 

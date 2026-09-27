@@ -75,9 +75,12 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   }
 
   // User message: raw chat text threaded in by the host-side bridge-chat-prompt
-  // helper. Fall back to the rendered markdown section, then bail if neither is set.
-  const userMessage =
+  // helper, else the rendered chat markdown. With neither, this is a task wake (e.g. an
+  // assigned ticket): use the task section the executor renders from the issue, so the
+  // agent answers the ticket and the host posts the reply as an issue comment.
+  const chatMessage =
     asString(context?.bridgeChatPrompt, "") || asString(context?.paperclipChatMarkdown, "");
+  const userMessage = chatMessage || asString(context?.paperclipTaskMarkdown, "");
   if (!userMessage) {
     return {
       exitCode: null,
@@ -207,7 +210,11 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     // parsed ticket rides resultJson; the Manager (heartbeat post-run hook) files
     // it as an issue assigned to the CEO. This adapter is a transport sandbox and
     // cannot reach the issue service itself — hence the resultJson handoff.
-    const { cleanedText, ticket } = extractHandoffTicket(content);
+    // Only chat replies can hand a ticket off. A reply to a ticket stays plain text: handed-off
+    // tickets are assigned to the CEO, so a CEO answering its own ticket could file another.
+    const { cleanedText, ticket } = chatMessage
+      ? extractHandoffTicket(content)
+      : { cleanedText: content, ticket: null };
 
     // Emit in the shape the Orbit bridge's StreamJsonParser maps to result_text,
     // which becomes the /chat response. Do not invent another format.

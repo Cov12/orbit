@@ -1,7 +1,18 @@
+// Portal hosts organization logos, so allow images from its origin (set at build time).
+const portalImagePattern = (() => {
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_PORTAL_URL || '')
+    return [{ protocol: url.protocol.replace(':', ''), hostname: url.hostname }]
+  } catch {
+    return []
+  }
+})()
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
         remotePatterns: [
+          ...portalImagePattern,
           {
             protocol: 'https',
             hostname: 'uploadthing.com',

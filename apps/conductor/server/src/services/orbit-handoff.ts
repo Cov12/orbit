@@ -35,6 +35,8 @@ export interface FileHandoffDeps {
     issueId: string;
     assigneeAgentId: string;
     requestedByActorId: string;
+    /** The chat's active sub-account, so the CEO's run is scoped where the request came from. */
+    subAccountId?: string;
   }): Promise<void>;
   logger: {
     info(obj: unknown, msg: string): void;
@@ -47,6 +49,8 @@ export interface FileHandoffParams {
   agent: { id: string; companyId: string };
   runId: string;
   resultJson: Record<string, unknown> | null | undefined;
+  /** Active sub-account of the chat run that emitted the ticket, if any. */
+  subAccountId?: string | null;
 }
 
 export interface FileHandoffOutcome {
@@ -125,6 +129,7 @@ export async function fileHandoffTicket(
       issueId: issue.id,
       assigneeAgentId: ceoId,
       requestedByActorId: params.agent.id,
+      ...(params.subAccountId ? { subAccountId: params.subAccountId } : {}),
     });
     deps.logger.info(
       {

@@ -55,6 +55,7 @@ Public hostnames are configured on the tunnel, not here: the apex to `portal:300
 - **The assistant's CRM tools reach WorkPipe at its public URL**: the orchestrator's plugin host
   refuses private addresses, and WorkPipe's internal API still requires the plugin's short-lived
   token.
-- **The business's CEO agent runs on the agent runtime and isn't woken by tickets.** Production
-  works tickets with coding-agent CLIs, which this image leaves out, so handed-off tickets wait on
-  the board.
+- **The business's CEO agent runs on the agent runtime.** Production works tickets with
+  coding-agent CLIs, which this image leaves out. Here, an assigned ticket wakes the CEO, which
+  replies with a plan (scoped to the location the chat was in) that the orchestrator posts on the
+  ticket, then moves the ticket to review; it can't carry the work out.

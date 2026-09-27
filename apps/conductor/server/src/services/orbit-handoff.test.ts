@@ -74,6 +74,21 @@ describe("fileHandoffTicket", () => {
     });
   });
 
+  it("forwards the chat's sub-account to the CEO's wake", async () => {
+    const deps = makeDeps();
+    await fileHandoffTicket(deps, {
+      ...base,
+      subAccountId: "sub-9",
+      resultJson: { handoffTicket: { title: "Follow up" } },
+    });
+    expect(deps.wakeAssignee).toHaveBeenCalledWith({
+      issueId: "issue-1",
+      assigneeAgentId: "ceo-1",
+      requestedByActorId: "assistant-1",
+      subAccountId: "sub-9",
+    });
+  });
+
   it("files unassigned and skips wakeup when there is no CEO", async () => {
     const deps = makeDeps({ findOldestCeoId: vi.fn(async () => null) });
     const out = await fileHandoffTicket(deps, {

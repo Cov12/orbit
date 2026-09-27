@@ -25,6 +25,7 @@ ORG_INDUSTRY="E-commerce & Retail"
 SUB_ID=cdemosubwarehouse0000001
 SUB_NAME="Main Warehouse"
 EMAIL=${ORBIT_DEMO_EMAIL:-demo+clerk_test@orbit-app.site}
+LOGO="https://$domain/demo/harbor-supply.png"   # served by Portal (apps/portal/public/demo)
 
 log() { printf '  %s\n' "$*"; }
 psql_db() { local db=$1; shift; docker exec -i orbit-demo-db-1 psql -v ON_ERROR_STOP=1 -U orbit -d "$db" -tAq "$@"; }
@@ -48,11 +49,11 @@ else
 fi
 
 echo "== Portal business"
-psql_db portal -v org="$ORG_ID" -v name="$ORG_NAME" -v slug="$ORG_SLUG" -v ind="$ORG_INDUSTRY" \
+psql_db portal -v org="$ORG_ID" -v name="$ORG_NAME" -v slug="$ORG_SLUG" -v ind="$ORG_INDUSTRY" -v logo="$LOGO" \
   -v sub="$SUB_ID" -v subname="$SUB_NAME" -v uid="$user_id" -v email="$EMAIL" <<'SQL'
-INSERT INTO "Organization"(id, name, slug, industry, licensed, "updatedAt")
-VALUES (:'org', :'name', :'slug', :'ind', true, now())
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, industry = EXCLUDED.industry, licensed = true, "updatedAt" = now();
+INSERT INTO "Organization"(id, name, slug, industry, "logoUrl", licensed, "updatedAt")
+VALUES (:'org', :'name', :'slug', :'ind', :'logo', true, now())
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, industry = EXCLUDED.industry, "logoUrl" = EXCLUDED."logoUrl", licensed = true, "updatedAt" = now();
 INSERT INTO "Member"(id, "clerkUserId", email, name, "orgId", role, "updatedAt")
 VALUES ('cdemomember0000000000001', :'uid', :'email', 'Demo Reviewer', :'org', 'OWNER', now())
 ON CONFLICT (id) DO UPDATE SET "clerkUserId" = EXCLUDED."clerkUserId", role = 'OWNER', "updatedAt" = now();
@@ -64,13 +65,13 @@ log "$ORG_NAME / $SUB_NAME"
 
 # A launch token with the same claims Portal puts in one (src/lib/jwt.ts, api/auth/token).
 token=$(USER_ID="$user_id" EMAIL="$EMAIL" ORG_ID="$ORG_ID" ORG_NAME="$ORG_NAME" ORG_SLUG="$ORG_SLUG" \
-  ORG_INDUSTRY="$ORG_INDUSTRY" SUB_ID="$SUB_ID" python3 - <<'PY'
+  ORG_INDUSTRY="$ORG_INDUSTRY" SUB_ID="$SUB_ID" LOGO="$LOGO" python3 - <<'PY'
 import base64, hashlib, hmac, json, os, time
 def b64(b): return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
 now = int(time.time()); e = os.environ
 claims = {"sub": e["USER_ID"], "email": e["EMAIL"], "name": "Demo Reviewer",
           "org_id": e["ORG_ID"], "org_slug": e["ORG_SLUG"], "org_name": e["ORG_NAME"],
-          "org_logo": None, "org_industry": e["ORG_INDUSTRY"], "sub_account_id": e["SUB_ID"],
+          "org_logo": e["LOGO"], "org_industry": e["ORG_INDUSTRY"], "sub_account_id": e["SUB_ID"],
           "role": "OWNER", "subscriptions": [{"plan": "ENTERPRISE", "status": "ACTIVE"}],
           "app_access": ["ATRIUM", "CONDUCTOR", "DRIVE", "WORKPIPE"], "iat": now, "exp": now + 300}
 head = b64(json.dumps({"alg": "HS256", "typ": "JWT"}).encode()); body = b64(json.dumps(claims).encode())
@@ -129,8 +130,8 @@ log "agent: $agent"
 
 # New companies get a CEO (and later specialists) on the coding-agent CLI adapter that
 # production uses to work tickets; the demo image leaves those CLIs out. Point this business's
-# CLI agents at the agent runtime and don't wake them on assignment: the chat adapter has no
-# ticket loop, so a woken agent could only fail. Handed-off tickets wait on the board.
+# agents at the agent runtime instead: woken by an assigned ticket, the agent answers it and
+# the orchestrator posts the answer on the ticket as a comment.
 echo "== CEO and specialists on the agent runtime"
 ORG_NAME="$ORG_NAME" ASSISTANT_ID="$agent" python3 - "$company" <<'PY'
 import json, os, sys, urllib.request
@@ -143,9 +144,6 @@ agents = call("GET", f"/companies/{company}/agents")
 agents = agents if isinstance(agents, list) else agents.get("data", [])
 switched = 0
 for a in agents:
-    if a.get("adapterType") not in ("codex_local", "claude_local", "opencode_local", "process") \
-            and (a.get("runtimeConfig") or {}).get("heartbeat", {}).get("wakeOnDemand") is False:
-        continue
     if a.get("id") == os.environ.get("ASSISTANT_ID"):
         continue
     title = a.get("title") or a.get("role") or "specialist"
@@ -154,15 +152,18 @@ for a in agents:
               "what you would do, what you need from the owner, and what could go wrong. Never claim "
               "that work is done, sent or scheduled; you can only plan it here.")
     call("PATCH", f"/agents/{a['id']}", {"adapterType": "hermes_openai", "replaceAdapterConfig": True,
-         "runtimeConfig": {"heartbeat": {"enabled": False, "wakeOnDemand": False}},
+         "runtimeConfig": {"heartbeat": {"enabled": False, "wakeOnDemand": True}},
          "adapterConfig": {"url": "http://runtime:8642/v1/chat/completions", "model": "hermes-agent",
                            "apiKeyEnv": "HERMES_API_KEY", "timeoutSec": 120, "systemPrompt": prompt}})
     switched += 1
-print(f"  {switched} agent(s) on the runtime, not woken on assignment")
+print(f"  {switched} agent(s) on the runtime, answering assigned tickets")
 PY
 
 echo "== WorkPipe sample data"
-psql_db workpipe -v sub="$SUB_ID" <<'SQL'
+psql_db workpipe -v sub="$SUB_ID" -v org="$ORG_ID" -v logo="$LOGO" <<'SQL'
+-- Logos: first launch copies the org logo onto the business; sub-account sync leaves it blank.
+UPDATE "Business" SET "businessLogo" = :'logo' WHERE id = :'org';
+UPDATE "SubAccount" SET "subAccountLogo" = :'logo' WHERE id = :'sub';
 INSERT INTO "Pipeline"(id, name, "subAccountId", "updatedAt") VALUES
   ('demo-pipe-wholesale', 'Wholesale Orders', :'sub', now()) ON CONFLICT (id) DO NOTHING;
 INSERT INTO "Lane"(id, name, "pipelineId", "order", "updatedAt") VALUES

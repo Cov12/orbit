@@ -41,7 +41,7 @@ const manifest: PaperclipPluginManifestV1 = {
     {
       name: "findContact",
       displayName: "WorkPipe Find Contact",
-      description: "Search contacts in the active run's sub-account by name or email.",
+      description: "Search contacts in the active run's sub-account by name, email or company name.",
       parametersSchema: {
         type: "object",
         properties: {
