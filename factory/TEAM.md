@@ -4,24 +4,13 @@ _This file is the source of truth for who's on the team. Every agent reads
 this on bootstrap. When a new teammate joins, this is the first file that
 gets updated._
 
-> **Snapshot note (public edition):** this roster is as of June 2026. On 2026-06-29 Byte moved to
-> GPT-5.4 and took over Dex's analysis work. Hermes — the agent runtime in
-> `apps/agent-runtime` — also takes build handoffs through the queue (see `queue/examples/`).
-
-## Active
-
-| Name | Type  | Provider  | Role                        | Host              | Model               | Channels        |
-|------|-------|-----------|-----------------------------|-------------------|---------------------|-----------------|
-| Coda | cloud | openai-codex | Operator                 | Ops VPS           | gpt-5.3-codex       | Telegram, Slack |
-| Byte | cloud | openai-codex | Support email + routine ops | Ops VPS        | gpt-5.3-codex       | Telegram, Email |
-| Dex  | local | ollama    | Strategist                  | The Principal's Win desktop | qwen2.5:14b         | Telegram, Slack |
-
-**Type** is `cloud` (model runs on a third-party API) or `local` (model
-runs on the Principal's hardware via Ollama or equivalent). Cloud agents run a
-lightweight harness; local agents run the model itself.
-
-**Host** is where the OpenClaw harness lives, not where the model runs.
-For cloud agents, host requirements are minimal.
+> **Public edition:** the roster table itself (names, models, hosts, channels) lives in the
+> private operating repository and isn't published. The current team and each agent's lane are
+> in [the factory README](README.md#the-team). What follows is how the team works together,
+> as written in June 2026; since then Byte has taken over Dex's analysis work, and Hermes, the
+> agent runtime in `apps/agent-runtime`, also takes build handoffs through the queue (see
+> `queue/examples/`). "Peers" means no agent overrides another's work; Coda still coordinates
+> and delegates, and the Principal approves anything consequential.
 
 ## How we work together
 

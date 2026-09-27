@@ -18,7 +18,7 @@ release (see the note at the end).
 | **Byte** | Support email (the only agent that sends), routine ops, session analysis. | OpenClaw harness |
 | **Dex** | Strategy and analysis; its lane later moved to Byte. | Local model on a GPU desktop |
 
-The roster and each agent's lane are in [`TEAM.md`](TEAM.md).
+How the team works together is in [`TEAM.md`](TEAM.md).
 
 ## Human checkpoints
 
@@ -68,7 +68,7 @@ Agents move fast inside their lane; anything consequential waits for the princip
 
 ```
 orchestrator/CLAUDE.md   the orchestrator's operating rules
-TEAM.md                  roster and lanes
+TEAM.md                  how the team works together
 protocols/               team-wide rules (handoff, verification, refactors, email, money, confidentiality…)
 ops/                     delegation and session-archive scripts
 queue/                   message-queue spec + real examples
@@ -95,8 +95,8 @@ really reads and writes. They map to this directory like this:
 | the orchestrator's workspace rules | [`orchestrator/CLAUDE.md`](orchestrator/CLAUDE.md) |
 
 Some paths point at files that aren't published — agents' private memory and identity files — and
-describe where things live rather than something to open. The roster is
-a snapshot; see the note in `TEAM.md`.
+describe where things live rather than something to open. The roster
+table isn't published; see the note in `TEAM.md`.
 
 The methodology this grew out of is written up separately in
 [ai-dev-methodology](https://github.com/Cov12/ai-dev-methodology).
