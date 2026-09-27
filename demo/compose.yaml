@@ -48,6 +48,9 @@ services:
         <<: *public-urls
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:?}
     environment:
+      # Also needed at runtime: the redirect allowlist (src/lib/return-to.ts) reads these
+      # with a computed key, which Next.js can't inline at build time.
+      <<: *public-urls
       DATABASE_URL: postgresql://orbit:${POSTGRES_PASSWORD}@db:5432/portal
       JWT_SECRET: ${ORBIT_JWT_SECRET:?}
       ORBIT_PORTAL_JWT_SECRET: ${ORBIT_JWT_SECRET:?}
