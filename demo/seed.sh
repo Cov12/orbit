@@ -146,5 +146,19 @@ SQL
 log "super-admin: admin@orbit.example"
 
 echo "== restarting services that read seeded values"
-"$here/up.sh" up -d --no-build conductor runtime atrium >/dev/null 2>&1
+# Order matters: the runtime lists Conductor's plugin tools once, when it starts, so Conductor
+# must be up with both plugins ready before the runtime (and Atrium) come back.
+"$here/up.sh" up -d --no-build conductor >/dev/null 2>&1
+for _ in $(seq 1 90); do
+  ready=$( (curl -s --max-time 5 "$conductor/api/plugins" -H "Authorization: Bearer $ORBIT_BOARD_API_KEY" || true) \
+    | python3 -c 'import json,sys
+try:
+    d=json.load(sys.stdin); d=d if isinstance(d,list) else d.get("data",[])
+    print(sum(1 for p in d if p.get("status")=="ready"))
+except Exception: print(0)' 2>/dev/null)
+  [[ "${ready:-0}" -ge 2 ]] && break
+  sleep 2
+done
+log "conductor: ${ready:-0} plugin(s) ready"
+"$here/up.sh" up -d --no-build --force-recreate runtime atrium >/dev/null 2>&1
 echo "seed: done"

@@ -22,5 +22,7 @@ if $public; then
     curl -sf -o /dev/null --max-time 5 "https://${ORBIT_DEMO_DOMAIN:-orbit-app.site}/" && break; sleep 5
   done
   "$here/seed-demo-account.sh"
+  # Record whether the demo came back healthy; a failure here doesn't undo the reset.
+  "$here/smoke.sh" || echo "reset: smoke test FAILED"
 fi
-echo "reset: done"
+echo "reset: done ($(date -u +%FT%TZ))"
