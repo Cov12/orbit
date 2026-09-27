@@ -11,7 +11,7 @@ import { logEntitlementDecision, logTokenExchange } from "@/lib/audit";
 /**
  * POST /api/auth/token
  *
- * Issues a Orbit JWT for cross-app authentication.
+ * Issues an Orbit JWT for cross-app authentication.
  * Called by WorkPipe, Drive, Atrium, and Conductor to get a token for the current user.
  *
  * Workspace resolution order:

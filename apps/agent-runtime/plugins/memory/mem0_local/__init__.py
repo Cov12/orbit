@@ -53,13 +53,13 @@ _BREAKER_THRESHOLD = 5
 _BREAKER_COOLDOWN_SECS = 120
 
 _DEFAULTS = {
-    # Extraction LLM. "openai" + the Hermes subscription proxy rides the Grok sub
-    # (fast, smart, flat-rate); "ollama" keeps it fully local (slow on CPU);
-    # "anthropic" uses the Anthropic API (key from ANTHROPIC_API_KEY).
-    "llm_provider": "openai",            # "openai" (proxy/api) | "anthropic" | "ollama" (local)
-    "llm_model": "grok-4.20-0309-non-reasoning",  # via Hermes proxy; ollama: qwen2.5:14b
-    "openai_base_url": "http://127.0.0.1:8645/v1",  # `hermes proxy start`
-    "openai_api_key": "unused-proxy-attaches-creds",  # proxy ignores it; client needs non-empty
+    # Extraction LLM. "ollama" keeps it fully local (the default; slow on CPU);
+    # "openai" uses any OpenAI-compatible endpoint (key from MEM0_LOCAL_OPENAI_API_KEY
+    # or openai_api_key); "anthropic" uses the Anthropic API (key from ANTHROPIC_API_KEY).
+    "llm_provider": "ollama",            # "ollama" (local) | "openai" | "anthropic"
+    "llm_model": "qwen2.5:14b",          # openai: e.g. gpt-4.1-mini
+    "openai_base_url": "https://api.openai.com/v1",
+    "openai_api_key": "",
     # Embedder. "ollama" = local (default); "openai" = any OpenAI-compatible
     # embeddings endpoint (key: MEM0_LOCAL_EMBEDDER_API_KEY env, then the
     # embedder_api_key config value, then OPENAI_API_KEY env).
@@ -366,8 +366,7 @@ class Mem0LocalMemoryProvider(MemoryProvider):
         return cfg
 
     def _build_llm_config(self) -> dict:
-        # "openai" -> OpenAI-compatible endpoint (the Hermes subscription proxy,
-        # which attaches the live Grok token). "ollama" -> fully local.
+        # "openai" -> any OpenAI-compatible endpoint. "ollama" -> fully local.
         if self._llm_provider == "openai":
             return {
                 "provider": "openai",

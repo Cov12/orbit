@@ -27,8 +27,7 @@ type IdParams = {
 };
 
 const PLUGIN_ID = "orbit.workpipe-tools";
-// workpipe.orbit.example is currently parked; the live public deployment for this integration
-// is the Render host below (also mirrored by WorkPipe's own middleware fallback).
+// Default WorkPipe base URL; each deployment sets its own via the plugin's workpipeBaseUrl config.
 const WORKPIPE_BASE_URL = "https://workpipe.orbit.example";
 const TOKEN_TTL_SECONDS = 300;
 const DEFAULT_ROLE = "member";

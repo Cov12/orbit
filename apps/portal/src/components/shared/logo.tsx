@@ -11,7 +11,7 @@ const sizes = {
 export function Logo({ size = "md" }: LogoProps) {
   return (
     <div className={`${sizes[size]} rounded-lg gradient-primary flex items-center justify-center font-bold`}>
-      W
+      O
     </div>
   );
 }

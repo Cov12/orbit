@@ -221,9 +221,9 @@ def seed_knowledge(session):
             title="Pricing Guide",
             content=(
                 "Standard pricing tiers:\n"
-                "- Starter: $—/mo — basic CRM + 1 pipeline\n"
-                "- Growth: $—/mo — full CRM + automations + 3 pipelines\n"
-                "- Enterprise: $—/mo — everything + custom integrations + dedicated support\n\n"
+                "- Starter: basic CRM + 1 pipeline\n"
+                "- Growth: full CRM + automations + 3 pipelines\n"
+                "- Enterprise: everything + custom integrations + dedicated support\n\n"
                 "Custom quotes available for enterprise deals. Minimum contract: 3 months."
             ),
             metadata_={"type": "pricing", "priority": "high"},
@@ -349,7 +349,7 @@ def seed_proposals(session):
             title="Process refund for Widget Co — $1,200",
             description=(
                 "Widget Co requested a full refund citing unsatisfactory service. "
-                "They've been a customer for 2 months on the Growth plan ($—/mo + overage). "
+                "They've been a customer for 2 months on the Growth plan. "
                 "Recommend processing to maintain reputation."
             ),
             action_type="process_refund",

@@ -37,8 +37,8 @@ orchestrator and an agent runtime — built by one engineer working with a team 
    the identity gate: one signed token carries organization, sub-account and app entitlements to every app.
 7. **[`apps/workpipe/src/lib/authz.ts`](apps/workpipe/src/lib/authz.ts)** — the ownership guards that
    closed a class of cross-tenant access bugs in the CRM.
-8. **[`apps/drive/src/lib/encryption.ts`](apps/drive/src/lib/encryption.ts)** — envelope encryption:
-   a random key per file, wrapped by a per-tenant key.
+8. **[`evals/`](evals/README.md)** — the agent tested through the real runtime, with every result
+   committed, including the runs that caught a cross-tenant leak and a silent loss of memory.
 9. **[`docs/case-studies/agent-system.md`](docs/case-studies/agent-system.md)** — the agent system end to end: what it does, how it's orchestrated, how I know it works, and the incidents that shaped it.
 10. **[`docs/SHIPLOG.md`](docs/SHIPLOG.md)** — every merged PR, with dates.
 
@@ -79,8 +79,8 @@ partitioned per company and filtered per sub-account, and refuses to operate wit
 | [Atrium](apps/atrium) | Workspace where a team works with its AI staff; onboarding | Open WebUI | Onboarding: context capture → memory seeding → agent provisioning |
 | [Conductor](apps/conductor) | Agent orchestrator: per-tenant assistants, specialists, tools | Paperclip | Bridge routes, tool plugins, the tenant contract |
 | [WorkPipe](apps/workpipe) | CRM: pipelines, contacts, funnels, invoices, files | Next.js, Prisma | Full commit history; ownership guards |
-| [Drive](apps/drive) | Per-tenant file storage and sharing | Next.js, object storage | Envelope encryption; per-tenant storage |
-| [Agent runtime](apps/agent-runtime) | Runs the agents | Hermes Agent | Two small patches and a memory plugin |
+| [Drive](apps/drive) | Per-tenant file storage and sharing | Next.js, object storage | Private per-tenant vault; expiring, access-limited share links |
+| [Agent runtime](apps/agent-runtime) | Runs the agents | Hermes Agent | Three small patches and a memory plugin |
 
 ## Adopt before build
 

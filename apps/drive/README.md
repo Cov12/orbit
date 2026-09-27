@@ -2,7 +2,7 @@
 
 Secure org-scoped file storage for the Orbit product suite. Built on Cloudflare R2.
 
-**Free with any Orbit subscription.** Auth managed by [Orbit Portal](https://portal.orbit.example).
+**Included with every Orbit workspace.** Auth managed by [Orbit Portal](https://portal.orbit.example).
 
 ## Tech Stack
 
@@ -10,7 +10,7 @@ Secure org-scoped file storage for the Orbit product suite. Built on Cloudflare 
 - **Auth**: Portal JWT (`orbit_token` cookie) — zero Clerk dependency
 - **Database**: PostgreSQL + Prisma 7 (Neon, `@prisma/adapter-pg`)
 - **Storage**: Cloudflare R2 (S3-compatible)
-- **Encryption**: Server-side AES-256-GCM (client-side WebCrypto planned for Phase 2)
+- **Encryption**: not yet applied to file content. Each upload gets a per-file key, wrapped with a per-organization key (AES-256-GCM, `src/lib/encryption.ts`), but files go to the private bucket unencrypted through a presigned URL and the key is not used yet. Planned: client-side (end-to-end) encryption. Until then, privacy comes from the private bucket, per-org access checks, and short-lived signed download links.
 
 ## Authentication
 

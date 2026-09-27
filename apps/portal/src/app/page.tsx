@@ -12,7 +12,7 @@ export default async function LandingPage() {
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center font-bold text-sm">
-            W
+            O
           </div>
           <span className="font-semibold text-lg">Orbit</span>
         </div>
@@ -101,7 +101,7 @@ export default async function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 px-6 py-8 text-center text-sm text-gray-500">
-        © {new Date().getFullYear()} Orbit All rights reserved.
+        © {new Date().getFullYear()} Orbit. All rights reserved.
       </footer>
     </div>
   );

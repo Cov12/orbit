@@ -277,7 +277,7 @@ export default function AcceptInvitePage() {
               </div>
               <div className="mt-5 p-3 rounded-lg bg-[#2B2FFF]/5 border border-[#2B2FFF]/20">
                 <p className="text-xs text-gray-300 text-center">
-                  <span className="font-medium text-white">Already have a Orbit account?</span><br />
+                  <span className="font-medium text-white">Already have an Orbit account?</span><br />
                   Sign in to add this workspace to your existing account.
                   You&apos;ll be able to switch between all your workspaces.
                 </p>

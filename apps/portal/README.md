@@ -1,6 +1,6 @@
 # Orbit Portal
 
-Centralized identity and entitlement portal for Orbit (Orbit) products.
+Centralized identity and entitlement portal for Orbit products.
 
 This is the **license edition**: there is no commercial billing. Every organization is licensed and fully entitled to every app (see [License Mode](#license-mode)).
 

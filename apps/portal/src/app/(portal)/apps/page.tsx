@@ -39,7 +39,7 @@ export default async function AppsPage() {
         <AppCard
           name="Orbit Drive"
           slug="drive"
-          description="Banking-grade encrypted file storage for your workspace. Upload, share, and manage files securely."
+          description="Private file storage for your workspace. Upload, share, and manage files securely."
           icon={
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.338-2.338 4.502 4.502 0 013.516 5.855A4.5 4.5 0 0117.25 19.5H6.75z" />

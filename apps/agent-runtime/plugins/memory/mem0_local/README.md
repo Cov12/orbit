@@ -33,7 +33,7 @@ hermes memory status
 }
 ```
 - **`embedding_dims` must match the embedder** — `nomic-embed-text` is **768** (not OpenAI's 1536). Wrong dims = qdrant insert/search errors.
-- `llm_model` does fact extraction on every turn. `qwen2.5:14b` = better extraction; `qwen2.5:7b-instruct` = lighter/faster on CPU. Extraction is CPU-bound on the runtime host and can take tens of seconds — it runs in a **background thread** so the chat reply is never blocked.
+- `llm_model` does fact extraction on every turn. `qwen2.5:14b` = better extraction; `qwen2.5:7b-instruct` = lighter/faster on CPU. On a CPU-only host, extraction can take tens of seconds — it runs in a **background thread** so the chat reply is never blocked.
 - Qdrant data lives at `$HERMES_HOME/mem0_local_qdrant/` (on-disk, embedded, no server).
 
 ### Hosted backends (optional)

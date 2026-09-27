@@ -60,16 +60,6 @@ apps/atrium/
 4. **Dual DB** — OpenWebUI DB (AI/conversations) + WorkPipe DB (CRM/business)
 5. **Multi-tenant** — RLS on shared Postgres (Phase 1) → DB-per-tenant (Enterprise)
 
-## Pricing
-
-Managed via Portal. Per-app subscriptions:
-
-| Tier | Monthly | Annual |
-|------|---------|-------------------|
-| Starter | $—/mo | $—/mo |
-| Growth | $—/mo | $—/mo |
-| Enterprise | $—/mo | $—/mo |
-
 ## Tech Stack
 
 - **Backend**: FastAPI (Python 3.11+), mounted at `/api/atrium/`

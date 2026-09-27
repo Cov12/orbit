@@ -31,7 +31,7 @@ async function getPortalUser(): Promise<{
     const cookieStore = await cookies()
     let token = cookieStore.get(PORTAL_TOKEN_COOKIE)?.value
 
-    // Service-to-service: accept a Orbit JWT as a Bearer token when no Drive
+    // Service-to-service: accept an Orbit JWT as a Bearer token when no Drive
     // cookie is present (e.g. WorkPipe's upload proxy forwards the user's token
     // this way; Atrium reads Drive the same way). Browser requests still use
     // the cookie, which takes precedence.

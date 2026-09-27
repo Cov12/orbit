@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Orbit Drive — Secure File Storage",
-  description: "Banking-grade encrypted file storage for your organization",
+  description: "Private file storage for your organization",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

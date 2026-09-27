@@ -26,7 +26,7 @@ const includedApps = [
   { name: "WorkPipe CRM", description: "Pipelines, contacts, invoices, and automations", color: "#2B2FFF" },
   { name: "Atrium", description: "AI-powered department heads for your business", color: "#20B2AA" },
   { name: "Conductor", description: "AI back office that plans and delegates work", color: "#A78BFA" },
-  { name: "Orbit Drive", description: "Encrypted file storage for your workspace", color: "#6961ff" },
+  { name: "Orbit Drive", description: "Private file storage for your workspace", color: "#6961ff" },
 ];
 
 export default function NewWorkspaceWizard() {

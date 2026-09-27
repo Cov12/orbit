@@ -18,7 +18,7 @@ You are a coding agent working on Orbit Drive, a secure file storage service.
 - Prisma 7 with `@prisma/adapter-pg` (do NOT use bare `new PrismaClient()`)
 - Clerk auth (shared with Portal for SSO)
 - Cloudflare R2 for object storage
-- Server-side AES-256-GCM encryption
+- Per-file keys are generated and wrapped per org (`src/lib/encryption.ts`), but file content is not encrypted yet (uploads go straight to the private bucket). Don't describe Drive as encrypted until that's wired up.
 
 ## Key Architecture
 
