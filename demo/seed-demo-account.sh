@@ -93,6 +93,13 @@ callback() {  # callback NAME URL -> response headers
   printf '%s' "$headers"
 }
 echo "== first launch of each app"
+# seed.sh recreates Conductor, the runtime and Atrium at its end; wait until they answer.
+for url in http://127.0.0.1:15101/ http://127.0.0.1:15103/api/health http://127.0.0.1:15104/health; do
+  for _ in $(seq 1 60); do
+    [[ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$url")" =~ ^(200|30[0-9])$ ]] && break
+    sleep 3
+  done
+done
 callback workpipe  http://127.0.0.1:15101/auth/callback >/dev/null
 callback conductor http://127.0.0.1:15103/conductor/auth/callback >/dev/null
 atrium_headers=$(callback atrium http://127.0.0.1:15104/atrium/auth/callback)
