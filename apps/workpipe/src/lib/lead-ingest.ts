@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { normalizeEmail } from './contact-normalize'
 import { db } from './db'
+import { recordLeadNotificationUnchecked } from './queries-internal'
 
 /**
  * Public lead-capture ingest (issue #54 phase 3).
@@ -303,6 +304,10 @@ export async function ingestLeadSubmission({
       data: { Tags: { connect: { id: tag.id } } },
     })
   }
+
+  // The owner's "new contact" notification is written here, server-side, rather than by the
+  // visitor's browser calling a server action (which anyone could call for any sub-account).
+  await recordLeadNotificationUnchecked(leadForm.subAccountId, contact.name)
 
   // Deliberately identical whether the contact was created or merged — the
   // response must not tell an anonymous caller which emails are already known.

@@ -10,11 +10,7 @@ import ContactForm from '@/components/forms/contact-form'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
 import { EditorBtns } from '@/lib/constants'
-import {
-  getFunnelPublic,
-  saveActivityLogsNotification,
-  upsertContactUnchecked,
-} from '@/lib/queries'
+import { getFunnelPublic } from '@/lib/queries'
 import { ContactUserFormSchema } from '@/lib/types'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
 
@@ -130,11 +126,6 @@ const ContactFormComponent = (props: Props) => {
           title: 'Success',
           description: 'Successfully Saved your info',
         })
-        await saveActivityLogsNotification({
-          businessId: undefined,
-          description: `A New contact signed up | ${values.name}`,
-          subaccountId: subaccountId,
-        })
 
         // A form-level redirect wins over the funnel's next page.
         if (data?.redirectUrl) {
@@ -145,27 +136,14 @@ const ContactFormComponent = (props: Props) => {
         return
       }
 
-      // Provisioning failed (leadFormKey is null) — keep the funnel form
-      // working via the legacy direct contact write.
-      const response = await upsertContactUnchecked({
-        name: values.name,
-        email: values.email,
-        phone: values.phone || undefined,
-        companyName: values.companyName || undefined,
-        customFields: values.message ? { message: values.message } : undefined,
-        subAccountId: subaccountId,
-      })
-      //WIP Call trigger endpoint
-      await saveActivityLogsNotification({
-        businessId: undefined,
-        description: `A New contact signed up | ${response?.name}`,
-        subaccountId: subaccountId,
-      })
+      // No lead form is provisioned for this funnel, so there is nowhere trusted to send the
+      // submission. (The old fallback wrote the contact through a server action that any
+      // browser could call for any sub-account.)
       toast({
-        title: 'Success',
-        description: 'Successfully Saved your info',
+        variant: 'destructive',
+        title: 'Failed',
+        description: 'This form is not set up to accept submissions yet',
       })
-      await goToNextPage()
     } catch (error) {
       toast({
         variant: 'destructive',

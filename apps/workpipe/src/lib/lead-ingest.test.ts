@@ -15,6 +15,10 @@ vi.mock('./db', () => ({
     tag: { findFirst: vi.fn(), create: vi.fn() },
   },
 }))
+// The owner's notification is written server-side by the ingest path.
+vi.mock('./queries-internal', () => ({
+  recordLeadNotificationUnchecked: vi.fn(),
+}))
 
 import { db } from './db'
 import {
@@ -23,6 +27,7 @@ import {
   clientIpFromHeaders,
   ingestLeadSubmission,
 } from './lead-ingest'
+import { recordLeadNotificationUnchecked } from './queries-internal'
 
 type Mock = ReturnType<typeof vi.fn>
 const leadForm = db.leadForm as unknown as { findUnique: Mock }
@@ -179,6 +184,15 @@ describe('contact dedupe', () => {
       ok: true,
       body: { contactId: 'contact-new' },
     })
+  })
+
+  it("notifies the form's sub-account owner server-side", async () => {
+    await ingest({ email: 'brand-new@example.com', name: 'New Lead' })
+
+    expect(recordLeadNotificationUnchecked).toHaveBeenCalledWith(
+      FORM.subAccountId,
+      expect.any(String)
+    )
   })
 })
 

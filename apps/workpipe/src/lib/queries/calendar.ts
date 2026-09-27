@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
+import { assertOwnsContact, assertOwnsSubAccount, assertOwnsTicket } from '@/lib/authz'
 import { db } from '@/lib/db'
 
 export type CalendarEventFormData = {
@@ -47,6 +48,8 @@ export const getCalendarEvents = async (
   startDate?: Date,
   endDate?: Date
 ) => {
+  // Server actions accept any arguments a browser sends: check ownership on every call.
+  await assertOwnsSubAccount(subAccountId)
   const where: any = { subAccountId }
 
   if (startDate && endDate) {
@@ -72,16 +75,32 @@ export const getCalendarEvents = async (
 }
 
 export const getCalendarEventById = async (eventId: string) => {
-  return await db.calendarEvent.findUnique({
+  const event = await db.calendarEvent.findUnique({
     where: { id: eventId },
     include: {
       Contact: true,
       Ticket: true,
     },
   })
+  if (!event) return null
+  await assertOwnsSubAccount(event.subAccountId)
+  return event
 }
 
 export const upsertCalendarEvent = async (event: CalendarEventFormData) => {
+  await assertOwnsSubAccount(event.subAccountId)
+  if (event.id) {
+    // An existing event must already belong to this sub-account (no moving it elsewhere).
+    const existing = await db.calendarEvent.findUnique({
+      where: { id: event.id },
+      select: { subAccountId: true },
+    })
+    if (!existing || existing.subAccountId !== event.subAccountId) {
+      throw new Error('Calendar event not found')
+    }
+  }
+  if (event.contactId) await assertOwnsContact(event.contactId)
+  if (event.ticketId) await assertOwnsTicket(event.ticketId)
   const data = {
     title: event.title,
     description: event.description || null,
@@ -109,6 +128,12 @@ export const upsertCalendarEvent = async (event: CalendarEventFormData) => {
 }
 
 export const deleteCalendarEvent = async (eventId: string) => {
+  const target = await db.calendarEvent.findUnique({
+    where: { id: eventId },
+    select: { subAccountId: true },
+  })
+  if (!target) throw new Error('Calendar event not found')
+  await assertOwnsSubAccount(target.subAccountId)
   const event = await db.calendarEvent.delete({
     where: { id: eventId },
   })

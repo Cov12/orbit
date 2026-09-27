@@ -19,7 +19,7 @@ import { redirect } from 'next/navigation'
 import { v4 } from 'uuid'
 import { z } from 'zod'
 
-import { getAuthAdmin, getCurrentUser } from './auth'
+import { getAuthAdmin, getAuthContext, getCurrentUser } from './auth'
 import {
   assertCanManagePermissions,
   assertCanUpdateUser,
@@ -36,12 +36,19 @@ import {
   assertOwnsSubAccount,
   assertOwnsTag,
   assertOwnsTicket,
+  ForbiddenError,
+  requireBusinessEditor,
 } from './authz'
-import { normalizeEmail } from './contact-normalize'
 import { db } from './db'
 import { computeInvoiceTotals } from './invoice-totals'
 import { sendMail } from './mailer'
 import { PORTAL_TOKEN_COOKIE } from './portal-jwt'
+import {
+  loadPipelines,
+  loadTicketsWithTags,
+  persistContact,
+  persistTicket,
+} from './queries-internal'
 import {
   CreateFunnelFormSchema,
   CreateMediaType,
@@ -191,26 +198,16 @@ export const saveActivityLogsNotification = async ({
   // abort the caller's action (saving settings, accepting an invite, etc.).
   // Any failure is logged and swallowed.
   try {
+    // Signed-in callers only, and only for their own business: this is a server action, so
+    // anything it accepts can be sent by any browser. Anonymous activity (a funnel visitor
+    // submitting a lead form) is recorded server-side by the lead-ingest route instead.
     const authUser = await getCurrentUser()
-    let userData
-    if (!authUser) {
-      const response = await db.user.findFirst({
-        where: {
-          Business: {
-            SubAccount: {
-              some: { id: subaccountId },
-            },
-          },
-        },
-      })
-      if (response) {
-        userData = response
-      }
-    } else {
-      userData = await db.user.findUnique({
-        where: { email: authUser.email },
-      })
-    }
+    if (!authUser) return
+    if (subaccountId) await assertOwnsSubAccount(subaccountId)
+    if (businessId) await assertOwnsBusiness(businessId)
+    const userData = await db.user.findUnique({
+      where: { email: authUser.email },
+    })
 
     if (!userData) {
       console.log(
@@ -301,39 +298,60 @@ export const deleteBusiness = async (businessId: string) => {
 
 export const upsertBusiness = async (business: Business, _price?: Plan) => {
   if (!business.companyEmail) return null
+  // A server action accepts whatever a browser sends. So the business is always the caller's
+  // own (id from the session, owner/admin only), only the editable details are written, and
+  // the Stripe-linked ids (connectAccountId, customerId) are left to the payment flows. On
+  // create, the caller is the user attached, never whoever owns `companyEmail`.
+  const businessId = await requireBusinessEditor()
+  const { userId } = await getAuthContext()
+  if (!userId) throw new ForbiddenError('Not authenticated')
+  const details = {
+    name: business.name,
+    businessLogo: business.businessLogo,
+    companyEmail: business.companyEmail,
+    companyPhone: business.companyPhone,
+    whiteLabel: business.whiteLabel,
+    address: business.address,
+    city: business.city,
+    zipCode: business.zipCode,
+    state: business.state,
+    country: business.country,
+    goal: business.goal,
+  }
   try {
     const businessDetails = await db.business.upsert({
       where: {
-        id: business.id,
+        id: businessId,
       },
-      update: business,
+      update: details,
       create: {
+        id: businessId,
+        ...details,
         users: {
-          connect: { email: business.companyEmail },
+          connect: { id: userId },
         },
-        ...business,
         SidebarOption: {
           create: [
             {
               name: 'Calendar',
               icon: 'calendar',
-              link: `/business/${business.id}/calendar`,
+              link: `/business/${businessId}/calendar`,
             },
             {
               name: 'Dashboard',
               icon: 'category',
-              link: `/business/${business.id}`,
+              link: `/business/${businessId}`,
             },
             //cleanup
             // {
             //   name: 'File Manager',
             //   icon: 'database',
-            //   link: `/business/${business.id}/files`,
+            //   link: `/business/${businessId}/files`,
             // },
             {
               name: 'KickStart',
               icon: 'clipboardIcon',
-              link: `/business/${business.id}/kickstart`,
+              link: `/business/${businessId}/kickstart`,
             },
             {
               name: 'Billing',
@@ -343,17 +361,17 @@ export const upsertBusiness = async (business: Business, _price?: Plan) => {
             {
               name: 'Settings',
               icon: 'settings',
-              link: `/business/${business.id}/settings`,
+              link: `/business/${businessId}/settings`,
             },
             {
               name: 'Sub Accounts',
               icon: 'person',
-              link: `/business/${business.id}/all-subaccounts`,
+              link: `/business/${businessId}/all-subaccounts`,
             },
             {
               name: 'Team',
               icon: 'shield',
-              link: `/business/${business.id}/team`,
+              link: `/business/${businessId}/team`,
             },
           ],
         },
@@ -1039,32 +1057,9 @@ export const deletePipeline = async (pipelineId: string) => {
   return response
 }
 
-const loadTicketsWithTags = async (pipelineId: string) => {
-  const response = await db.ticket.findMany({
-    where: {
-      Lane: {
-        pipelineId,
-      },
-    },
-    include: { Tags: true, Assigned: true, Customer: true },
-  })
-  // Convert Decimal to number for client component serialization
-  return response.map(ticket => ({
-    ...ticket,
-    value: ticket.value?.toNumber() ?? null,
-  }))
-}
-
 // Authenticated dashboard read — verifies the caller's org owns the pipeline.
 export const getTicketsWithTags = async (pipelineId: string) => {
   await assertOwnsPipeline(pipelineId)
-  return loadTicketsWithTags(pipelineId)
-}
-
-// Unguarded read for the service-authed GET /api/internal/pipelines/[id]/tickets
-// route, which verifies pipeline→business ownership itself. Do NOT call from
-// interactive dashboard code — use getTicketsWithTags.
-export const getTicketsWithTagsUnchecked = async (pipelineId: string) => {
   return loadTicketsWithTags(pipelineId)
 }
 
@@ -1166,38 +1161,9 @@ export const sendInvitation = async (
   return response
 }
 
-const loadPipelines = async (subaccountId: string) => {
-  const response = await db.pipeline.findMany({
-    where: { subAccountId: subaccountId },
-    include: {
-      Lane: {
-        include: { Tickets: true },
-      },
-    },
-  })
-  // Convert Decimal values to numbers for client component serialization
-  return response.map(pipeline => ({
-    ...pipeline,
-    Lane: pipeline.Lane.map(lane => ({
-      ...lane,
-      Tickets: lane.Tickets.map(ticket => ({
-        ...ticket,
-        value: ticket.value?.toNumber() ?? null,
-      })),
-    })),
-  }))
-}
-
 // Authenticated dashboard read — verifies the caller's org owns the sub-account.
 export const getPipelines = async (subaccountId: string) => {
   await assertOwnsSubAccount(subaccountId)
-  return loadPipelines(subaccountId)
-}
-
-// Unguarded read for the service-authed GET /api/internal/pipelines route, which
-// verifies sub-account→business ownership itself via validateSubAccountForBusiness.
-// Do NOT call from interactive dashboard code — use getPipelines.
-export const getPipelinesUnchecked = async (subaccountId: string) => {
   return loadPipelines(subaccountId)
 }
 
@@ -1492,61 +1458,11 @@ export const updateFunnelProducts = async (
   return data
 }
 
-/**
- * Shared contact write path.
- *
- * `Contact` has no unique key on (subAccountId, email) — and prod may already
- * hold duplicates — so dedupe happens here in application code: with no id
- * supplied we look for an existing contact in the same sub-account whose email
- * matches case-insensitively and update that one in place, instead of the old
- * `where: { id: contact.id || v4() }` upsert which always created a new row.
- */
-const persistContact = async (contact: Prisma.ContactUncheckedCreateInput) => {
-  const email = normalizeEmail(contact.email)
-  const data = { ...contact, ...(email !== undefined && { email }) }
-
-  // Explicit id: caller knows the row it means — keep upsert-by-id behaviour.
-  if (contact.id) {
-    return db.contact.upsert({
-      where: { id: contact.id },
-      update: data,
-      create: data,
-    })
-  }
-
-  if (email) {
-    const existing = await db.contact.findFirst({
-      where: {
-        subAccountId: contact.subAccountId,
-        email: { equals: email, mode: 'insensitive' },
-      },
-      select: { id: true },
-    })
-
-    if (existing) {
-      return db.contact.update({ where: { id: existing.id }, data })
-    }
-  }
-
-  return db.contact.create({ data })
-}
-
 // Authenticated dashboard write — verifies the caller's org owns the sub-account.
 export const upsertContact = async (
   contact: Prisma.ContactUncheckedCreateInput
 ) => {
   await assertOwnsSubAccount(contact.subAccountId)
-  return persistContact(contact)
-}
-
-// Unguarded write for callers that authorize by other means: the public live
-// funnel contact form (no session — lead capture) and the service-authed
-// /api/internal/contacts route (validateInternalAuth + validateSubAccountForBusiness).
-// Do NOT call from interactive dashboard code — use upsertContact so the
-// session ownership guard applies.
-export const upsertContactUnchecked = async (
-  contact: Prisma.ContactUncheckedCreateInput
-) => {
   return persistContact(contact)
 }
 
@@ -1655,57 +1571,12 @@ export const createLeadForm = async (
   })
 }
 
-const persistTicket = async (
-  ticket: Prisma.TicketUncheckedCreateInput,
-  tags: Tag[]
-) => {
-  let order: number
-  if (!ticket.order) {
-    const tickets = await db.ticket.findMany({
-      where: { laneId: ticket.laneId },
-    })
-    order = tickets.length
-  } else {
-    order = ticket.order
-  }
-
-  const response = await db.ticket.upsert({
-    where: {
-      id: ticket.id || v4(),
-    },
-    update: { ...ticket, Tags: { set: tags } },
-    create: { ...ticket, Tags: { connect: tags }, order },
-    include: {
-      Assigned: true,
-      Customer: true,
-      Tags: true,
-      Lane: true,
-    },
-  })
-
-  // Convert Decimal to number for client component serialization
-  return {
-    ...response,
-    value: response.value?.toNumber() ?? null,
-  }
-}
-
 // Authenticated dashboard write — verifies the caller's org owns the lane.
 export const upsertTicket = async (
   ticket: Prisma.TicketUncheckedCreateInput,
   tags: Tag[]
 ) => {
   await assertOwnsLane(ticket.laneId)
-  return persistTicket(ticket, tags)
-}
-
-// Unguarded write for the service-authed /api/internal/tickets route, which
-// already verifies lane→sub-account→business ownership itself. Do NOT call from
-// interactive dashboard code — use upsertTicket so the session guard applies.
-export const upsertTicketUnchecked = async (
-  ticket: Prisma.TicketUncheckedCreateInput,
-  tags: Tag[]
-) => {
   return persistTicket(ticket, tags)
 }
 

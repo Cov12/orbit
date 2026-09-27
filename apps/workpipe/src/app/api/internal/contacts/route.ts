@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
-import { upsertContactUnchecked } from '@/lib/queries'
 import {
   validateInternalAuth,
   validateSubAccountForBusiness,
 } from '@/lib/internal-auth'
+import { upsertContactUnchecked } from '@/lib/queries-internal'
 
 const errorResponse = (error: string, code: string, status: number) =>
   NextResponse.json({ error, code }, { status })

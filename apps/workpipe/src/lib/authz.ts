@@ -159,6 +159,14 @@ async function requireBusinessAdmin(): Promise<string> {
   return orgId
 }
 
+/**
+ * The caller's own business id, for editing that business's details: requires an owner/admin
+ * role. Returns the id from the session so callers never trust a client-supplied one.
+ */
+export async function requireBusinessEditor(): Promise<string> {
+  return requireBusinessAdmin()
+}
+
 /** Assert the caller (owner/admin) manages the target user's business. */
 export async function assertManagesUser(userId: string): Promise<void> {
   const orgId = await requireBusinessAdmin()

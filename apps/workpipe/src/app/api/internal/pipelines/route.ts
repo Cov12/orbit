@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 
-import { getPipelinesUnchecked } from '@/lib/queries'
 import {
   validateInternalAuth,
   validateSubAccountForBusiness,
 } from '@/lib/internal-auth'
+import { getPipelinesUnchecked } from '@/lib/queries-internal'
 
 const errorResponse = (error: string, code: string, status: number) =>
   NextResponse.json({ error, code }, { status })

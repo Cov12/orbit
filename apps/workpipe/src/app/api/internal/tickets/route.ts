@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 import { db } from '@/lib/db'
 import { validateInternalAuth } from '@/lib/internal-auth'
-import { upsertTicketUnchecked } from '@/lib/queries'
+import { upsertTicketUnchecked } from '@/lib/queries-internal'
 
 const errorResponse = (error: string, code: string, status: number) =>
   NextResponse.json({ error, code }, { status })
