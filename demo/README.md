@@ -36,7 +36,7 @@ demo/seed.sh                            # orchestrator plugins, assistant templa
 demo/up.sh --profile public up -d       # start the tunnel
 demo/seed-demo-account.sh               # the shared demo business (needs the public Portal URL)
 demo/smoke.sh                           # end-to-end: the assistant must name a seeded deal
-demo/reset.sh                           # drop all data and reseed (scheduled nightly)
+demo/reset.sh                           # drop all data and reseed (run on demand)
 ```
 
 Public hostnames are configured on the tunnel, not here: the apex to `portal:3000`, and

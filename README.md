@@ -133,7 +133,7 @@ apps/
   atrium/         workspace, on Open WebUI (snapshot — see below)
   conductor/      orchestrator, on Paperclip (snapshot — see below)
   agent-runtime/  our changes to Hermes Agent
-demo/             the live demo: compose stack, seeds, smoke test, nightly reset
+demo/             the live demo: compose stack, seeds, smoke test, reset
 evals/            agent evals and every result, failures included
 factory/          how it's built: agent rules, protocols, scripts, real handoffs
 docs/SHIPLOG.md   every merged pull request
@@ -180,8 +180,7 @@ small sales pipeline and a few customers. Things to try:
 4. **Open WorkPipe** (the CRM) and **Drive** (the file vault) from Portal. They use the same sign-in and
    show the same business.
 
-What's different from production: the data is fictional, and **everything resets nightly** (3am US
-Eastern). The coding-agent CLIs that production agents use to work tickets are left out of the demo,
+What's different from production: the data is fictional, and it's reset to a clean state from time to time. The coding-agent CLIs that production agents use to work tickets are left out of the demo,
 so the lead agent answers a ticket with a plan rather than carrying it out. The assistant runs with the tool
 lockdown described in [the case study](docs/case-studies/agent-system.md): only the CRM tools, with
 no host access, no shared memory and no cross-session search.
@@ -198,7 +197,7 @@ demo/up.sh up -d               # start (env files are read from outside the repo
 demo/seed.sh                   # orchestrator plugins, assistant template, API key, admin
 demo/seed-demo-account.sh      # the demo business, through each app's own first-launch path
 demo/smoke.sh                  # ask the assistant about the pipeline; pass only if it names a real deal
-demo/reset.sh                  # drop all data and reseed (runs nightly)
+demo/reset.sh                  # drop all data and reseed
 ```
 
 `smoke.sh` is the end-to-end check. The first time it ran, it found three breaks between the
