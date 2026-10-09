@@ -18,6 +18,7 @@ const mockAgentService = vi.hoisted(() => ({
 
 const mockAccessService = vi.hoisted(() => ({
   ensureMembership: vi.fn(),
+  canUser: vi.fn(),
 }));
 
 const mockBudgetService = vi.hoisted(() => ({
@@ -248,7 +249,8 @@ describe.sequential("company portability routes", () => {
     expect(mockCompanyPortabilityService.exportBundle).toHaveBeenNthCalledWith(2, companyId, exportRequest);
   });
 
-  it.sequential("allows board users to export through legacy and CEO-safe bundle routes", async () => {
+  it.sequential("allows board users with agents:create to export through legacy and CEO-safe bundle routes", async () => {
+    mockAccessService.canUser.mockResolvedValue(true);
     mockCompanyPortabilityService.exportBundle.mockResolvedValue(createExportResult());
     const app = await createApp({
       type: "board",
@@ -425,5 +427,79 @@ describe.sequential("company portability routes", () => {
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("Instance admin");
     expect(mockCompanyPortabilityService.importBundle).not.toHaveBeenCalled();
+  });
+
+  // Portal-launched users are plain members of their own company. Import creates agents with
+  // arbitrary adapter config and export reveals it, so membership alone must not be enough.
+  const memberWithoutAgentsCreate = {
+    type: "board",
+    userId: "member-1",
+    companyIds: [companyId],
+    source: "session",
+    isInstanceAdmin: false,
+  };
+  const inlinePackage = { type: "inline", files: { "COMPANY.md": "---\nname: Test\n---\n" } };
+
+  it.sequential.each([
+    ["legacy export", `/api/companies/${companyId}/export`, exportRequest],
+    ["export", `/api/companies/${companyId}/exports`, exportRequest],
+    ["export preview", `/api/companies/${companyId}/exports/preview`, exportRequest],
+    ["import preview", `/api/companies/${companyId}/imports/preview`, {
+      source: inlinePackage,
+      include: { company: true, agents: true, projects: false, issues: false },
+      target: { mode: "existing_company", companyId },
+      collisionStrategy: "rename",
+    }],
+    ["import apply", `/api/companies/${companyId}/imports/apply`, {
+      source: inlinePackage,
+      include: { company: true, agents: true, projects: false, issues: false },
+      target: { mode: "existing_company", companyId },
+      collisionStrategy: "rename",
+    }],
+    ["unscoped import into an existing company", "/api/companies/import", {
+      source: inlinePackage,
+      include: { company: true, agents: true, projects: false, issues: false },
+      target: { mode: "existing_company", companyId },
+      collisionStrategy: "rename",
+    }],
+    ["unscoped import preview into an existing company", "/api/companies/import/preview", {
+      source: inlinePackage,
+      include: { company: true, agents: true, projects: false, issues: false },
+      target: { mode: "existing_company", companyId },
+      collisionStrategy: "rename",
+    }],
+  ] as const)("rejects %s for a company member without agents:create", async (_name, path, body) => {
+    mockAccessService.canUser.mockResolvedValue(false);
+    const app = await createApp(memberWithoutAgentsCreate);
+
+    const res = await request(app).post(path).send(body);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("agents:create");
+    expect(mockAccessService.canUser).toHaveBeenCalledWith(companyId, "member-1", "agents:create");
+    expect(mockCompanyPortabilityService.exportBundle).not.toHaveBeenCalled();
+    expect(mockCompanyPortabilityService.previewExport).not.toHaveBeenCalled();
+    expect(mockCompanyPortabilityService.previewImport).not.toHaveBeenCalled();
+    expect(mockCompanyPortabilityService.importBundle).not.toHaveBeenCalled();
+  });
+
+  it.sequential("lets instance admins import into an existing company without a grant", async () => {
+    mockCompanyPortabilityService.importBundle.mockResolvedValue({
+      company: { id: companyId, action: "updated" },
+      agents: [],
+      warnings: [],
+    });
+    const app = await createApp({ ...memberWithoutAgentsCreate, userId: "admin-1", isInstanceAdmin: true });
+
+    const res = await request(app).post("/api/companies/import").send({
+      source: inlinePackage,
+      include: { company: true, agents: true, projects: false, issues: false },
+      target: { mode: "existing_company", companyId },
+      collisionStrategy: "rename",
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockAccessService.canUser).not.toHaveBeenCalled();
+    expect(mockCompanyPortabilityService.importBundle).toHaveBeenCalledTimes(1);
   });
 });

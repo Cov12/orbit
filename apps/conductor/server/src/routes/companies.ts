@@ -48,7 +48,20 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     return parsed;
   }
 
-  function assertImportTargetAccess(
+  // Importing a package creates agents (with their adapter type and config) and exporting one
+  // reveals agent config, so a board user needs the same right as creating agents directly.
+  // Company membership alone is not enough: Portal-launched users are members of their own
+  // company, and agent config can carry commands, URLs and env-var references.
+  async function assertBoardCanManagePortability(req: Request, companyId: string) {
+    if (req.actor.type !== "board") return;
+    if (req.actor.source === "local_implicit" || req.actor.isInstanceAdmin) return;
+    const allowed = await access.canUser(companyId, req.actor.userId, "agents:create");
+    if (!allowed) {
+      throw forbidden("Missing permission: agents:create");
+    }
+  }
+
+  async function assertImportTargetAccess(
     req: Request,
     target: { mode: "new_company" } | { mode: "existing_company"; companyId: string },
   ) {
@@ -57,6 +70,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
       return;
     }
     assertCompanyAccess(req, target.companyId);
+    await assertBoardCanManagePortability(req, target.companyId);
   }
 
   async function assertCanUpdateBranding(req: Request, companyId: string) {
@@ -75,7 +89,10 @@ export function companyRoutes(db: Db, storage?: StorageService) {
 
   async function assertCanManagePortability(req: Request, companyId: string, capability: "imports" | "exports") {
     assertCompanyAccess(req, companyId);
-    if (req.actor.type === "board") return;
+    if (req.actor.type === "board") {
+      await assertBoardCanManagePortability(req, companyId);
+      return;
+    }
     if (!req.actor.agentId) throw forbidden("Agent authentication required");
 
     const actorAgent = await agents.getById(req.actor.agentId);
@@ -171,14 +188,14 @@ export function companyRoutes(db: Db, storage?: StorageService) {
 
   router.post("/import/preview", validate(companyPortabilityPreviewSchema), async (req, res) => {
     assertBoard(req);
-    assertImportTargetAccess(req, req.body.target);
+    await assertImportTargetAccess(req, req.body.target);
     const preview = await portability.previewImport(req.body);
     res.json(preview);
   });
 
   router.post("/import", validate(companyPortabilityImportSchema), async (req, res) => {
     assertBoard(req);
-    assertImportTargetAccess(req, req.body.target);
+    await assertImportTargetAccess(req, req.body.target);
     const actor = getActorInfo(req);
     const result = await portability.importBundle(req.body, req.actor.type === "board" ? req.actor.userId : null);
     await logActivity(db, {

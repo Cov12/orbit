@@ -6,6 +6,7 @@ const mockRegistry = vi.hoisted(() => ({
   getById: vi.fn(),
   getByKey: vi.fn(),
   upsertConfig: vi.fn(),
+  getConfig: vi.fn(),
 }));
 
 const mockCompanySettings = vi.hoisted(() => ({
@@ -708,5 +709,35 @@ describe.sequential("plugin tool and bridge authz", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ runId: "run-1", jobId: "job-1" });
     expect(scheduler.triggerJob).toHaveBeenCalledWith("job-1", "manual");
+  });
+
+  // Stored plugin config can hold shared secrets (e.g. a bridge secret), and plugin logs span
+  // every company. Company membership must not be enough to read either.
+  it.each([
+    ["config read", "get", `/api/plugins/${pluginId}/config`, undefined],
+    ["config test", "post", `/api/plugins/${pluginId}/config/test`, { configJson: {} }],
+    ["logs", "get", `/api/plugins/${pluginId}/logs`, undefined],
+  ] as const)("rejects plugin %s for company members who are not instance admins", async (_name, method, path, body) => {
+    readyPlugin();
+    mockRegistry.getConfig.mockResolvedValue({ configJson: { sharedSecret: "s".repeat(40) } });
+    const { app } = await createApp(boardActor());
+
+    const res = method === "get" ? await request(app).get(path) : await request(app).post(path).send(body);
+
+    expect(res.status).toBe(403);
+    expect(JSON.stringify(res.body)).not.toContain("sharedSecret");
+    expect(mockRegistry.getById).not.toHaveBeenCalled();
+    expect(mockRegistry.getConfig).not.toHaveBeenCalled();
+  }, 15_000);
+
+  it("allows instance admins to read plugin config", async () => {
+    readyPlugin();
+    mockRegistry.getConfig.mockResolvedValue({ configJson: { sharedSecret: "s".repeat(40) } });
+    const { app } = await createApp(boardActor({ userId: "admin-1", isInstanceAdmin: true, companyIds: [] }));
+
+    const res = await request(app).get(`/api/plugins/${pluginId}/config`);
+
+    expect(res.status).toBe(200);
+    expect(mockRegistry.getConfig).toHaveBeenCalledWith(pluginId);
   });
 });
