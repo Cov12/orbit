@@ -95,7 +95,6 @@ async function provisionBusinessFromPortal(
               icon: 'clipboardIcon',
               link: `/business/${orgId}/kickstart`,
             },
-            { name: 'Billing', icon: 'payment', link: `${portalUrl}/billing` },
             {
               name: 'Settings',
               icon: 'settings',

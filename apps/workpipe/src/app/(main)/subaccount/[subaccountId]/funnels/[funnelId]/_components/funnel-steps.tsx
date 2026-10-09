@@ -200,7 +200,13 @@ const FunnelSteps = ({ funnel, funnelId, pages, subaccountId }: Props) => {
                       />
                     </Link>
 
-                    {funnel.subDomainName && (
+                    {funnel.subDomainName && !process.env.NEXT_PUBLIC_DOMAIN && (
+                      <p className="p-2 text-sm text-muted-foreground">
+                        Publishing to a live web address isn’t enabled here.
+                        Open the page in the editor to preview it.
+                      </p>
+                    )}
+                    {funnel.subDomainName && process.env.NEXT_PUBLIC_DOMAIN && (
                       <Link
                         target="_blank"
                         href={`${process.env.NEXT_PUBLIC_SCHEME}${funnel.subDomainName}.${process.env.NEXT_PUBLIC_DOMAIN}/${clickedPage?.pathName}`}

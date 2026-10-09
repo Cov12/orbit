@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { db } from '@/lib/db'
+import { isStripeConnectConfigured } from '@/lib/deployment'
 import { stripe } from '@/lib/stripe'
 import { getStripeOAuthLink } from '@/lib/utils'
 
@@ -113,6 +114,10 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
                   size={50}
                   className="flex-shrink-0 p-2 text-primary"
                 />
+              ) : !isStripeConnectConfigured() ? (
+                <span className="flex-shrink-0 text-sm text-muted-foreground">
+                  Not enabled here
+                </span>
               ) : (
                 <Link
                   className="rounded-md bg-primary px-4 py-2 text-white"

@@ -52,7 +52,19 @@ const SendInvoiceForm: React.FC<SendInvoiceFormProps> = ({
   const onSend = async () => {
     setSending(true)
     try {
-      await sendInvoiceEmail(subAccountId, invoiceId, email)
+      const res = await sendInvoiceEmail(subAccountId, invoiceId, email)
+      if (!res.ok) {
+        toast({
+          variant: 'destructive',
+          title: 'Invoice not sent',
+          description:
+            res.reason === 'EMAIL_NOT_CONFIGURED'
+              ? 'Email delivery isn’t set up for this workspace. Use “Copy pay link” to share the invoice instead.'
+              : 'The email could not be delivered, and the invoice was left unchanged. Please try again.',
+        })
+        setSending(false)
+        return
+      }
       toast({ title: 'Invoice sent', description: `Emailed to ${email}` })
       setClose()
       router.refresh()

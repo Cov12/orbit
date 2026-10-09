@@ -1,9 +1,6 @@
-import Link from 'next/link'
-
 import { AreaChart } from '@tremor/react'
 import {
   Contact2,
-  CreditCard,
   DollarSign,
   Goal,
   ShoppingCart,
@@ -100,30 +97,6 @@ const Page = async ({
 
   return (
     <div className="relative h-full">
-      {/* Billing setup CTA — shown when business has no Stripe customer configured */}
-      {!businessDetails.customerId && (
-        <Card className="mb-6 border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <CardTitle className="text-lg">Set Up Billing</CardTitle>
-            </div>
-            <CardDescription>
-              Set up billing to unlock premium features, manage subscriptions,
-              and access advanced tools for your business.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href={`${process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.orbit.example'}/billing`}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              <CreditCard className="h-4 w-4" />
-              Set Up Billing
-            </Link>
-          </CardContent>
-        </Card>
-      )}
       {/* cleanup: this forces the user to create a stripe account */}
       {/* {!businessDetails.connectAccountId && (
         <div className="absolute -top-10 -left-10 right-0 bottom-0 z-30 flex items-center justify-center backdrop-blur-md bg-background/50">

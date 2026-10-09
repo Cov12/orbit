@@ -34,15 +34,17 @@ const FunnelSettings: React.FC<FunnelSettingsProps> = async ({
   })
 
   if (!subaccountDetails) return null
-  if (!subaccountDetails.connectAccountId) return null
 
+  // Products need a connected Stripe account; the funnel's own settings don't.
   let products: Awaited<ReturnType<typeof getConnectAccountProducts>> = []
-  try {
-    products = await getConnectAccountProducts(
-      subaccountDetails.connectAccountId
-    )
-  } catch (error) {
-    console.error('Failed to fetch Stripe products:', error)
+  if (subaccountDetails.connectAccountId) {
+    try {
+      products = await getConnectAccountProducts(
+        subaccountDetails.connectAccountId
+      )
+    } catch (error) {
+      console.error('Failed to fetch Stripe products:', error)
+    }
   }
 
   return (

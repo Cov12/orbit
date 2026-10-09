@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { db } from '@/lib/db'
+import { isStripeConnectConfigured } from '@/lib/deployment'
 import { stripe } from '@/lib/stripe'
 
 type Props = {
@@ -127,7 +128,13 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
             gating the whole dashboard. Payment-derived metrics below already
             self-disable to $0 when no account is connected. Mirrors the
             business-tier soft CTA. */}
-        {!subaccountDetails.connectAccountId && (
+        {!subaccountDetails.connectAccountId && !isStripeConnectConfigured() && (
+          <p className="mb-6 text-sm text-muted-foreground">
+            Payments aren’t enabled for this workspace, so revenue and checkout
+            figures below stay at $0. Pipeline value is tracked from your deals.
+          </p>
+        )}
+        {!subaccountDetails.connectAccountId && isStripeConnectConfigured() && (
           <Card className="mb-6 border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">

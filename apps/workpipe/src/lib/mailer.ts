@@ -35,6 +35,19 @@ function getTransport(): Transporter {
   return cached
 }
 
+/** True when every setting sendMail needs is present, so callers can skip work up front. */
+export function isMailConfigured(): boolean {
+  const user =
+    process.env.INVOICE_NOTIFICATION_USER ||
+    process.env.INVOICE_NOTIFICATION_EMAIL
+  return Boolean(
+    process.env.INVOICE_NOTIFICATION_HOST &&
+      user &&
+      process.env.INVOICE_NOTIFICATION_SECRET &&
+      process.env.INVOICE_NOTIFICATION_EMAIL
+  )
+}
+
 export async function sendMail({
   to,
   subject,

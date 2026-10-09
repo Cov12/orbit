@@ -63,8 +63,8 @@ const SendInvitation: React.FC<SendInvitationProps> = ({ businessId }) => {
         subaccountId: undefined,
       })
       toast({
-        title: 'Success',
-        description: 'Created and sent invitation',
+        title: 'Invitation recorded',
+        description: `Add ${res.email} to your organization in Portal so they can sign in.`,
       })
     } catch (error) {
       console.log(error)

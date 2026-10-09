@@ -40,8 +40,9 @@ import {
   requireBusinessEditor,
 } from './authz'
 import { db } from './db'
+import { isDemoMode } from './deployment'
 import { computeInvoiceTotals } from './invoice-totals'
-import { sendMail } from './mailer'
+import { isMailConfigured, sendMail } from './mailer'
 import { PORTAL_TOKEN_COOKIE } from './portal-jwt'
 import {
   loadPipelines,
@@ -551,6 +552,7 @@ export const getSubaccountDetailsPublic = async (subaccountId: string) => {
 
 export const deleteSubAccount = async (subaccountId: string) => {
   await assertOwnsSubAccount(subaccountId)
+  if (isDemoMode()) throw new Error('DEMO_READ_ONLY')
   const response = await db.subAccount.delete({
     where: {
       id: subaccountId,
@@ -991,8 +993,15 @@ export const sendInvoiceEmail = async (
   })
   if (!invoice) throw new Error('NOT_FOUND')
 
+  // Expected failures are returned, not thrown: Next.js replaces server-action
+  // error messages in production, so the form could not tell them apart.
+  if (!isMailConfigured()) {
+    return { ok: false as const, reason: 'EMAIL_NOT_CONFIGURED' as const }
+  }
+
   // Ensure the public pay link exists and mark the invoice SENT. This also
   // assigns the invoice number on first send, so use the returned value.
+  const previousStatus = invoice.status
   const { link, number } = await markInvoiceSent(subaccountId, invoiceId)
 
   const base = (process.env.NEXT_PUBLIC_URL || '').replace(/\/$/, '')
@@ -1024,19 +1033,32 @@ export const sendInvoiceEmail = async (
     <p style="color: #888; font-size: 12px; margin-top: 20px;">Or open this link: <a href="${payUrl}" style="color: #2B2FFF;">${payUrl}</a></p>
   </div>`
 
-  await sendMail({
-    to,
-    subject: `Invoice from ${businessName} — ${amount} due`,
-    html,
-    fromName: businessName,
-  })
+  try {
+    await sendMail({
+      to,
+      subject: `Invoice from ${businessName} — ${amount} due`,
+      html,
+      fromName: businessName,
+    })
+  } catch (error) {
+    // Nothing was delivered, so don't leave a draft marked SENT. The number and
+    // pay link stay: both are harmless and reused on the next attempt.
+    if (previousStatus !== 'SENT') {
+      await db.invoice.update({
+        where: { id: invoice.id },
+        data: { status: previousStatus },
+      })
+    }
+    console.error('sendInvoiceEmail: delivery failed', error)
+    return { ok: false as const, reason: 'SEND_FAILED' as const }
+  }
 
   await saveActivityLogsNotification({
     subaccountId,
     description: `Emailed an invoice to ${to}`,
   })
 
-  return { ok: true }
+  return { ok: true as const }
 }
 
 export const getPipelineDetails = async (pipelineId: string) => {

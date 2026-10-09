@@ -190,6 +190,39 @@ INSERT INTO "Ticket"(id, name, "laneId", "order", value, description, "customerI
   ('demo-tk-05', 'Grocery store supplies',      'demo-lane-nego',  0,  7400, 'Produce bags, cleaning chemicals, weekly delivery',    'demo-ct-07', now()),
   ('demo-tk-06', 'Bistro annual contract',      'demo-lane-won',   0, 12600, 'All disposables and cleaning, standing weekly order',  'demo-ct-01', now())
 ON CONFLICT (id) DO NOTHING;
+
+-- Invoices: one paid, one past due (shown as overdue), one due soon, one draft. Amounts in cents.
+INSERT INTO "Invoice"(id, number, status, name, "dueDate", "subTotalCents", "totalDueCents", "netPaymentTerm", link, "paidAt", "subAccountId", "createdAt", "updatedAt") VALUES
+  ('demo-inv-01', 'INV-0001', 'PAID', 'Bluefin Bistro - September deliveries',  now() - interval '20 days', 105000, 105000, 'Net 15', gen_random_uuid()::text, now() - interval '24 days', :'sub', now() - interval '35 days', now()),
+  ('demo-inv-02', 'INV-0002', 'SENT', 'Greenleaf Grocers - bags and chemicals', now() - interval '6 days',   63000,  63000, 'Net 15', gen_random_uuid()::text, NULL,                      :'sub', now() - interval '21 days', now()),
+  ('demo-inv-03', 'INV-0003', 'SENT', 'Cornerstone Cafe - cups and lids',       now() + interval '12 days',  44800,  44800, 'Net 15', gen_random_uuid()::text, NULL,                      :'sub', now() - interval '3 days',  now()),
+  ('demo-inv-04', NULL,       'DRAFT', 'Brooks Market - opening order',         now() + interval '30 days', 120000, 120000, 'Net 30', NULL,                    NULL,                      :'sub', now(),                      now())
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO "InvoiceService"(id, name, description, quantity, "unitPriceCents", "totalCents", "invoiceId", "updatedAt") VALUES
+  ('demo-ins-01', 'Weekly disposables delivery', 'Containers, cups, napkins',       4, 22500,  90000, 'demo-inv-01', now()),
+  ('demo-ins-02', 'Cleaning chemicals',          'Degreaser and sanitizer, 4 gal',  1, 15000,  15000, 'demo-inv-01', now()),
+  ('demo-ins-03', 'Produce bags, case of 2,000', NULL,                              10, 4200,  42000, 'demo-inv-02', now()),
+  ('demo-ins-04', 'Floor degreaser, 1 gal',      NULL,                               6, 3500,  21000, 'demo-inv-02', now()),
+  ('demo-ins-05', '12 oz hot cups with lids, case', NULL,                            8, 5600,  44800, 'demo-inv-03', now()),
+  ('demo-ins-06', 'Opening supply kit',          'Bags, wrap, cleaning starter set', 1, 120000, 120000, 'demo-inv-04', now())
+ON CONFLICT (id) DO NOTHING;
+
+-- A lead-capture funnel: a landing page with a quote form, and a thank-you page.
+INSERT INTO "Funnel"(id, name, description, published, "subDomainName", "subAccountId", "updatedAt") VALUES
+  ('demo-funnel-01', 'Wholesale Account Signup', 'Captures new wholesale accounts from local restaurants and shops', false, 'harbor-wholesale', :'sub', now())
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO "FunnelPage"(id, name, "pathName", "order", visits, content, "funnelId", "updatedAt") VALUES
+  ('demo-fp-01', 'Landing', '', 0, 142, $page$[{"id":"__body","name":"Body","type":"__body","styles":{"backgroundColor":"white"},"content":[{"id":"demo-fp-01-main","name":"Container","type":"container","styles":{"display":"flex","flexDirection":"column","gap":"16px","padding":"48px 24px","maxWidth":"720px","margin":"0 auto"},"content":[{"id":"demo-fp-01-h","name":"Heading","type":"heading","styles":{},"content":{"text":"Wholesale supplies for Ohio restaurants and shops","level":"h1","alignment":"left"}},{"id":"demo-fp-01-t","name":"Text","type":"text","styles":{"color":"black"},"content":{"innerText":"Packaging, disposables and janitorial supplies, delivered weekly from our Columbus warehouse. Tell us what you go through in a month and we'll send a quote within one business day."}},{"id":"demo-fp-01-form","name":"Contact Form","type":"contactForm","styles":{},"content":{"title":"Get a wholesale quote","subTitle":"Open an account","submitText":"Request my quote","fields":["phone","companyName","message"]}}]}]}]$page$, 'demo-funnel-01', now()),
+  ('demo-fp-02', 'Thank you', 'thank-you', 1, 37, $page$[{"id":"__body","name":"Body","type":"__body","styles":{"backgroundColor":"white"},"content":[{"id":"demo-fp-02-main","name":"Container","type":"container","styles":{"display":"flex","flexDirection":"column","gap":"16px","padding":"48px 24px","maxWidth":"720px","margin":"0 auto"},"content":[{"id":"demo-fp-02-h","name":"Heading","type":"heading","styles":{},"content":{"text":"Thanks, we've got your request","level":"h1","alignment":"left"}},{"id":"demo-fp-02-t","name":"Text","type":"text","styles":{"color":"black"},"content":{"innerText":"Someone from our sales team will call you within one business day with pricing for your account."}}]}]}]$page$, 'demo-funnel-01', now())
+ON CONFLICT (id) DO NOTHING;
+
+-- Upcoming calendar: deliveries and calls tied to the deals above (times in UTC, morning US Eastern).
+INSERT INTO "CalendarEvent"(id, title, description, start, "end", category, "contactId", "ticketId", "subAccountId", "updatedAt") VALUES
+  ('demo-ev-01', 'Delivery: Bluefin Bistro weekly order', 'Standing order, dock 2',          date_trunc('day', now()) + interval '1 day 13 hours',        date_trunc('day', now()) + interval '1 day 14 hours',        'delivery', 'demo-ct-01', 'demo-tk-06', :'sub', now()),
+  ('demo-ev-02', 'Call: Priya Shah on grocery pricing',   'Walk through the weekly delivery quote', date_trunc('day', now()) + interval '2 days 18 hours', date_trunc('day', now()) + interval '2 days 18 hours 30 minutes', 'call', 'demo-ct-07', 'demo-tk-05', :'sub', now()),
+  ('demo-ev-03', 'Follow up: Sunrise Bakery holiday boxes', 'Confirm print run and dates', date_trunc('day', now()) + interval '3 days 14 hours',       date_trunc('day', now()) + interval '3 days 14 hours 30 minutes', 'call', 'demo-ct-05', 'demo-tk-03', :'sub', now()),
+  ('demo-ev-04', 'Site visit: Romero Facility Care',      'Walk the floors for the janitorial program', date_trunc('day', now()) + interval '5 days 17 hours', date_trunc('day', now()) + interval '5 days 18 hours', 'meeting', 'demo-ct-06', 'demo-tk-02', :'sub', now())
+ON CONFLICT (id) DO NOTHING;
 SQL
-log "pipeline, 6 deals, 8 contacts"
+log "pipeline, 6 deals, 8 contacts, 4 invoices, 1 funnel, 4 calendar events"
 echo "seed-demo-account: done ($EMAIL)"

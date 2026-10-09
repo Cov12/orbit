@@ -77,6 +77,8 @@ services:
       # `next start` re-reads next.config.mjs at runtime; its image allowlist includes
       # Portal's origin (organization logos) from this variable.
       NEXT_PUBLIC_PORTAL_URL: https://${ORBIT_DEMO_DOMAIN:?}
+      # Shared demo login: block deleting the sub-account out from under the next visitor.
+      WORKPIPE_DEMO_MODE: "1"
     ports: ["127.0.0.1:15101:3000"]
     depends_on:
       db: { condition: service_healthy }

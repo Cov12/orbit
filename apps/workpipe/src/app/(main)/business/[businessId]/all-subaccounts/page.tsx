@@ -1,7 +1,7 @@
 import { SubAccount } from '@prisma/client'
-import Image from 'next/image'
 import Link from 'next/link'
 
+import LogoOrInitial from '@/components/global/logo-or-initial'
 import { AlertDescription } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -22,6 +22,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import { isDemoMode } from '@/lib/deployment'
 import { getAuthUserDetails } from '@/lib/queries'
 import { syncSubAccountsFromPortal } from '@/lib/subaccount-sync'
 
@@ -65,11 +66,12 @@ const AllSubaccountsPage = async ({ params }: Props) => {
                       className="flex h-full w-full gap-4"
                     >
                       <div className="relative w-32">
-                        <Image
+                        <LogoOrInitial
                           src={subaccount.subAccountLogo}
+                          name={subaccount.name}
                           alt="subaccount logo"
-                          fill
                           className="rounded-md bg-muted/50 object-contain p-4"
+                          initialClassName="text-3xl"
                         />
                       </div>
                       <div className="flex flex-col justify-between">
@@ -81,6 +83,7 @@ const AllSubaccountsPage = async ({ params }: Props) => {
                         </div>
                       </div>
                     </Link>
+                    {!isDemoMode() && (
                     <AlertDialogTrigger asChild>
                       <Button
                         size={'sm'}
@@ -90,13 +93,14 @@ const AllSubaccountsPage = async ({ params }: Props) => {
                         Delete
                       </Button>
                     </AlertDialogTrigger>
+                    )}
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle className="text-left">
-                          Are your absolutely sure
+                          Are you absolutely sure?
                         </AlertDialogTitle>
                         <AlertDescription className="text-left">
-                          This action cannot be undon. This will delete the
+                          This action cannot be undone. This will delete the
                           subaccount and all data related to the subaccount.
                         </AlertDescription>
                       </AlertDialogHeader>
